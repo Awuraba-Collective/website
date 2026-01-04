@@ -49,7 +49,7 @@ export default function AboutPage() {
                 </section>
 
                 {/* Vision & Spirit - Two Column Narrative */}
-                <section className="grid md:grid-cols-2 gap-16 md:gap-24">
+                <section className="grid md:grid-cols-2 gap-16 md:gap-24 text-center md:text-left">
                     <div className="space-y-6">
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 block mb-2">The Vision</span>
                         <h3 className="font-serif text-3xl md:text-4xl leading-tight">
@@ -105,7 +105,7 @@ export default function AboutPage() {
                 <div className="text-center pt-16">
                     <Link
                         href="/partners"
-                        className="group inline-flex items-center gap-3 text-lg font-serif italic hover:opacity-70 transition-opacity"
+                        className="group flex flex-col md:inline-flex items-center gap-3 text-lg font-serif italic hover:opacity-70 transition-opacity"
                     >
                         <span>Interested in our future platform?</span>
                         <span className="group-hover:translate-x-1 transition-transform duration-300">
