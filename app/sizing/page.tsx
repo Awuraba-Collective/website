@@ -18,7 +18,7 @@ export default function SizingPage() {
                 {/* Intro / How to Choose */}
                 <section className="grid md:grid-cols-2 gap-12 items-start">
                     <div className="space-y-6">
-                        <h2 className="font-serif text-2xl text-black dark:text-white border-b border-black/10 dark:border-white/10 pb-2">How to Choose Your Size</h2>
+                        <h2 className="font-serif text-2xl text-black dark:text-white border-b border-black/10 dark:border-white/10 pb-2 text-center md:text-left">How to Choose Your Size</h2>
                         <ul className="space-y-4 text-neutral-600 dark:text-neutral-400 list-disc list-inside">
                             <li>Measure your <strong>bust, waist, and hips</strong> using a measuring tape.</li>
                             <li>Compare your measurements with our size chart below.</li>
@@ -27,7 +27,7 @@ export default function SizingPage() {
                         </ul>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 text-center md:text-left">
                         <h2 className="font-serif text-2xl text-black dark:text-white border-b border-black/10 dark:border-white/10 pb-2">Size Ranges Explained</h2>
                         <p className="text-neutral-600 dark:text-neutral-400">
                             Our sizes are offered in <strong>ranges</strong> to accommodate different body shapes.
@@ -42,7 +42,7 @@ export default function SizingPage() {
                 {/* Table 1: Body Measurements */}
                 <section className="overflow-x-auto">
                     <div className="mb-6">
-                        <h2 className="font-serif text-2xl text-black dark:text-white">Body Measurements (Inches)</h2>
+                        <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">Body Measurements (Inches)</h2>
                         <p className="text-sm text-neutral-500">Standard body measurements for each size.</p>
                     </div>
 
@@ -81,17 +81,35 @@ export default function SizingPage() {
                     </table>
                 </section>
 
+                <section className="">
+                    <h2 className="font-serif text-2xl text-black dark:text-white mb-4 text-center md:text-left">Loose (Bola) Outfits Guide</h2>
+                    <div className="grid grid-cols-3 gap-6 text-center bg-neutral-50 dark:bg-neutral-900 p-8 rounded-xl">
+                        <div className="space-y-2">
+                            <span className="block text-2xl font-bold">S</span>
+                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XS - S</span>
+                        </div>
+                        <div className="space-y-2">
+                            <span className="block text-2xl font-bold">M</span>
+                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard M - L</span>
+                        </div>
+                        <div className="space-y-2">
+                            <span className="block text-2xl font-bold">L</span>
+                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XL - XXL</span>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Height & Proportions */}
                 <section className="space-y-8">
-                    <div className="max-w-3xl">
-                        <h2 className="font-serif text-2xl text-black dark:text-white mb-4">Height & Length Guide</h2>
+                    <div className="max-w-full">
+                        <h2 className="font-serif text-2xl text-black dark:text-white mb-4 text-center md:text-left">Height & Length Guide</h2>
                         <div className="grid sm:grid-cols-3 gap-4 mb-8">
                             <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
                                 <span className="block font-bold mb-1">PETITE</span>
                                 <span className="text-sm">Under 5'3"</span>
                             </div>
                             <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
-                                <span className="block font-bold mb-1">STANDARD</span>
+                                <span className="block font-bold mb-1">REGULAR</span>
                                 <span className="text-sm">5'3" to 5'7"</span>
                             </div>
                             <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
@@ -112,22 +130,22 @@ export default function SizingPage() {
                                 <tr>
                                     <th className="p-3 border border-neutral-700">Length Guide (Inches)</th>
                                     <th className="p-3 border border-neutral-700">Petite</th>
-                                    <th className="p-3 border border-neutral-700">Standard</th>
+                                    <th className="p-3 border border-neutral-700">Regular</th>
                                     <th className="p-3 border border-neutral-700">Tall</th>
                                 </tr>
                             </thead>
                             <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
                                 {[
-                                    { label: "Short Sleeve", petite: "7", standard: "7.5", tall: "8" },
-                                    { label: "Long Sleeve", petite: "22", standard: "23", tall: "24" },
-                                    { label: "Short Length (Dress)", petite: "30-33", standard: "33-36", tall: "36-39" },
-                                    { label: "3/4 Length (Dress)", petite: "35-38", standard: "38-41", tall: "41-44" },
-                                    { label: "Full / Long Length", petite: "44-47", standard: "47-50", tall: "50-53" },
+                                    { label: "Short Sleeve", petite: "7", regular: "7.5", tall: "8" },
+                                    { label: "Long Sleeve", petite: "22", regular: "23", tall: "24" },
+                                    { label: "Short Length (Dress)", petite: "30-33", regular: "33-36", tall: "36-39" },
+                                    { label: "3/4 Length (Dress)", petite: "35-38", regular: "38-41", tall: "41-44" },
+                                    { label: "Full / Long Length", petite: "44-47", regular: "47-50", tall: "50-53" },
                                 ].map((row, i) => (
                                     <tr key={i} className="bg-white dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
                                         <td className="p-3 border border-neutral-200 dark:border-neutral-800 font-bold text-left pl-6">{row.label}</td>
                                         <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.petite}</td>
-                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.standard}</td>
+                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.regular}</td>
                                         <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.tall}</td>
                                     </tr>
                                 ))}
@@ -136,27 +154,10 @@ export default function SizingPage() {
                     </div>
                 </section>
 
-                {/* Loose Fits */}
-                <section className="">
-                    <h2 className="font-serif text-2xl text-black dark:text-white mb-4">Loose (Bola) Outfits Guide</h2>
-                    <div className="grid grid-cols-3 gap-6 text-center bg-neutral-50 dark:bg-neutral-900 p-8 rounded-xl">
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">S</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XS - S</span>
-                        </div>
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">M</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard M - L</span>
-                        </div>
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">L</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XL - XXL</span>
-                        </div>
-                    </div>
-                </section>
+
 
                 <section className="space-y-6 ">
-                    <h2 className="font-serif text-2xl text-black dark:text-white">Important Notes</h2>
+                    <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">Important Notes</h2>
                     <ul className="space-y-4 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-outside ml-4">
                         <li>
                             <strong>Full Length Preference:</strong> Full length is designed to skim the floor when worn with heels.
@@ -173,7 +174,6 @@ export default function SizingPage() {
                     </ul>
                 </section>
 
-                {/* Support */}
                 <div className="text-center pt-12 border-t border-dashed border-black/20 dark:border-white/20">
                     <h3 className="font-serif text-xl mb-4 text-black dark:text-white">Still Unsure?</h3>
                     <p className="text-neutral-600 dark:text-neutral-400 mb-6">
