@@ -5,7 +5,7 @@ import { ArrowRight, Star, Heart, ShieldCheck } from "lucide-react";
 export default function Home() {
   return (
     <div className="flex flex-col">
-      <section className="relative flex h-[80vh] w-full flex-col items-center justify-center bg-neutral-900 px-4 text-center text-white overflow-hidden">
+      <section className="relative flex h-screen w-full flex-col items-center justify-center bg-neutral-900 px-4 text-center text-white overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/fabrics.webp"
