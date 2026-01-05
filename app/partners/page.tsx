@@ -45,10 +45,10 @@ export default function PartnersPage() {
                                 Please send your inquiries to:
                             </p>
                             <a
-                                href="mailto:thebonnetbay20@gmail.com"
+                                href="mailto:helloawuraba@gmail.com"
                                 className="block w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-md font-medium hover:opacity-90 transition-opacity text-center"
                             >
-                                thebonnetbay20@gmail.com
+                                helloawuraba@gmail.com
                             </a>
                             <p className="text-xs text-center text-neutral-400 pt-2">
                                 Click to open your email client
