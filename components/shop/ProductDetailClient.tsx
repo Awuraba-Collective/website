@@ -1,13 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import { Product, Size, LooseSize, Length, } from '@/types/shop';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
-import { Check, Ruler, Info, ExternalLink, Share2, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
 import { toast } from 'sonner';
+import { Check, ChevronRight, Info, Ruler, Share2, X } from 'lucide-react';
+import Link from 'next/link';
+
+// Sizing Data
+const BODY_MEASUREMENTS = [
+    { label: "Bust", xs: "30-33", s: "33-36", m: "36-39", l: "39-42", xl: "42-46", xxl: "46-50" },
+    { label: "Waist", xs: "23-26", s: "26-29", m: "29-32", l: "32-36", xl: "36-40", xxl: "40-45" },
+    { label: "Hip", xs: "34-37", s: "37-40", m: "40-43", l: "43-46", xl: "46-50", xxl: "50-54" },
+    { label: "Thigh", xs: "20-22", s: "22-24", m: "24-26", l: "26-28", xl: "28-31", xxl: "31-34" },
+];
+
+const LENGTH_GUIDE = [
+    { label: "Short Sleeve", petite: "7\"", regular: "7.5\"", tall: "8\"" },
+    { label: "Long Sleeve", petite: "22\"", regular: "23\"", tall: "24\"" },
+    { label: "Short Dress", petite: "30-33\"", regular: "33-36\"", tall: "36-39\"" },
+    { label: "3/4 Dress", petite: "35-38\"", regular: "38-41\"", tall: "41-44\"" },
+    { label: "Full Length", petite: "44-47\"", regular: "47-50\"", tall: "50-53\"" },
+];
 
 interface ProductDetailClientProps {
     product: Product;
@@ -34,6 +51,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const [note, setNote] = useState('');
 
     const [activeImage, setActiveImage] = useState(0);
+    const [activeGuide, setActiveGuide] = useState<'size' | 'length' | null>(null);
 
     const handleAddToCart = () => {
         if (!selectedSize) {
@@ -120,6 +138,115 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     <ChevronRight className="w-3 h-3 text-neutral-300" />
                     <span className="text-black dark:text-white">{product.name}</span>
                 </nav>
+
+                <AnimatePresence>
+                    {activeGuide && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setActiveGuide(null)}
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-2xl rounded-sm overflow-hidden"
+                            >
+                                <div className="flex items-center justify-between p-6 border-b border-neutral-100 dark:border-neutral-800">
+                                    <h2 className="font-serif text-2xl uppercase tracking-tight">
+                                        {activeGuide === 'size' ? 'Size Guide' : 'Length Guide'}
+                                    </h2>
+                                    <button
+                                        onClick={() => setActiveGuide(null)}
+                                        className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 overflow-x-auto">
+                                    {activeGuide === 'size' ? (
+                                        <div className="space-y-6">
+                                            <table className="w-full text-center border-collapse text-xs">
+                                                <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
+                                                    <tr>
+                                                        <th className="p-3 border border-neutral-700">Size</th>
+                                                        {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(s => (
+                                                            <th key={s} className="p-3 border border-neutral-700">{s}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {BODY_MEASUREMENTS.map((row, i) => (
+                                                        <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase">{row.label}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xs}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.s}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.m}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.l}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xl}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xxl}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {product.fitCategory === 'Loose' && (
+                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
+                                                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2">Loose (Bola) Fit Guide</p>
+                                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                                        <div><span className="block font-bold">S</span><span className="text-[10px] text-neutral-500">Fits XS-S</span></div>
+                                                        <div><span className="block font-bold">M</span><span className="text-[10px] text-neutral-500">Fits M-L</span></div>
+                                                        <div><span className="block font-bold">L</span><span className="text-[10px] text-neutral-500">Fits XL-XXL</span></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                                <div className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-sm text-center">
+                                                    <span className="block font-bold text-[10px]">PETITE</span>
+                                                    <span className="text-[10px] text-neutral-500">Under 5'3"</span>
+                                                </div>
+                                                <div className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-sm text-center">
+                                                    <span className="block font-bold text-[10px]">REGULAR</span>
+                                                    <span className="text-[10px] text-neutral-500">5'3" to 5'7"</span>
+                                                </div>
+                                                <div className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-sm text-center">
+                                                    <span className="block font-bold text-[10px]">TALL</span>
+                                                    <span className="text-[10px] text-neutral-500">5'7" +</span>
+                                                </div>
+                                            </div>
+                                            <table className="w-full text-center border-collapse text-xs">
+                                                <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
+                                                    <tr>
+                                                        <th className="p-3 border border-neutral-700 text-left">Category</th>
+                                                        <th className="p-3 border border-neutral-700">Petite</th>
+                                                        <th className="p-3 border border-neutral-700">Regular</th>
+                                                        <th className="p-3 border border-neutral-700">Tall</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {LENGTH_GUIDE.map((row, i) => (
+                                                        <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold text-left">{row.label}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.petite}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.regular}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.tall}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
 
@@ -251,9 +378,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="block text-sm font-bold uppercase tracking-wider">Size {product.fitCategory === 'Loose' && <span className="text-[10px] font-normal text-neutral-500 ml-2">(Loose Fit Guide)</span>}</span>
-                                    <Link href="/sizing" className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group">
-                                        <Ruler className="w-3 h-3" /> Size Guide <ExternalLink className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </Link>
+                                    <button
+                                        onClick={() => setActiveGuide('size')}
+                                        className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
+                                    >
+                                        <Ruler className="w-3 h-3" /> Size Guide
+                                    </button>
                                 </div>
                                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                                     {sizes.map(size => (
@@ -313,9 +443,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="block text-sm font-bold uppercase tracking-wider">Length</span>
-                                    <Link href="/sizing" className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group">
-                                        <Ruler className="w-3 h-3" /> Length Guide <ExternalLink className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </Link>
+                                    <button
+                                        onClick={() => setActiveGuide('length')}
+                                        className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
+                                    >
+                                        <Ruler className="w-3 h-3" /> Length Guide
+                                    </button>
                                 </div>
                                 <div className="flex gap-4">
                                     {lengths.map(len => (
