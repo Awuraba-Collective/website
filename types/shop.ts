@@ -1,5 +1,18 @@
 export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'Custom';
+export type LooseSize = 'S' | 'M' | 'L';
+export type FitCategory = 'Standard' | 'Loose';
 export type Length = 'Petite' | 'Regular' | 'Tall';
+
+export interface ProductVariant {
+    name: string;
+    isAvailable: boolean;
+}
+
+export interface ModelInfo {
+    height: string;
+    wearingSize: string;
+    wearingVariant: string;
+}
 
 export interface ProductImage {
     src: string;
@@ -13,9 +26,13 @@ export interface Product {
     price: number;
     description: string;
     images: ProductImage[];
-    colors: string[]; // e.g. ["#000000", "#FF0000"] or Names "Black", "Red"
+    variants: ProductVariant[];
+    fitCategory: FitCategory;
+    modelInfo?: ModelInfo;
+    discountPrice?: number;
+    discountEndsAt?: string; // ISO date string
     category: string;
-    collection?: string; // e.g., "Monthly Drop", "Classics"
+    collection?: string;
     isNewDrop?: boolean;
 }
 
@@ -35,8 +52,9 @@ export interface CartItem {
     image: string;
     selectedSize: Size;
     selectedLength: Length;
-    selectedColor: string;
+    selectedVariant: string;
+    fitCategory: FitCategory;
     customMeasurements?: CustomMeasurements;
-    note?: string; // User note per item
+    note?: string;
     quantity: number;
 }

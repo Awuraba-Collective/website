@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation';
-import { products } from '@/lib/shop-data';
+import { shopService } from '@/services/shopService';
 import { ProductDetailClient } from '@/components/shop/ProductDetailClient';
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-    const product = products.find(p => p.slug === params.slug);
+export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const product = await shopService.getProductBySlug(slug);
 
     if (!product) {
         notFound();

@@ -13,7 +13,19 @@ export const products: Product[] = [
             { src: "/images/placeholder-dress-1.jpg", alt: "Awuraba Maxi Front" },
             { src: "/images/placeholder-dress-2.jpg", alt: "Awuraba Maxi Back" },
         ],
-        colors: ["Emerald Green", "Midnight Black", "Royal Blue"],
+        variants: [
+            { name: "Emerald Green", isAvailable: true },
+            { name: "Midnight Black", isAvailable: true },
+            { name: "Royal Blue", isAvailable: false }
+        ],
+        fitCategory: "Standard",
+        modelInfo: {
+            height: "5'9\"",
+            wearingSize: "M",
+            wearingVariant: "Emerald Green"
+        },
+        discountPrice: 380,
+        discountEndsAt: "2026-01-20T23:59:59Z",
         category: "Dresses",
         collection: "January 25th Drop",
         isNewDrop: true,
@@ -27,7 +39,16 @@ export const products: Product[] = [
         images: [
             { src: "/images/placeholder-set-1.jpg", alt: "Silk Set Front" },
         ],
-        colors: ["Champagne", "Rose Gold"],
+        variants: [
+            { name: "Champagne", isAvailable: true },
+            { name: "Rose Gold", isAvailable: true }
+        ],
+        fitCategory: "Loose",
+        modelInfo: {
+            height: "5'7\"",
+            wearingSize: "S",
+            wearingVariant: "Champagne"
+        },
         category: "Sets",
         collection: "Essentials",
         isNewDrop: false,
@@ -41,7 +62,11 @@ export const products: Product[] = [
         images: [
             { src: "/images/placeholder-top-1.jpg", alt: "Wrap Top Front" },
         ],
-        colors: ["White", "Burnt Orange"],
+        variants: [
+            { name: "White", isAvailable: true },
+            { name: "Burnt Orange", isAvailable: true }
+        ],
+        fitCategory: "Standard",
         category: "Tops",
         collection: "January 25th Drop",
         isNewDrop: true,
@@ -55,7 +80,11 @@ export const products: Product[] = [
         images: [
             { src: "/images/placeholder-skirt-1.jpg", alt: "Midi Skirt" },
         ],
-        colors: ["Navy", "Mustard"],
+        variants: [
+            { name: "Navy", isAvailable: true },
+            { name: "Mustard", isAvailable: false }
+        ],
+        fitCategory: "Standard",
         category: "Bottoms",
         collection: "Essentials",
         isNewDrop: false,

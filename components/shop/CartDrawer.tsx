@@ -31,26 +31,27 @@ export function CartDrawer() {
         <div className="fixed inset-0 z-50 flex justify-end">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity cursor-pointer"
                 onClick={() => dispatch(toggleCart())}
+                aria-hidden="true"
             />
 
             {/* Drawer */}
-            <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 h-screen shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-neutral-100 dark:border-neutral-800">
-                    <h2 className="font-serif text-2xl">Your Cart ({items.length})</h2>
+                <div className="flex items-center justify-between p-6 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 z-10">
+                    <h2 className="font-serif text-2xl">Your Bag ({items.length})</h2>
                     <button onClick={() => dispatch(toggleCart())} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Items */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-neutral-50/50 dark:bg-neutral-900/50">
                     {items.length === 0 ? (
                         <div className="text-center py-20 text-neutral-500">
-                            <p>Your cart is empty.</p>
+                            <p>Your bag is empty.</p>
                             <button
                                 onClick={() => dispatch(toggleCart())}
                                 className="mt-4 text-black dark:text-white underline font-medium"
@@ -60,8 +61,8 @@ export function CartDrawer() {
                         </div>
                     ) : (
                         items.map((item) => (
-                            <div key={item.id} className="flex gap-4">
-                                <div className="relative w-20 aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden flex-shrink-0">
+                            <div key={item.id} className="flex gap-4 p-3 bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 rounded-sm shadow-sm transition-all hover:shadow-md">
+                                <div className="relative w-20 aspect-[3/4] bg-neutral-100 rounded-xs overflow-hidden flex-shrink-0">
                                     <Image src={item.image} alt={item.name} fill className="object-cover" />
                                 </div>
                                 <div className="flex-1 flex flex-col justify-between">
@@ -76,7 +77,7 @@ export function CartDrawer() {
                                             </button>
                                         </div>
                                         <p className="text-sm text-neutral-500">
-                                            {item.selectedSize} / {item.selectedLength} / {item.selectedColor}
+                                            {item.selectedSize} / {item.selectedLength} / {item.selectedVariant}
                                         </p>
                                         <p className="text-sm font-medium mt-1">₵ {item.price.toFixed(2)}</p>
                                     </div>
@@ -106,18 +107,26 @@ export function CartDrawer() {
                 {/* Footer */}
                 {items.length > 0 && (
                     <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4 bg-white dark:bg-neutral-900">
-                        <div className="flex justify-between items-center text-lg font-bold">
+                        <div className="flex justify-between items-center text-lg font-serif">
                             <span>Subtotal</span>
                             <span>₵ {total.toFixed(2)}</span>
                         </div>
-                        <p className="text-xs text-neutral-500 text-center">Shipping & taxes calculated at checkout</p>
-                        <Link
-                            href="/checkout"
-                            onClick={() => dispatch(toggleCart())}
-                            className="block w-full bg-black text-white dark:bg-white dark:text-black text-center py-4 uppercase tracking-widest font-bold hover:opacity-90 transition-opacity"
-                        >
-                            Checkout
-                        </Link>
+                        <div className="space-y-3">
+                            <Link
+                                href="/cart"
+                                onClick={() => dispatch(toggleCart())}
+                                className="block w-full border border-black dark:border-white text-black dark:text-white text-center py-4 uppercase tracking-[0.2em] text-xs font-bold hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all"
+                            >
+                                View Full Bag
+                            </Link>
+                            <Link
+                                href="/checkout"
+                                onClick={() => dispatch(toggleCart())}
+                                className="block w-full bg-black text-white dark:bg-white dark:text-black text-center py-4 uppercase tracking-[0.2em] text-xs font-bold hover:opacity-90 transition-opacity"
+                            >
+                                Checkout
+                            </Link>
+                        </div>
                     </div>
                 )}
             </div>

@@ -36,15 +36,30 @@ export function ProductCard({ product }: ProductCardProps) {
                         New Drop
                     </div>
                 )}
+                {/* Sale Badge */}
+                {product.discountPrice && (
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm dark:bg-black/90 text-black dark:text-white text-[10px] px-2 py-1 uppercase tracking-[0.2em] font-bold border border-neutral-200 dark:border-neutral-800 shadow-sm">
+                        Sale
+                    </div>
+                )}
             </div>
 
             <div className="mt-4 space-y-1 text-center sm:text-left">
                 <h3 className="text-sm font-medium text-neutral-900 dark:text-white uppercase tracking-wide">
                     {product.name}
                 </h3>
-                <p className="text-sm text-neutral-500">
-                    ₵ {product.price.toFixed(2)}
-                </p>
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    {product.discountPrice ? (
+                        <>
+                            <span className="text-sm font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
+                            <span className="text-xs text-neutral-400 line-through font-medium">₵ {product.price.toFixed(2)}</span>
+                        </>
+                    ) : (
+                        <p className="text-sm text-black dark:text-white font-semibold">
+                            ₵ {product.price.toFixed(2)}
+                        </p>
+                    )}
+                </div>
             </div>
         </Link>
     );

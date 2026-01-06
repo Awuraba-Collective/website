@@ -5,10 +5,10 @@ export default function PartnersPage() {
     return (
         <div className="bg-white dark:bg-black w-full">
             {/* Hero */}
-            <div className="relative overflow-hidden bg-neutral-900 py-32 text-center text-white">
+            <div className="relative overflow-hidden bg-neutral-900 py-20 md:py-28 text-center text-white">
                 <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-black opacity-50" />
                 <div className="relative z-10 max-w-4xl mx-auto px-6">
-                    <h1 className="font-serif text-4xl font-bold sm:text-6xl mb-6">
+                    <h1 className="font-serif text-4xl md:text-6xl font-bold mb-6">
                         Partner With Us
                     </h1>
                     <p className="mx-auto max-w-2xl text-lg text-neutral-300">

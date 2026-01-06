@@ -5,9 +5,10 @@ import Image from "next/image";
 import { useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import clsx from "clsx";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleCart } from "@/store/slices/cartSlice";
-import { CartDrawer } from "./shop/CartDrawer";
 
 const navLinks = [
     { name: "Home", href: "/" },
@@ -20,6 +21,7 @@ const navLinks = [
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const pathname = usePathname();
     const dispatch = useAppDispatch();
     const { items } = useAppSelector((state) => state.cart);
     const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -48,15 +50,30 @@ export function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex md:items-center md:gap-8">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            className="text-sm font-medium uppercase tracking-wider text-neutral-600 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-white"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                    {navLinks.map((link) => {
+                        const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={clsx(
+                                    "relative text-sm font-medium uppercase tracking-wider transition-colors py-2",
+                                    isActive
+                                        ? "text-black dark:text-white"
+                                        : "text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                                )}
+                            >
+                                {link.name}
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="nav-underline"
+                                        className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-black dark:bg-white"
+                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                    />
+                                )}
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 {/* Right side icons (Mobile menu toggle) */}
@@ -74,8 +91,7 @@ export function Navbar() {
                         )}
                     </button>
 
-                    {/* Cart Drawer is mounted here to be available globally (Navbar is always present) */}
-                    <CartDrawer />
+                    {/* Cart Drawer is moved to RootLayout for global access and z-index stability */}
 
                     <button
                         onClick={() => setIsOpen(!isOpen)}
@@ -90,28 +106,35 @@ export function Navbar() {
             <div
                 className={clsx(
                     "md:hidden absolute top-16 left-0 w-full bg-white dark:bg-black border-b border-black/5 dark:border-white/10 transition-all duration-300 ease-in-out overflow-hidden",
-                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    isOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"
                 )}
             >
-                <div className="flex flex-col space-y-4 p-6">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            onClick={() => setIsOpen(false)}
-                            className="text-lg font-medium text-neutral-800 dark:text-neutral-200"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
+                <div className="flex flex-col space-y-4 p-8">
+                    {navLinks.map((link) => {
+                        const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+                        return (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                onClick={() => setIsOpen(false)}
+                                className={clsx(
+                                    "relative text-xl font-medium tracking-tight flex items-center gap-4",
+                                    isActive ? "text-black dark:text-white" : "text-neutral-400"
+                                )}
+                            >
+                                {isActive && <motion.div layoutId="mobile-indicator" className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
+                                {link.name}
+                            </Link>
+                        );
+                    })}
                     <button
                         onClick={() => {
                             setIsOpen(false);
                             dispatch(toggleCart());
                         }}
-                        className="text-lg font-medium text-neutral-800 dark:text-neutral-200 text-left flex items-center gap-2"
+                        className="text-xl font-medium text-neutral-400 text-left flex items-center gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-900"
                     >
-                        Cart ({cartCount})
+                        Bag (<span className="text-black dark:text-white font-bold">{cartCount}</span>)
                     </button>
                 </div>
             </div>

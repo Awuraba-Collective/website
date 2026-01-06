@@ -5,6 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import StoreProvider from "@/store/StoreProvider";
+import { CartDrawer } from "@/components/shop/CartDrawer";
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,11 +40,13 @@ export default function RootLayout({
       >
         <StoreProvider>
           <Navbar />
+          <CartDrawer />
           <main className="flex-grow w-full">
             {children}
           </main>
           <WhatsAppButton />
           <Footer />
+          <Toaster position="top-right" richColors />
         </StoreProvider>
       </body>
     </html>

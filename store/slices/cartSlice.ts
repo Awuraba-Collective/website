@@ -42,6 +42,12 @@ const cartSlice = createSlice({
                 item.note = action.payload.note;
             }
         },
+        updateCartItem: (state, action: PayloadAction<{ id: string; newItem: CartItem }>) => {
+            const index = state.items.findIndex(item => item.id === action.payload.id);
+            if (index > -1) {
+                state.items[index] = action.payload.newItem;
+            }
+        },
         toggleCart: (state) => {
             state.isOpen = !state.isOpen;
         },
@@ -54,5 +60,5 @@ const cartSlice = createSlice({
     },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, updateNote, toggleCart, setCartOpen, clearCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, updateNote, updateCartItem, toggleCart, setCartOpen, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;

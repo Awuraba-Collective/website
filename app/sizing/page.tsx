@@ -4,8 +4,8 @@ import { MessageCircle } from "lucide-react";
 export default function SizingPage() {
     return (
         <div className="bg-white dark:bg-black w-full min-h-screen">
-            <div className="bg-neutral-50 dark:bg-neutral-900 py-24 px-4 text-center">
-                <h1 className="font-serif text-4xl font-bold sm:text-5xl text-black dark:text-white">
+            <div className="bg-neutral-50 dark:bg-neutral-900 py-20 md:py-28 px-4 text-center">
+                <h1 className="font-serif text-4xl font-bold md:text-6xl text-black dark:text-white">
                     Size Guidelines
                 </h1>
                 <p className="mt-4 text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">

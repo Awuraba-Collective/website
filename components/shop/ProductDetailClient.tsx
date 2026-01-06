@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Product, Size, Length } from '@/types/shop';
-import { useAppDispatch } from '@/store/hooks';
+import { Product, Size, LooseSize, Length, } from '@/types/shop';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
-import { Check, ChevronRight, Ruler, Info } from 'lucide-react';
+import { Check, Ruler, Info, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface ProductDetailClientProps {
     product: Product;
@@ -15,8 +17,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const dispatch = useAppDispatch();
 
     // Selections
-    const [selectedColor, setSelectedColor] = useState(product.colors[0]);
-    const [selectedSize, setSelectedSize] = useState<Size | null>(null);
+    const [selectedVariant, setSelectedVariant] = useState(product.variants[0].name);
+    const [selectedSize, setSelectedSize] = useState<Size | LooseSize | null>(null);
     const [selectedLength, setSelectedLength] = useState<Length>('Regular');
 
     // Custom Size Inputs
@@ -35,36 +37,59 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     const handleAddToCart = () => {
         if (!selectedSize) {
-            alert('Please select a size');
+            toast.error('Please select a size before adding to bag');
             return;
         }
 
         // Validate custom
         if (selectedSize === 'Custom') {
             if (!customMeasurements.bust || !customMeasurements.waist || !customMeasurements.hips) {
-                alert('Please fill in your custom measurements');
+                toast.error('Please fill in your bust, waist, and hip measurements');
                 return;
             }
         }
 
         dispatch(addToCart({
-            id: `${product.id}-${selectedColor}-${selectedSize}-${selectedLength}`, // Simple unique ID generation
+            id: `${product.id}-${selectedVariant}-${selectedSize}-${selectedLength}`,
             productId: product.id,
             name: product.name,
-            price: product.price,
+            price: product.discountPrice ?? product.price,
             image: product.images[0].src,
-            selectedSize,
+            selectedSize: selectedSize as Size,
             selectedLength,
-            selectedColor,
+            selectedVariant,
+            fitCategory: product.fitCategory,
             customMeasurements: selectedSize === 'Custom' ? customMeasurements : undefined,
             note: note,
             quantity: 1,
         }));
 
-        alert('Added to cart!');
+        toast.success(`${product.name} added to your bag!`);
+
+        // Sophisticated feedback instead of alert
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 3000);
     };
 
-    const sizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'];
+    const [isAdded, setIsAdded] = useState(false);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [isHovering, setIsHovering] = useState(false);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+        const x = ((e.pageX - left) / width) * 100;
+        const y = ((e.pageY - top) / height) * 100;
+        setMousePos({ x, y });
+    };
+
+    const allProducts = useAppSelector(state => state.shop.products);
+    const relatedProducts = allProducts
+        .filter((p: Product) => p.id !== product.id && (p.category === product.category || p.collection === product.collection))
+        .slice(0, 4);
+
+    const standardSizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'];
+    const looseSizes: LooseSize[] = ['S', 'M', 'L'];
+    const sizes = product.fitCategory === 'Loose' ? looseSizes : standardSizes;
     const lengths: Length[] = ['Petite', 'Regular', 'Tall'];
 
     return (
@@ -74,15 +99,33 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                     {/* Image Gallery */}
                     <div className="space-y-4">
-                        <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800">
+                        <div
+                            className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 cursor-zoom-in"
+                            onMouseMove={handleMouseMove}
+                            onMouseEnter={() => setIsHovering(true)}
+                            onMouseLeave={() => setIsHovering(false)}
+                        >
                             <Image
                                 src={product.images[activeImage].src}
                                 alt={product.images[activeImage].alt}
                                 fill
-                                className="object-cover"
+                                className={`object-cover transition-transform duration-200 ${isHovering ? 'scale-[1.5]' : 'scale-100'}`}
+                                style={isHovering ? {
+                                    transformOrigin: `${mousePos.x}% ${mousePos.y}%`
+                                } : undefined}
                                 priority
                             />
                         </div>
+                        {product.modelInfo && (
+                            <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
+                                <p className="text-xs uppercase tracking-widest font-bold mb-2 flex items-center gap-2">
+                                    <Info className="w-3 h-3" /> Model Guide
+                                </p>
+                                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                    Model is <span className="font-medium text-black dark:text-white">{product.modelInfo.height}</span> wearing size <span className="font-medium text-black dark:text-white">{product.modelInfo.wearingSize}</span> in <span className="font-medium text-black dark:text-white font-serif">{product.modelInfo.wearingVariant}</span>.
+                                </p>
+                            </div>
+                        )}
                         {product.images.length > 1 && (
                             <div className="flex gap-4 overflow-x-auto pb-2">
                                 {product.images.map((img, idx) => (
@@ -106,9 +149,35 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                     {/* Product Info & Controls */}
                     <div className="flex flex-col h-full">
-                        <div className="mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-8">
-                            <h1 className="font-serif text-4xl lg:text-5xl mb-2">{product.name}</h1>
-                            <p className="text-xl text-neutral-600 dark:text-neutral-400">₵ {product.price.toFixed(2)}</p>
+                        <div className="mb-10 border-b border-neutral-100 dark:border-neutral-900 pb-10">
+                            <h1 className="font-serif text-4xl lg:text-5xl mb-6 tracking-tight">{product.name}</h1>
+
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-baseline gap-4">
+                                    {product.discountPrice ? (
+                                        <>
+                                            <span className="text-4xl font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
+                                            <span className="text-lg text-neutral-400 line-through font-light">₵ {product.price.toFixed(2)}</span>
+                                        </>
+                                    ) : (
+                                        <p className="text-3xl font-medium text-black dark:text-white">₵ {product.price.toFixed(2)}</p>
+                                    )}
+                                </div>
+
+                                {product.discountEndsAt && (
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[10px] uppercase tracking-[0.25em] font-black text-white bg-black dark:bg-white dark:text-black px-2 py-0.5">
+                                            Limited Offer
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-neutral-500">
+                                            {(() => {
+                                                const daysLeft = Math.ceil((new Date(product.discountEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                                return daysLeft > 0 ? `${daysLeft} days remaining at this price` : 'Ends soon';
+                                            })()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-8 flex-grow">
@@ -116,20 +185,28 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 {product.description}
                             </p>
 
-                            {/* Color */}
+                            {/* Variants */}
                             <div>
-                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Color: <span className="text-neutral-500 font-normal capitalize">{selectedColor}</span></span>
+                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Variants: <span className="text-neutral-500 font-normal capitalize">{selectedVariant}</span></span>
                                 <div className="flex flex-wrap gap-3">
-                                    {product.colors.map(color => (
+                                    {product.variants.map((variant) => (
                                         <button
-                                            key={color}
-                                            onClick={() => setSelectedColor(color)}
-                                            className={`px-4 py-2 text-sm border transition-all ${selectedColor === color
-                                                    ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                                                    : 'border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400'
+                                            key={variant.name}
+                                            disabled={!variant.isAvailable}
+                                            onClick={() => setSelectedVariant(variant.name)}
+                                            className={`px-4 py-2 text-sm border transition-all relative ${selectedVariant === variant.name
+                                                ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                                                : variant.isAvailable
+                                                    ? 'border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400'
+                                                    : 'border-neutral-200 text-neutral-300 dark:border-neutral-800 dark:text-neutral-600 cursor-not-allowed overflow-hidden'
                                                 }`}
                                         >
-                                            {color}
+                                            {variant.name}
+                                            {!variant.isAvailable && (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="w-full h-[1px] bg-neutral-300 dark:bg-neutral-700 rotate-[20deg]" />
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
@@ -138,10 +215,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {/* Size */}
                             <div>
                                 <div className="flex justify-between items-center mb-3">
-                                    <span className="block text-sm font-bold uppercase tracking-wider">Size</span>
-                                    <button className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1">
-                                        <Ruler className="w-3 h-3" /> Size Guide
-                                    </button>
+                                    <span className="block text-sm font-bold uppercase tracking-wider">Size {product.fitCategory === 'Loose' && <span className="text-[10px] font-normal text-neutral-500 ml-2">(Loose Fit Guide)</span>}</span>
+                                    <Link href="/sizing" className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group">
+                                        <Ruler className="w-3 h-3" /> Size Guide <ExternalLink className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </Link>
                                 </div>
                                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                                     {sizes.map(size => (
@@ -149,8 +226,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                             key={size}
                                             onClick={() => setSelectedSize(size)}
                                             className={`py-2 text-sm border transition-all uppercase ${selectedSize === size
-                                                    ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                                                    : 'border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400'
+                                                ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                                                : 'border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400'
                                                 }`}
                                         >
                                             {size}
@@ -199,7 +276,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Length */}
                             <div>
-                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Length</span>
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className="block text-sm font-bold uppercase tracking-wider">Length</span>
+                                    <Link href="/sizing" className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group">
+                                        <Ruler className="w-3 h-3" /> Length Guide <ExternalLink className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </Link>
+                                </div>
                                 <div className="flex gap-4">
                                     {lengths.map(len => (
                                         <label key={len} className="flex items-center gap-2 cursor-pointer group">
@@ -235,14 +317,56 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         <div className="pt-8 mt-8 border-t border-neutral-200 dark:border-neutral-800">
                             <button
                                 onClick={handleAddToCart}
-                                className="w-full bg-black text-white dark:bg-white dark:text-black py-4 uppercase tracking-widest font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${isAdded
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-90'
+                                    }`}
                             >
-                                Add to Cart
+                                {isAdded ? (
+                                    <>
+                                        <Check className="w-5 h-5" /> Added to Bag
+                                    </>
+                                ) : 'Add to Bag'}
                             </button>
                         </div>
 
                     </div>
                 </div>
+
+                {/* Related Products */}
+                {relatedProducts.length > 0 && (
+                    <div className="mt-32">
+                        <h2 className="font-serif text-3xl mb-12">You Might Also Like</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {relatedProducts.map((p: Product) => (
+                                <div key={p.id} className="group cursor-pointer" onClick={() => window.location.href = `/shop/${p.slug}`}>
+                                    <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
+                                        <Image src={p.images[0].src} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                    </div>
+                                    <h3 className="text-sm font-medium">{p.name}</h3>
+                                    <p className="text-sm text-neutral-500">₵ {p.price.toFixed(2)}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Mobile Sticky Buy Bar */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300">
+                <div className="flex-grow">
+                    <p className="text-xs text-neutral-500 line-clamp-1">{product.name}</p>
+                    <p className="font-bold">₵ {product.price.toFixed(2)}</p>
+                </div>
+                <button
+                    onClick={handleAddToCart}
+                    className={`flex-grow h-12 uppercase tracking-widest text-xs font-bold transition-all px-6 ${isAdded
+                        ? 'bg-green-600 text-white'
+                        : 'bg-black text-white dark:bg-white dark:text-black'
+                        }`}
+                >
+                    {isAdded ? 'Added' : 'Add to Bag'}
+                </button>
             </div>
         </div>
     );
