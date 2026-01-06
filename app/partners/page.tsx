@@ -1,5 +1,15 @@
 import Link from "next/link";
 import { MoveRight } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Partner With Us",
+    description: "Join the future of African fashion. AWURABA is building a multi-vendor platform to empower designers and creators.",
+    openGraph: {
+        title: "Partner With Us | AWURABA",
+        description: "Join the AWURABA community of designers and creators.",
+    }
+};
 
 export default function PartnersPage() {
     return (

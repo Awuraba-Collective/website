@@ -17,7 +17,7 @@ export default function HomeClient() {
                 <div className="fixed inset-0 z-0">
                     <Image
                         src="/images/fabrics.webp"
-                        alt="Awuraba Fabrics"
+                        alt="Handcrafted African Fabrics - AWURABA Elegant Fashion"
                         fill
                         className="object-cover"
                         priority

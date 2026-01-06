@@ -1,5 +1,15 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Size Guidelines",
+    description: "Find your perfect fit with the AWURABA size guide. Detailed measurements for all our handcrafted African ready-to-wear pieces.",
+    openGraph: {
+        title: "Size Guidelines | AWURABA",
+        description: "Find your perfect fit with the AWURABA size guide.",
+    }
+};
 
 export default function SizingPage() {
     return (

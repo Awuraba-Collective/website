@@ -1,5 +1,15 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "Our Story",
+    description: "Discover the spirit of AWURABA. Modern African elegance handcrafted in Ghana, inspired by femininity, dignity, and grace.",
+    openGraph: {
+        title: "Our Story | AWURABA",
+        description: "Discover the spirit of AWURABA. Modern African elegance handcrafted in Ghana.",
+    }
+};
 
 export default function AboutPage() {
     return (

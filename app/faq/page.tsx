@@ -1,4 +1,14 @@
 import { Plus } from "lucide-react";
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: "FAQ",
+    description: "Common questions about shopping with AWURABA. Information on ordering, delivery, production times, and custom sizing.",
+    openGraph: {
+        title: "FAQ | AWURABA",
+        description: "Everything you need to know about shopping with AWURABA.",
+    }
+};
 
 export default function FAQPage() {
     const faqs = [

@@ -10,8 +10,8 @@ export const products: Product[] = [
         price: 450,
         description: "Our signature silhouette designed for effortless elegance. Features a flowing drape that flatters every curve. Perfect for both casual outings and formal events.",
         images: [
-            { src: "/images/placeholder-dress-1.jpg", alt: "Awuraba Maxi Front" },
-            { src: "/images/placeholder-dress-2.jpg", alt: "Awuraba Maxi Back" },
+            { src: "/images/placeholder-dress-1.jpg", alt: "The Awuraba Maxi Dress in Emerald Green - Elegant African Fashion" },
+            { src: "/images/placeholder-dress-2.jpg", alt: "Back view of The Awuraba Maxi Dress - Emerald Green" },
         ],
         variants: [
             { name: "Emerald Green", isAvailable: true },
@@ -37,7 +37,7 @@ export const products: Product[] = [
         price: 600,
         description: "Luxurious comfort meets modern style. This two-piece set is crafted from premium silk-blend fabric, ensuring you look polished even while relaxing.",
         images: [
-            { src: "/images/placeholder-set-1.jpg", alt: "Silk Set Front" },
+            { src: "/images/placeholder-set-1.jpg", alt: "Silk Lounge Set in Champagne - Handcrafted African Ready-to-wear" },
         ],
         variants: [
             { name: "Champagne", isAvailable: true },
@@ -60,7 +60,7 @@ export const products: Product[] = [
         price: 250,
         description: "A versatile top with adjustable wrap ties, allowing for multiple styling options. The structured sleeves add a touch of drama to any outfit.",
         images: [
-            { src: "/images/placeholder-top-1.jpg", alt: "Wrap Top Front" },
+            { src: "/images/placeholder-top-1.jpg", alt: "AWURABA Statement Wrap Top in White - Versatile African Style" },
         ],
         variants: [
             { name: "White", isAvailable: true },
@@ -78,7 +78,7 @@ export const products: Product[] = [
         price: 350,
         description: "A high-waisted midi skirt with a soft A-line flare. Moves beautifully with every step you take.",
         images: [
-            { src: "/images/placeholder-skirt-1.jpg", alt: "Midi Skirt" },
+            { src: "/images/placeholder-skirt-1.jpg", alt: "Flow Midi Skirt in Navy - Elegant Ready-to-wear from Ghana" },
         ],
         variants: [
             { name: "Navy", isAvailable: true },
