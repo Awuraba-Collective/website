@@ -13,8 +13,8 @@ import { toggleCart } from "@/store/slices/cartSlice";
 const navLinks = [
     { name: "Home", href: "/" },
     { name: "Shop", href: "/shop" },
-    { name: "Sizing", href: "/sizing" },
     { name: "About", href: "/about" },
+    { name: "Sizing", href: "/sizing" },
     { name: "Partners", href: "/partners" },
     { name: "FAQ", href: "/faq" },
 ];
