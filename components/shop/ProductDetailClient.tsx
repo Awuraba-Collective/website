@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Product, Size, LooseSize, Length, } from '@/types/shop';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
-import { Check, Ruler, Info, ExternalLink } from 'lucide-react';
+import { Check, Ruler, Info, ExternalLink, Share2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -71,6 +71,23 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         setTimeout(() => setIsAdded(false), 3000);
     };
 
+    const handleShare = async () => {
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: `AWURABA | ${product.name}`,
+                    text: product.description,
+                    url: window.location.href,
+                });
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success('Link copied to clipboard');
+            }
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
+    };
+
     const [isAdded, setIsAdded] = useState(false);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [isHovering, setIsHovering] = useState(false);
@@ -94,7 +111,16 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     return (
         <div className="bg-white dark:bg-black min-h-screen text-black dark:text-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+                {/* Breadcrumbs */}
+                <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 mb-8 lg:mb-12 overflow-x-auto whitespace-nowrap pb-2">
+                    <Link href="/shop" className="hover:text-black dark:hover:text-white transition-colors">Shop</Link>
+                    <ChevronRight className="w-3 h-3 text-neutral-300" />
+                    <Link href={`/shop?category=${product.category}`} className="hover:text-black dark:hover:text-white transition-colors uppercase">{product.category}</Link>
+                    <ChevronRight className="w-3 h-3 text-neutral-300" />
+                    <span className="text-black dark:text-white">{product.name}</span>
+                </nav>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
 
                     {/* Image Gallery */}
@@ -150,7 +176,16 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     {/* Product Info & Controls */}
                     <div className="flex flex-col h-full">
                         <div className="mb-10 border-b border-neutral-100 dark:border-neutral-900 pb-10">
-                            <h1 className="font-serif text-4xl lg:text-5xl mb-6 tracking-tight">{product.name}</h1>
+                            <div className="flex justify-between items-start gap-4 mb-4">
+                                <h1 className="font-serif text-4xl lg:text-5xl tracking-tight lowercase first-letter:uppercase">{product.name}</h1>
+                                <button
+                                    onClick={handleShare}
+                                    className="p-2 rounded-full border border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors group"
+                                    title="Share product"
+                                >
+                                    <Share2 className="w-5 h-5 text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                                </button>
+                            </div>
 
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-baseline gap-4">
@@ -344,7 +379,16 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         <Image src={p.images[0].src} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
                                     </div>
                                     <h3 className="text-sm font-medium">{p.name}</h3>
-                                    <p className="text-sm text-neutral-500">₵ {p.price.toFixed(2)}</p>
+                                    <p className="text-sm">
+                                        {p.discountPrice ? (
+                                            <span className="flex gap-2">
+                                                <span className="font-bold">₵ {p.discountPrice.toFixed(2)}</span>
+                                                <span className="text-neutral-400 line-through">₵ {p.price.toFixed(2)}</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-neutral-500">₵ {p.price.toFixed(2)}</span>
+                                        )}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -355,8 +399,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             {/* Mobile Sticky Buy Bar */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300">
                 <div className="flex-grow">
-                    <p className="text-xs text-neutral-500 line-clamp-1">{product.name}</p>
-                    <p className="font-bold">₵ {product.price.toFixed(2)}</p>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold line-clamp-1 mb-1">{product.name}</p>
+                    <p className="font-bold">₵ {(product.discountPrice ?? product.price).toFixed(2)}</p>
                 </div>
                 <button
                     onClick={handleAddToCart}

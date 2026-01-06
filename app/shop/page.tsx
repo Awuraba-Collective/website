@@ -1,5 +1,6 @@
 import ShopClient from "@/components/shop/ShopClient";
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
     title: "Shop All",
@@ -12,5 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default function ShopPage() {
-    return <ShopClient />;
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white dark:bg-black" />}>
+            <ShopClient />
+        </Suspense>
+    );
 }

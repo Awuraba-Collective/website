@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setFilter, fetchProducts } from '@/store/slices/shopSlice';
 import { ProductCard } from '@/components/shop/ProductCard';
@@ -10,9 +11,19 @@ import { motion } from 'framer-motion';
 
 export default function ShopClient() {
     const dispatch = useAppDispatch();
+    const searchParams = useSearchParams();
     const { filteredProducts, activeFilter, loading, products } = useAppSelector((state) => state.shop);
 
     const filters = ['All', 'New Drop', 'Dresses', 'Sets', 'Tops', 'Bottoms'];
+
+    useEffect(() => {
+        const category = searchParams.get('category');
+        if (category && filters.includes(category)) {
+            dispatch(setFilter(category));
+        } else if (!category) {
+            dispatch(setFilter('All'));
+        }
+    }, [searchParams, dispatch]);
 
     useEffect(() => {
         if (products.length === 0) {
