@@ -5,17 +5,24 @@ import Image from "next/image";
 import { useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import clsx from "clsx";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { toggleCart } from "@/store/slices/cartSlice";
+import { CartDrawer } from "./shop/CartDrawer";
 
 const navLinks = [
     { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
+    { name: "Shop", href: "/shop" },
     { name: "Sizing", href: "/sizing" },
-    { name: "FAQ", href: "/faq" },
+    { name: "About", href: "/about" },
     { name: "Partners", href: "/partners" },
+    { name: "FAQ", href: "/faq" },
 ];
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const dispatch = useAppDispatch();
+    const { items } = useAppSelector((state) => state.cart);
+    const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-md dark:bg-black/80 dark:border-white/10">
@@ -54,7 +61,21 @@ export function Navbar() {
 
                 {/* Right side icons (Mobile menu toggle) */}
                 <div className="flex items-center gap-4">
-                    {/* Future: Cart Icon could go here */}
+                    {/* Cart Icon */}
+                    <button
+                        onClick={() => dispatch(toggleCart())}
+                        className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                    >
+                        <ShoppingBag className="h-5 w-5" />
+                        {cartCount > 0 && (
+                            <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-black text-white dark:bg-white dark:text-black text-[10px] flex items-center justify-center font-bold">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* Cart Drawer is mounted here to be available globally (Navbar is always present) */}
+                    <CartDrawer />
 
                     <button
                         onClick={() => setIsOpen(!isOpen)}
@@ -83,6 +104,15 @@ export function Navbar() {
                             {link.name}
                         </Link>
                     ))}
+                    <button
+                        onClick={() => {
+                            setIsOpen(false);
+                            dispatch(toggleCart());
+                        }}
+                        className="text-lg font-medium text-neutral-800 dark:text-neutral-200 text-left flex items-center gap-2"
+                    >
+                        Cart ({cartCount})
+                    </button>
                 </div>
             </div>
         </nav>
