@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation"
 import {
     LayoutDashboard,
     ShoppingBag,
-    Upload,
+    Package,
     Users,
     Settings,
     MoreVertical,
@@ -28,7 +28,7 @@ import {
 const sidebarLinks = [
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
-    { name: "Products", href: "/admin/products", icon: Upload },
+    { name: "Products", href: "/admin/products", icon: Package },
     { name: "Customers", href: "/admin/customers", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ]

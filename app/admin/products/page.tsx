@@ -18,12 +18,12 @@ import {
 import Link from 'next/link';
 
 const products = [
-    { id: 'PROD-001', name: 'Silk Wrap Dress', category: 'Dresses', price: 'GH₵ 450', stock: 12, status: 'Active' },
-    { id: 'PROD-002', name: 'Linen Set Coral', category: 'Sets', price: 'GH₵ 350', stock: 3, status: 'Low Stock' },
-    { id: 'PROD-003', name: 'Ankara Maxi', category: 'Dresses', price: 'GH₵ 550', stock: 22, status: 'Active' },
-    { id: 'PROD-004', name: 'Velvet Evening Gown', category: 'Dresses', price: 'GH₵ 850', stock: 5, status: 'Active' },
-    { id: 'PROD-005', name: 'Cotton Summer Top', category: 'Tops', price: 'GH₵ 120', stock: 0, status: 'Out of Stock' },
-    { id: 'PROD-006', name: 'High-Waist Trousers', category: 'Bottoms', price: 'GH₵ 280', stock: 15, status: 'Active' },
+    { id: 'PROD-001', name: 'Silk Wrap Dress', category: 'Dresses', collection: 'January 25th Drop', costPrice: 'GH₵ 250', sellingPrice: 'GH₵ 450' },
+    { id: 'PROD-002', name: 'Linen Set Coral', category: 'Sets', collection: 'Essentials', costPrice: 'GH₵ 180', sellingPrice: 'GH₵ 350' },
+    { id: 'PROD-003', name: 'Ankara Maxi', category: 'Dresses', collection: 'Resort 2024', costPrice: 'GH₵ 300', sellingPrice: 'GH₵ 550' },
+    { id: 'PROD-004', name: 'Velvet Evening Gown', category: 'Dresses', collection: 'January 25th Drop', costPrice: 'GH₵ 450', sellingPrice: 'GH₵ 850' },
+    { id: 'PROD-005', name: 'Cotton Summer Top', category: 'Tops', collection: 'Essentials', costPrice: 'GH₵ 60', sellingPrice: 'GH₵ 120' },
+    { id: 'PROD-006', name: 'High-Waist Trousers', category: 'Bottoms', collection: 'Resort 2024', costPrice: 'GH₵ 140', sellingPrice: 'GH₵ 280' },
 ];
 
 export default function ProductsPage() {
@@ -82,9 +82,9 @@ export default function ProductsPage() {
                             <tr className="border-b border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/10">
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Product</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Category</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Price</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Stock</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Collection</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Cost Price</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-neutral-400">Selling Price</th>
                                 <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-neutral-400">Actions</th>
                             </tr>
                         </thead>
@@ -103,28 +103,9 @@ export default function ProductsPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-6 text-xs text-neutral-500 font-medium">{product.category}</td>
-                                    <td className="px-6 py-6 text-xs font-bold text-black dark:text-white">{product.price}</td>
-                                    <td className="px-6 py-6">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{product.stock} units</span>
-                                            <div className="w-24 h-1 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all ${product.stock === 0 ? 'bg-red-500' : product.stock < 5 ? 'bg-black dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-700'}`}
-                                                    style={{ width: `${Math.min((product.stock / 30) * 100, 100)}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-sm border ${product.status === 'Active'
-                                                ? 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400'
-                                                : product.status === 'Low Stock'
-                                                    ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
-                                                    : 'border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400'
-                                            }`}>
-                                            {product.status}
-                                        </span>
-                                    </td>
+                                    <td className="px-6 py-6 text-xs text-neutral-500 font-medium">{product.collection}</td>
+                                    <td className="px-6 py-6 text-xs font-bold text-neutral-400">{product.costPrice}</td>
+                                    <td className="px-6 py-6 text-xs font-bold text-black dark:text-white">{product.sellingPrice}</td>
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-md transition-colors" title="View details">
@@ -134,7 +115,7 @@ export default function ProductsPage() {
                                                 <Edit3 className="w-4 h-4 text-neutral-500" />
                                             </button>
                                             <button className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors" title="Delete product">
-                                                <Trash2 className="w-4 h-4 text-red-500" />
+                                                <Trash2 className="w-4 h-4 text-rose-500" />
                                             </button>
                                         </div>
                                         <div className="group-hover:hidden">
