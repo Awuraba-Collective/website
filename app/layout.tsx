@@ -112,13 +112,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white`}
       >
         <StoreProvider>
-          <Navbar />
-          <CartDrawer />
-          <main className="flex-grow w-full">
-            {children}
-          </main>
-          <WhatsAppButton />
-          <Footer />
+          {children}
           <Toaster position="top-right" richColors />
         </StoreProvider>
       </body>
