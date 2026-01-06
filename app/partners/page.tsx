@@ -55,14 +55,14 @@ export default function PartnersPage() {
                                 Please send your inquiries to:
                             </p>
                             <a
-                                href="mailto:helloawuraba@gmail.com"
+                                href="mailto:hello@awuraba.co"
                                 className="block w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-md font-medium hover:opacity-90 transition-opacity text-center"
                             >
-                                helloawuraba@gmail.com
+                                hello@awuraba.co
                             </a>
-                            <p className="text-xs text-center text-neutral-400 pt-2">
+                            {/* <p className="text-xs text-center text-neutral-400 pt-2">
                                 Click to open your email client
-                            </p>
+                            </p> */}
                         </div>
                     </div>
                 </div>

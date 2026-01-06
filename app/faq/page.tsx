@@ -13,40 +13,40 @@ export const metadata: Metadata = {
 export default function FAQPage() {
     const faqs = [
         {
-            question: "How do I place an order?",
-            answer: "Orders are placed via our Google Form found on our social media bio or by clicking the 'Order' button when collections drop. After filling the form, you'll receive confirmation via WhatsApp.",
+            question: "What items do you sell?",
+            answer: "We specialize in elegant African ready-to-wear pieces for women, including dresses, tops, and sets handcrafted with love in Ghana.",
         },
         {
             question: "When are new collections released?",
-            answer: "We drop a fresh collection of 5 new styles on the 25th of every month.",
+            answer: "We release a fresh collection on the 25th of every month.",
         },
         {
             question: "What is 'The 25th Drop'?",
-            answer: "It is our monthly launch event. Shopping during the drop gives you access to exclusive discounted prices. After the drop window, styles remain available but return to standard pricing.",
+            answer: "It is our monthly launch event. Shopping during the drop period gives you access to exclusive launch prices. After the drop window, items remain available but return to their standard pricing.",
         },
         {
-            question: "Do you offer delivery?",
-            answer: "Yes, we offer nationwide delivery across Ghana. Delivery fees vary based on location.",
-        },
-        {
-            question: "What items do you sell?",
-            answer: "We specialize in African ready-to-wear pieces for women, including dresses, tops, and skirts suitable for both casual and special occasions.",
-        },
-        {
-            question: "How long does production take?",
-            answer: "Each AWURABA piece is crafted with care. Please allow 5 working days for production after your order is confirmed, before it is shipped for delivery.",
+            question: "How do I place an order?",
+            answer: "You can place an order directly on our website. Simply browse our collections, select your preferred size and length, and proceed to checkout. We will contact you via phone or WhatsApp to confirm your order and finalize delivery.",
         },
         {
             question: "Can I provide my own measurements?",
-            answer: "Yes, you can share your specific measurements with us. However, please note that we cannot be held responsible if the item does not fit as expected based on self-provided measurements.",
+            answer: "Yes, we offer a 'Custom' sizing option for every piece. You can provide your specific measurements during checkout. However, please note that we cannot be held responsible if the item does not fit as expected based on self-provided measurements.",
         },
         {
             question: "Do you offer sizes above XXL?",
-            answer: "Absolutely. While our standard chart lists up to XXL, we are open to creating pieces for larger sizes as a custom order. Please contact us to assist you.",
+            answer: "Absolutely. While our standard chart lists up to XXL, we are happy to create pieces for larger sizes via our custom sizing option. Please reach out if you need assistance.",
+        },
+        {
+            question: "How long does production take?",
+            answer: "Each AWURABA piece is crafted with care and built to last. Please allow 5 working days for production after your order is confirmed before it is shipped.",
+        },
+        {
+            question: "Do you offer delivery?",
+            answer: "Yes, we offer nationwide delivery across Ghana. Delivery fees are calculated based on your location and are payable on delivery.",
         },
         {
             question: "Can I return an item?",
-            answer: "We ensure rigorous quality checks before delivery. Please contact us via WhatsApp immediately if you have any issues with your order upon receipt.",
+            answer: "As each piece is made to order, all sales are final. We ensure rigorous quality checks before delivery, but if you have any concerns upon receiving your order, please contact us via WhatsApp immediately.",
         },
     ];
 
@@ -81,7 +81,7 @@ export default function FAQPage() {
                     <p className="text-neutral-600 dark:text-neutral-400">
                         Still have questions?{" "}
                         <a
-                            href="https://wa.me/233000000000" // Replace with actual number
+                            href="https://wa.me/233549726818"
                             className="font-semibold text-black dark:text-white underline underline-offset-4 hover:no-underline"
                         >
                             Chat with us on WhatsApp
