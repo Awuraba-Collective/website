@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { phoneNumber } from "better-auth/plugins";
+import { admin, phoneNumber } from "better-auth/plugins";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./database";
 
@@ -16,6 +16,7 @@ export const auth = betterAuth({
         // Implement sending OTP code via SMS
       },
     }),
+    admin({}),
   ],
   socialProviders: {
     google: {
