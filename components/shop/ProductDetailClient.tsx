@@ -19,11 +19,11 @@ const BODY_MEASUREMENTS = [
 ];
 
 const LENGTH_GUIDE = [
-    { label: "Short Sleeve", petite: "7\"", regular: "7.5\"", tall: "8\"" },
-    { label: "Long Sleeve", petite: "22\"", regular: "23\"", tall: "24\"" },
-    { label: "Short Dress", petite: "30-33\"", regular: "33-36\"", tall: "36-39\"" },
-    { label: "3/4 Dress", petite: "35-38\"", regular: "38-41\"", tall: "41-44\"" },
-    { label: "Full Length", petite: "44-47\"", regular: "47-50\"", tall: "50-53\"" },
+    { label: "Short Sleeve", petite: "6\"", regular: "7\"", tall: "8.5\"" },
+    { label: "Long Sleeve", petite: "21\"", regular: "23\"", tall: "25\"" },
+    { label: "Short Dress", petite: "35-37\"", regular: "38-40\"", tall: "41-42\"" },
+    { label: "3/4 Dress", petite: "38-40\"", regular: "40-43\"", tall: "44-46\"" },
+    { label: "Full Length", petite: "52-54\"", regular: "55-57\"", tall: "60-62\"" },
 ];
 
 interface ProductDetailClientProps {

@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AWURABA | Elegant African Fashion",
-    description: "Curated elegant African ready-to-wear pieces for everyday life. Handcrafted with love in Ghana.",
+    description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
     url: "https://awuraba.co",
     siteName: "AWURABA",
     images: [
@@ -89,8 +89,10 @@ export default function RootLayout({
     "url": "https://awuraba.co",
     "logo": "https://awuraba.co/logos/icon.png",
     "sameAs": [
-      "https://www.instagram.com/awuraba.co",
-      // Add other social links if available
+      "https://www.instagram.com/shopawuraba",
+      "https://www.facebook.com/shopawuraba",
+      // "https://www.pinterest.com/shopawuraba",
+      "https://www.tiktok.com/shopawuraba",
     ],
     "description": "Curated elegant African ready-to-wear pieces handcrafted in Ghana.",
     "address": {
