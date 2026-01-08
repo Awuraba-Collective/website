@@ -47,22 +47,15 @@ export const metadata: Metadata = {
     description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
     url: "https://awuraba.co",
     siteName: "AWURABA",
-    images: [
-      {
-        url: "/og-image.jpg", // We should ensure this exists later or generate one
-        width: 1200,
-        height: 630,
-        alt: "AWURABA - Elegant African Fashion",
-      },
-    ],
+    images: [],
     locale: "en_GH",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "AWURABA | Elegant African Fashion",
-    description: "Curated elegant African ready-to-wear pieces for everyday life. Handcrafted with love in Ghana.",
-    images: ["/og-image.jpg"],
+    description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
+    images: [],
   },
   robots: {
     index: true,
