@@ -9,6 +9,7 @@ import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
 import { Check, ChevronRight, Info, Ruler, Share2, X } from 'lucide-react';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 
 // Sizing Data
 const BODY_MEASUREMENTS = [
@@ -91,6 +92,25 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             quantity: 1,
         }));
 
+        // PostHog: Track product added to cart
+        posthog.capture('product_added_to_cart', {
+            product_id: product.id,
+            product_name: product.name,
+            product_slug: product.slug,
+            product_category: product.category,
+            product_collection: product.collection,
+            price: product.discountPrice ?? product.price,
+            original_price: product.price,
+            has_discount: !!product.discountPrice,
+            selected_variant: selectedVariant,
+            selected_size: selectedSize,
+            selected_length: selectedLength,
+            fit_category: product.fitCategory,
+            is_custom_size: selectedSize === 'Custom',
+            has_note: !!note,
+            currency: 'GHS',
+        });
+
         toast.success(`${product.name} added to your bag!`);
 
         // Sophisticated feedback instead of alert
@@ -100,7 +120,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     const handleShare = async () => {
         try {
-            if (navigator.share) {
+            const canShare = typeof navigator.share === 'function';
+            const shareMethod = canShare ? 'native_share' : 'clipboard_copy';
+
+            if (canShare) {
                 await navigator.share({
                     title: `AWURABA | ${product.name}`,
                     text: product.description,
@@ -110,8 +133,20 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 await navigator.clipboard.writeText(window.location.href);
                 toast.success('Link copied to clipboard');
             }
+
+            // PostHog: Track product shared
+            posthog.capture('product_shared', {
+                product_id: product.id,
+                product_name: product.name,
+                product_slug: product.slug,
+                product_category: product.category,
+                share_method: shareMethod,
+                price: product.discountPrice ?? product.price,
+                currency: 'GHS',
+            });
         } catch (error) {
             console.error('Error sharing:', error);
+            posthog.captureException(error);
         }
     };
 
@@ -403,10 +438,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                 disabled={!variant.isAvailable}
                                                 onClick={() => setSelectedVariant(variant.name)}
                                                 className={`relative w-16 h-16 rounded-lg border-2 transition-all overflow-hidden ${selectedVariant === variant.name
-                                                        ? 'border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2'
-                                                        : variant.isAvailable
-                                                            ? 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
-                                                            : 'border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50'
+                                                    ? 'border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2'
+                                                    : variant.isAvailable
+                                                        ? 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
+                                                        : 'border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50'
                                                     }`}
                                                 title={variant.name}
                                             >
@@ -440,7 +475,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="block text-sm font-bold uppercase tracking-wider">Size {product.fitCategory === 'Loose' && <span className="text-[10px] font-normal text-neutral-500 ml-2">(Loose Fit Guide)</span>}</span>
                                     <button
-                                        onClick={() => setActiveGuide('size')}
+                                        onClick={() => {
+                                            setActiveGuide('size');
+                                            // PostHog: Track size guide opened
+                                            posthog.capture('size_guide_opened', {
+                                                product_id: product.id,
+                                                product_name: product.name,
+                                                product_slug: product.slug,
+                                                guide_type: 'size',
+                                                fit_category: product.fitCategory,
+                                            });
+                                        }}
                                         className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
                                     >
                                         <Ruler className="w-3 h-3" /> Size Guide
@@ -505,7 +550,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="block text-sm font-bold uppercase tracking-wider">Length</span>
                                     <button
-                                        onClick={() => setActiveGuide('length')}
+                                        onClick={() => {
+                                            setActiveGuide('length');
+                                            // PostHog: Track size guide opened (length)
+                                            posthog.capture('size_guide_opened', {
+                                                product_id: product.id,
+                                                product_name: product.name,
+                                                product_slug: product.slug,
+                                                guide_type: 'length',
+                                                fit_category: product.fitCategory,
+                                            });
+                                        }}
                                         className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
                                     >
                                         <Ruler className="w-3 h-3" /> Length Guide
@@ -569,8 +624,22 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {isFBT ? 'Frequently Bought Together' : 'You Might Also Like'}
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {recommendations.map((p: Product) => (
-                                <div key={p.id} className="group cursor-pointer" onClick={() => window.location.href = `/shop/${p.slug}`}>
+                            {relatedProducts.map((p: Product) => (
+                                <div key={p.id} className="group cursor-pointer" onClick={() => {
+                                    // PostHog: Track related product clicked
+                                    posthog.capture('related_product_clicked', {
+                                        source_product_id: product.id,
+                                        source_product_name: product.name,
+                                        clicked_product_id: p.id,
+                                        clicked_product_name: p.name,
+                                        clicked_product_slug: p.slug,
+                                        clicked_product_category: p.category,
+                                        clicked_product_price: p.discountPrice ?? p.price,
+                                        has_discount: !!p.discountPrice,
+                                        currency: 'GHS',
+                                    });
+                                    window.location.href = `/shop/${p.slug}`;
+                                }}>
                                     <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
                                         <Image src={p.images[0].src} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
                                     </div>

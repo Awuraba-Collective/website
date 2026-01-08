@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Send } from 'lucide-react';
 import Image from 'next/image';
+import posthog from 'posthog-js';
 
 export function WhatsAppButton() {
     const [isOpen, setIsOpen] = useState(false);
@@ -68,7 +69,14 @@ export function WhatsAppButton() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-3 rounded-xl font-bold text-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => {
+                                    // PostHog: Track WhatsApp chat started
+                                    posthog.capture('whatsapp_chat_started', {
+                                        source: 'floating_button',
+                                        current_page: typeof window !== 'undefined' ? window.location.pathname : null,
+                                    });
+                                    setIsOpen(false);
+                                }}
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 Start WhatsApp Chat
