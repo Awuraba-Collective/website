@@ -20,7 +20,13 @@ datasource db {
 // Then add ALTER TABLE ... ADD CONSTRAINT statements manually.
 // =============================================================================
 
-enum FitCategory {
+// FitCategory Enum removed or kept for legacy if needed, but we are switching to Model.
+// We will remove the Enum to force usage of the Model if possible, or keep it if other models use it (CartItem, OrderItem).
+// CartItem and OrderItem also use FitCategory Enum. We should probably keep the Enum for now for those snapshots, or update them too.
+// The plan focus was on Product.
+// Let's keep the Enum for now for OrderItem/CartItem to avoid massive refactor, but Product will link to the Model.
+
+enum FitCategoryType {
   STANDARD
   LOOSE
 }
@@ -57,6 +63,11 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 enum CouponType {
@@ -168,6 +179,18 @@ model Category {
   @@map("category")
 }
 
+model FitCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("fit_category")
+}
+
 model Collection {
   id          String    @id @default(cuid())
   name        String    @unique
@@ -183,21 +206,38 @@ model Collection {
 }
 
 model Product {
-  id             String      @id @default(cuid())
-  name           String
-  slug           String      @unique
-  description    String
-  price          Decimal     @db.Decimal(10, 2)
-  discountPrice  Decimal?    @db.Decimal(10, 2)
-  discountEndsAt DateTime?
-  fitCategory    FitCategory @default(STANDARD)
-  isNewDrop      Boolean     @default(false)
-  isActive       Boolean     @default(true)
+  id          String @id @default(cuid())
+  name        String
+  slug        String @unique
+  description String
 
-  categoryId   String
-  category     Category    @relation(fields: [categoryId], references: [id])
-  collectionId String?
-  collection   Collection? @relation(fields: [collectionId], references: [id])
+  price     Decimal  @db.Decimal(10, 2)
+  costPrice Decimal? @db.Decimal(10, 2) // For profit calc
+
+  // Discount Relation
+  discountId String?
+  discount   Discount? @relation(fields: [discountId], references: [id])
+
+  // Legacy/Cache fields (derived from Discount but kept for sorting/performance)
+  discountPrice  Decimal?  @db.Decimal(10, 2)
+  discountEndsAt DateTime?
+
+  // New Drop Logic
+  isNewDrop        Boolean   @default(false)
+  newDropExpiresAt DateTime?
+
+  isActive Boolean @default(true)
+
+  categoryId    String
+  category      Category     @relation(fields: [categoryId], references: [id])
+  collectionId  String?
+  collection    Collection?  @relation(fields: [collectionId], references: [id])
+  fitCategoryId String?
+  fitCategory   FitCategory? @relation(fields: [fitCategoryId], references: [id])
+
+  // Frequently Bought Together (Self Relation)
+  relatedProducts Product[] @relation("RelatedProducts")
+  parents         Product[] @relation("RelatedProducts")
 
   images     ProductImage[]
   variants   ProductVariant[]
@@ -207,9 +247,11 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([slug])
   @@index([categoryId])
   @@index([collectionId])
-  @@index([slug])
+  @@index([fitCategoryId])
+  @@index([discountId])
   @@map("product")
 }
 
@@ -275,7 +317,7 @@ model CartItem {
   // Size & fit options
   selectedSize   Size
   selectedLength Length
-  fitCategory    FitCategory
+  fitCategory    FitCategoryType
 
   // Custom measurements (for Custom size)
   customBust   String?
@@ -369,7 +411,7 @@ model OrderItem {
   // Size & fit (snapshot)
   selectedSize   Size
   selectedLength Length
-  fitCategory    FitCategory
+  fitCategory    FitCategoryType
 
   // Custom measurements
   customBust   String?
@@ -472,4 +514,70 @@ model Address {
 
   @@index([userId])
   @@map("address")
+}
+
+// =============================================================================
+// ADMIN SETTINGS
+// =============================================================================
+
+model Discount {
+  id          String       @id @default(cuid())
+  code        String? // Optional code for admin reference/tracking
+  description String // e.g., "Summer Sale 2026"
+  type        DiscountType
+  value       Decimal      @db.Decimal(10, 2) // % or Fixed Amount
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean      @default(true)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("discount")
+}
+
+model Currency {
+  code      String   @id // "USD", "GHS", "EUR"
+  symbol    String // "$", "₵"
+  rate      Decimal  @db.Decimal(10, 4) // Exchange rate vs Base
+  isBase    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("currency")
+}
+
+model BodyMeasurement {
+  id        String  @id @default(cuid())
+  size      String // "XS", "S", "M"
+  bust      String?
+  waist     String?
+  hips      String?
+  thigh     String?
+  back      String?
+  underBust String?
+  order     Int     @default(0)
+
+  @@map("body_measurement")
+}
+
+model LengthStandard {
+  id      String  @id @default(cuid())
+  part    String // "Short Sleeve", "Dress (Maxi)" 
+  petite  String?
+  regular String?
+  tall    String?
+  order   Int     @default(0)
+
+  @@map("length_standard")
+}
+
+model LooseFitMap {
+  id           String @id @default(cuid())
+  looseSize    String // "S", "M", "L"
+  fitsStandard String // "Standard XS - S"
+  order        Int    @default(0)
+
+  @@map("loose_fit_map")
 }
