@@ -24,16 +24,20 @@ export interface Product {
     slug: string;
     name: string;
     price: number;
+    priceUSD?: number;
     description: string;
     images: ProductImage[];
     variants: ProductVariant[];
     fitCategory: FitCategory;
     modelInfo?: ModelInfo;
     discountPrice?: number;
+    discountPriceUSD?: number;
+    costPriceGHS?: number;
     discountEndsAt?: string; // ISO date string
     category: string;
     collection?: string;
     isNewDrop?: boolean;
+    frequentlyBoughtTogether?: string[]; // Array of product IDs
 }
 
 export interface CustomMeasurements {
@@ -49,6 +53,7 @@ export interface CartItem {
     productId: string;
     name: string;
     price: number;
+    priceUSD?: number;
     image: string;
     selectedSize: Size;
     selectedLength: Length;

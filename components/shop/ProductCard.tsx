@@ -1,12 +1,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/types/shop';
+import { useAppSelector } from '@/store/hooks';
 
 interface ProductCardProps {
     product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+    const { currency } = useAppSelector((state) => state.shop);
+
+    const displayPrice = currency === 'USD' ? (product.priceUSD ?? (product.price / 15)) : product.price;
+    const displayDiscountPrice = currency === 'USD'
+        ? (product.discountPriceUSD ?? (product.discountPrice ? product.discountPrice / 15 : null))
+        : product.discountPrice;
+
+    const currencySymbol = currency === 'GHS' ? '₵' : '$';
+
     return (
         <Link href={`/shop/${product.slug}`} className="group block">
             <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm">
@@ -49,14 +59,14 @@ export function ProductCard({ product }: ProductCardProps) {
                     {product.name}
                 </h3>
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
-                    {product.discountPrice ? (
+                    {displayDiscountPrice ? (
                         <>
-                            <span className="text-sm font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
-                            <span className="text-xs text-neutral-400 line-through font-medium">₵ {product.price.toFixed(2)}</span>
+                            <span className="text-sm font-bold text-black dark:text-white">{currencySymbol} {displayDiscountPrice.toFixed(2)}</span>
+                            <span className="text-xs text-neutral-400 line-through font-medium">{currencySymbol} {displayPrice.toFixed(2)}</span>
                         </>
                     ) : (
                         <p className="text-sm text-black dark:text-white font-semibold">
-                            ₵ {product.price.toFixed(2)}
+                            {currencySymbol} {displayPrice.toFixed(2)}
                         </p>
                     )}
                 </div>

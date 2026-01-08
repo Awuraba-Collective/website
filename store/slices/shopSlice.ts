@@ -6,6 +6,7 @@ interface ShopState {
     products: Product[];
     filteredProducts: Product[];
     activeFilter: string;
+    currency: 'GHS' | 'USD';
     loading: boolean;
     error: string | null;
 }
@@ -14,6 +15,7 @@ const initialState: ShopState = {
     products: [],
     filteredProducts: [],
     activeFilter: 'All',
+    currency: 'GHS',
     loading: false,
     error: null,
 };
@@ -40,6 +42,9 @@ const shopSlice = createSlice({
             } else {
                 state.filteredProducts = state.products.filter(p => p.category === filter || p.collection === filter);
             }
+        },
+        setCurrency: (state, action: PayloadAction<'GHS' | 'USD'>) => {
+            state.currency = action.payload;
         },
     },
     extraReducers: (builder) => {
@@ -68,5 +73,5 @@ const shopSlice = createSlice({
     }
 });
 
-export const { setFilter } = shopSlice.actions;
+export const { setFilter, setCurrency } = shopSlice.actions;
 export default shopSlice.reducer;

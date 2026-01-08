@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleCart } from "@/store/slices/cartSlice";
+import { CurrencySwitcher } from "./shop/CurrencySwitcher";
 
 const navLinks = [
     { name: "Home", href: "/" },
@@ -78,6 +79,9 @@ export function Navbar() {
 
                 {/* Right side icons (Mobile menu toggle) */}
                 <div className="flex items-center gap-4">
+                    <div className="hidden sm:block">
+                        <CurrencySwitcher />
+                    </div>
                     {/* Cart Icon */}
                     <button
                         onClick={() => dispatch(toggleCart())}
@@ -136,6 +140,10 @@ export function Navbar() {
                     >
                         Bag (<span className="text-black dark:text-white font-bold">{cartCount}</span>)
                     </button>
+                    <div className="pt-6 border-t border-neutral-100 dark:border-neutral-900 flex justify-between items-center sm:hidden">
+                        <span className="text-sm font-bold uppercase tracking-widest text-neutral-400">Currency</span>
+                        <CurrencySwitcher />
+                    </div>
                 </div>
             </div>
         </nav>

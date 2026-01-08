@@ -25,6 +25,8 @@ export const products: Product[] = [
             wearingVariant: "Emerald Green"
         },
         discountPrice: 380,
+        discountPriceUSD: 25.33,
+        priceUSD: 30,
         discountEndsAt: "2026-01-20T23:59:59Z",
         category: "Dresses",
         collection: "January 25th Drop",
@@ -49,6 +51,7 @@ export const products: Product[] = [
             wearingSize: "S",
             wearingVariant: "Champagne"
         },
+        priceUSD: 40,
         category: "Sets",
         collection: "Essentials",
         isNewDrop: false,
@@ -67,6 +70,7 @@ export const products: Product[] = [
             { name: "Burnt Orange", isAvailable: true }
         ],
         fitCategory: "Standard",
+        priceUSD: 16.67,
         category: "Tops",
         collection: "January 25th Drop",
         isNewDrop: true,
@@ -85,6 +89,7 @@ export const products: Product[] = [
             { name: "Mustard", isAvailable: false }
         ],
         fitCategory: "Standard",
+        priceUSD: 23.33,
         category: "Bottoms",
         collection: "Essentials",
         isNewDrop: false,

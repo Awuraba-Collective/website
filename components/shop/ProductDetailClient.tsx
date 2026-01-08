@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import { Product, Size, LooseSize, Length, } from '@/types/shop';
@@ -34,6 +34,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const dispatch = useAppDispatch();
 
     // Selections
+    const { currency } = useAppSelector((state) => state.shop);
     const [selectedVariant, setSelectedVariant] = useState(product.variants[0].name);
     const [selectedSize, setSelectedSize] = useState<Size | LooseSize | null>(null);
     const [selectedLength, setSelectedLength] = useState<Length>('Regular');
@@ -53,6 +54,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const [activeImage, setActiveImage] = useState(0);
     const [activeGuide, setActiveGuide] = useState<'size' | 'length' | null>(null);
 
+    // Reset active image when variant changes
+    useEffect(() => {
+        setActiveImage(0);
+    }, [selectedVariant]);
+
     const handleAddToCart = () => {
         if (!selectedSize) {
             toast.error('Please select a size before adding to bag');
@@ -71,7 +77,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             id: `${product.id}-${selectedVariant}-${selectedSize}-${selectedLength}`,
             productId: product.id,
             name: product.name,
-            price: product.discountPrice ?? product.price,
+            price: currency === 'USD'
+                ? (product.discountPriceUSD ?? (product.discountPrice ? product.discountPrice / 15 : (product.priceUSD ?? product.price / 15)))
+                : (product.discountPrice ?? product.price),
+            priceUSD: product.discountPriceUSD ?? product.priceUSD ?? ((product.discountPrice ?? product.price) / 15),
             image: product.images[0].src,
             selectedSize: selectedSize as Size,
             selectedLength,
@@ -118,9 +127,29 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     };
 
     const allProducts = useAppSelector(state => state.shop.products);
-    const relatedProducts = allProducts
-        .filter((p: Product) => p.id !== product.id && (p.category === product.category || p.collection === product.collection))
-        .slice(0, 4);
+
+    // Recommendations Logic: FBT or Fallback
+    const recommendations = (() => {
+        if (product.frequentlyBoughtTogether && product.frequentlyBoughtTogether.length > 0) {
+            return allProducts.filter(p => product.frequentlyBoughtTogether?.includes(p.id));
+        }
+
+        // Fallback: Randomly generated from same category
+        const sameCategory = allProducts.filter(p => p.id !== product.id && p.category === product.category);
+        return [...sameCategory].sort(() => 0.5 - Math.random()).slice(0, 4);
+    })();
+
+    const isFBT = product.frequentlyBoughtTogether && product.frequentlyBoughtTogether.length > 0;
+
+    // Filter images by selected variant
+    const filteredImages = (() => {
+        const variantImages = product.images.filter(img =>
+            img.alt.toLowerCase().includes(selectedVariant.toLowerCase()) ||
+            (product.modelInfo?.wearingVariant === selectedVariant)
+        );
+        // Fallback to all images if no matches
+        return variantImages.length > 0 ? variantImages : product.images;
+    })();
 
     const standardSizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'];
     const looseSizes: LooseSize[] = ['S', 'M', 'L'];
@@ -259,8 +288,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             onMouseLeave={() => setIsHovering(false)}
                         >
                             <Image
-                                src={product.images[activeImage].src}
-                                alt={product.images[activeImage].alt}
+                                src={filteredImages[activeImage].src}
+                                alt={filteredImages[activeImage].alt}
                                 fill
                                 className={`object-cover transition-transform duration-200 ${isHovering ? 'scale-[1.5]' : 'scale-100'}`}
                                 style={isHovering ? {
@@ -279,9 +308,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 </p>
                             </div>
                         )}
-                        {product.images.length > 1 && (
+                        {filteredImages.length > 1 && (
                             <div className="flex gap-4 overflow-x-auto pb-2">
-                                {product.images.map((img, idx) => (
+                                {filteredImages.map((img, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setActiveImage(idx)}
@@ -316,13 +345,24 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-baseline gap-4">
-                                    {product.discountPrice ? (
-                                        <>
-                                            <span className="text-4xl font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
-                                            <span className="text-lg text-neutral-400 line-through font-light">₵ {product.price.toFixed(2)}</span>
-                                        </>
+                                    {currency === 'USD' ? (
+                                        product.discountPriceUSD ? (
+                                            <>
+                                                <span className="text-4xl font-bold text-black dark:text-white">$ {product.discountPriceUSD.toFixed(2)}</span>
+                                                <span className="text-lg text-neutral-400 line-through font-light">$ {(product.priceUSD ?? (product.price / 15)).toFixed(2)}</span>
+                                            </>
+                                        ) : (
+                                            <p className="text-3xl font-medium text-black dark:text-white">$ {(product.priceUSD ?? (product.price / 15)).toFixed(2)}</p>
+                                        )
                                     ) : (
-                                        <p className="text-3xl font-medium text-black dark:text-white">₵ {product.price.toFixed(2)}</p>
+                                        product.discountPrice ? (
+                                            <>
+                                                <span className="text-4xl font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
+                                                <span className="text-lg text-neutral-400 line-through font-light">₵ {product.price.toFixed(2)}</span>
+                                            </>
+                                        ) : (
+                                            <p className="text-3xl font-medium text-black dark:text-white">₵ {product.price.toFixed(2)}</p>
+                                        )
                                     )}
                                 </div>
 
@@ -349,28 +389,49 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Variants */}
                             <div>
-                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Variants: <span className="text-neutral-500 font-normal capitalize">{selectedVariant}</span></span>
+                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Color: <span className="text-neutral-500 font-normal capitalize">{selectedVariant}</span></span>
                                 <div className="flex flex-wrap gap-3">
-                                    {product.variants.map((variant) => (
-                                        <button
-                                            key={variant.name}
-                                            disabled={!variant.isAvailable}
-                                            onClick={() => setSelectedVariant(variant.name)}
-                                            className={`px-4 py-2 text-sm border transition-all relative ${selectedVariant === variant.name
-                                                ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
-                                                : variant.isAvailable
-                                                    ? 'border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400'
-                                                    : 'border-neutral-200 text-neutral-300 dark:border-neutral-800 dark:text-neutral-600 cursor-not-allowed overflow-hidden'
-                                                }`}
-                                        >
-                                            {variant.name}
-                                            {!variant.isAvailable && (
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="w-full h-[1px] bg-neutral-300 dark:bg-neutral-700 rotate-[20deg]" />
-                                                </div>
-                                            )}
-                                        </button>
-                                    ))}
+                                    {product.variants.map((variant) => {
+                                        // Find the first image for this variant
+                                        const variantImage = product.images.find(img =>
+                                            img.alt.toLowerCase().includes(variant.name.toLowerCase())
+                                        );
+
+                                        return (
+                                            <button
+                                                key={variant.name}
+                                                disabled={!variant.isAvailable}
+                                                onClick={() => setSelectedVariant(variant.name)}
+                                                className={`relative w-16 h-16 rounded-lg border-2 transition-all overflow-hidden ${selectedVariant === variant.name
+                                                        ? 'border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2'
+                                                        : variant.isAvailable
+                                                            ? 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
+                                                            : 'border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50'
+                                                    }`}
+                                                title={variant.name}
+                                            >
+                                                {variantImage ? (
+                                                    <Image
+                                                        src={variantImage.src}
+                                                        alt={variant.name}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase text-center px-1">
+                                                            {variant.name.substring(0, 3)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {!variant.isAvailable && (
+                                                    <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center">
+                                                        <div className="w-full h-[2px] bg-neutral-400 dark:bg-neutral-600 rotate-45" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -501,12 +562,14 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     </div>
                 </div>
 
-                {/* Related Products */}
-                {relatedProducts.length > 0 && (
+                {/* Recommendations */}
+                {recommendations.length > 0 && (
                     <div className="mt-32">
-                        <h2 className="font-serif text-3xl mb-12">You Might Also Like</h2>
+                        <h2 className="font-serif text-3xl mb-12">
+                            {isFBT ? 'Frequently Bought Together' : 'You Might Also Like'}
+                        </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {relatedProducts.map((p: Product) => (
+                            {recommendations.map((p: Product) => (
                                 <div key={p.id} className="group cursor-pointer" onClick={() => window.location.href = `/shop/${p.slug}`}>
                                     <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
                                         <Image src={p.images[0].src} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -533,7 +596,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300">
                 <div className="flex-grow">
                     <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold line-clamp-1 mb-1">{product.name}</p>
-                    <p className="font-bold">₵ {(product.discountPrice ?? product.price).toFixed(2)}</p>
+                    <p className="font-bold">
+                        {currency === 'USD'
+                            ? `$ ${(product.discountPriceUSD ?? (product.discountPrice ? product.discountPrice / 15 : (product.priceUSD ?? product.price / 15))).toFixed(2)}`
+                            : `₵ ${(product.discountPrice ?? product.price).toFixed(2)}`}
+                    </p>
                 </div>
                 <button
                     onClick={handleAddToCart}

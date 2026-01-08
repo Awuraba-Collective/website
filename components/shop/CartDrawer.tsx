@@ -9,9 +9,15 @@ import { useEffect } from 'react';
 
 export function CartDrawer() {
     const dispatch = useAppDispatch();
+    const { currency } = useAppSelector((state) => state.shop);
     const { items, isOpen } = useAppSelector((state) => state.cart);
 
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = items.reduce((sum, item) => {
+        const price = currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price;
+        return sum + price * item.quantity;
+    }, 0);
+
+    const currencySymbol = currency === 'GHS' ? '₵' : '$';
 
     // Prevent background scroll when open
     useEffect(() => {
@@ -79,7 +85,9 @@ export function CartDrawer() {
                                         <p className="text-sm text-neutral-500">
                                             {item.selectedSize} / {item.selectedLength} / {item.selectedVariant}
                                         </p>
-                                        <p className="text-sm font-medium mt-1">₵ {item.price.toFixed(2)}</p>
+                                        <p className="text-sm font-medium mt-1">
+                                            {currencySymbol} {(currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price).toFixed(2)}
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
@@ -109,7 +117,7 @@ export function CartDrawer() {
                     <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4 bg-white dark:bg-neutral-900">
                         <div className="flex justify-between items-center text-lg font-serif">
                             <span>Subtotal</span>
-                            <span>₵ {total.toFixed(2)}</span>
+                            <span>{currencySymbol} {total.toFixed(2)}</span>
                         </div>
                         <div className="space-y-3">
                             <Link
