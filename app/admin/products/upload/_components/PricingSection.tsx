@@ -16,48 +16,37 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useFormContext, useWatch } from "react-hook-form";
-import { ProductFormValues } from "@/lib/validations/product";
-import { motion, AnimatePresence } from "framer-motion";
-import { useProductForm } from "../_hooks/useProductForm";
+interface PricingSectionProps {
+    discounts: any[];
+    currencies: any[];
+    calculatePricing: () => any;
+}
 
-export function PricingSection() {
+export function PricingSection({ discounts, currencies: availableCurrencies, calculatePricing }: PricingSectionProps) {
     const { control } = useFormContext<ProductFormValues>();
-    const { calculatePricing } = useProductForm();
 
+    // Watch form state
     const pricing = useWatch({ control, name: "pricing" });
     const showDiscount = pricing.showDiscount;
 
-    const RATES = { USD: 15 };
-    const costPrice = pricing.costPrice || 0;
-    const projectedProfit = pricing.projectedProfit || 0;
-    const retailPriceGHS = costPrice + projectedProfit;
+    // Calculate derived state on every render
+    const { priceGHS, priceMap, currencies: supportedCurrencies } = calculatePricing();
 
-    let discountAmountGHS = 0;
-    if (showDiscount && pricing.discount) {
-        if (pricing.discount.type === 'percent') {
-            discountAmountGHS = retailPriceGHS * (pricing.discount.value / 100);
-        } else {
-            discountAmountGHS = pricing.discount.value;
-        }
-    }
-    const finalPriceGHS = Math.max(0, retailPriceGHS - discountAmountGHS);
-    const actualProfitGHS = finalPriceGHS - costPrice;
+    // Derived values for summary
+    // Base GHS
+    const ghsCalc = priceMap && priceMap['GHS'] ? priceMap['GHS'] : { price: 0 };
+    const finalPriceGHS = ghsCalc.discountPrice ?? ghsCalc.price;
+    const actualProfitGHS = finalPriceGHS - (pricing.costPrice || 0);
 
-    // Currency Displays
-    const currencies = [
-        {
-            code: 'GHS',
-            label: '₵',
-            selling: finalPriceGHS,
-            retail: retailPriceGHS
-        },
-        {
-            code: 'USD',
-            label: '$',
-            selling: Math.ceil(finalPriceGHS / RATES.USD),
-            retail: Math.ceil(retailPriceGHS / RATES.USD)
-        }
-    ];
+    const currencies = (supportedCurrencies || []).map((curr) => {
+        const calc = (priceMap && priceMap[curr.code]) || { price: 0 };
+        return {
+            ...curr,
+            label: curr.symbol, // Map symbol to label
+            selling: calc.discountPrice ?? calc.price,
+            retail: calc.price
+        };
+    });
 
     return (
         <div className="pt-12 border-t border-neutral-100 dark:border-neutral-900 space-y-12">
@@ -126,94 +115,49 @@ export function PricingSection() {
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg p-0 space-y-0">
                                     <FormLabel className="text-xs font-black uppercase tracking-widest text-neutral-400">Apply Discount</FormLabel>
                                     <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
+                                        <Select
+                                            value={field.value ? "true" : "false"}
+                                            onValueChange={(val) => field.onChange(val === "true")}
+                                        >
+                                            <SelectTrigger className="w-[100px] bg-white dark:bg-black font-bold h-10">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="false">None</SelectItem>
+                                                <SelectItem value="true">Select...</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </FormControl>
                                 </FormItem>
                             )}
                         />
 
-                        <AnimatePresence>
-                            {showDiscount && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden space-y-4 pt-2"
-                                >
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={control}
-                                            name="pricing.discount.type"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="bg-white dark:bg-black font-bold !h-12 w-full uppercase text-xs">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="percent">Percent (%)</SelectItem>
-                                                            <SelectItem value="fixed">Fixed (GHS)</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={control}
-                                            name="pricing.discount.value"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            {...field}
-                                                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                                                            className="bg-white dark:bg-black border-neutral-200 dark:border-neutral-800 h-12 font-bold"
-                                                            placeholder="Value"
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
-                                        <FormField
-                                            control={control}
-                                            name="pricing.discount.startDate"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-[10px] font-black uppercase text-neutral-400">Start Date</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="date" {...field} className="text-[10px] font-bold h-12" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={control}
-                                            name="pricing.discount.expiryDate"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-[10px] font-black uppercase text-neutral-400">Expiry Date</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="date" {...field} className="h-12 text-[10px] font-bold" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        {/* Render Discount Selection if enabled */}
+                        {pricing.showDiscount && (
+                            <FormField
+                                control={control}
+                                name="pricing.discountId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <SelectTrigger className="bg-white dark:bg-black font-bold !h-12 w-full uppercase text-xs">
+                                                    <SelectValue placeholder="Select Active Discount" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {discounts.map((discount) => (
+                                                        <SelectItem key={discount.id} value={discount.id}>
+                                                            {discount.description} ({discount.type === 'PERCENTAGE' ? `${discount.value}%` : `₵${discount.value}`})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+
                     </div>
                 </div>
 

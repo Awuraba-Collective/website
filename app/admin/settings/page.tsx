@@ -3,7 +3,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsListManager } from "./_components/SettingsListManager";
 import { CurrencyManager } from "./_components/CurrencyManager";
+import { CurrencyManager } from "./_components/CurrencyManager";
 import { SizingStandardsManager } from "./_components/SizingStandardsManager";
+import { DiscountManager } from "./_components/DiscountManager";
 import { Separator } from "@/components/ui/separator";
 
 // MOCK DATA - In production this would come from an API/DB
@@ -33,14 +35,24 @@ export default function SettingsPage() {
                         value="currency"
                         className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
                     >
-                        Currency
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="sizing"
-                        className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
-                    >
-                        Sizing Standards
-                    </TabsTrigger>
+                        <TabsTrigger
+                            value="currency"
+                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
+                        >
+                            Currency
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="discounts"
+                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
+                        >
+                            Discounts
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="sizing"
+                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
+                        >
+                            Sizing Standards
+                        </TabsTrigger>
                 </TabsList>
 
                 {/* GENERAL TAB */}
@@ -75,6 +87,11 @@ export default function SettingsPage() {
                 {/* CURRENCY TAB */}
                 <TabsContent value="currency" className="outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <CurrencyManager />
+                </TabsContent>
+
+                {/* DISCOUNTS TAB */}
+                <TabsContent value="discounts" className="outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <DiscountManager />
                 </TabsContent>
 
                 {/* SIZING TAB */}

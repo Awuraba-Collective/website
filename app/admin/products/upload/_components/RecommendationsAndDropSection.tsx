@@ -14,24 +14,54 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Search, Sparkles, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
 
-// Mock products for search simulation
-const MOCK_PRODUCTS = [
-    { id: 'prod_1', name: 'The Awuraba Maxi', image: '' },
-    { id: 'prod_2', name: 'Kente Silk Scarf', image: '' },
-    { id: 'prod_3', name: 'Sunset Bolero', image: '' },
-    { id: 'prod_4', name: 'Gold Statement Earrings', image: '' },
-];
+// Product interface for search results
+interface ProductResult {
+    id: string;
+    name: string;
+    image: string;
+}
 
 export function RecommendationsAndDropSection() {
     const { control, setValue } = useFormContext<ProductFormValues>();
     const newDrop = useWatch({ control, name: "newDrop" });
     const frequentlyBought = useWatch({ control, name: "frequentlyBoughtTogether" }) || [];
-
-    // Safety check if newDrop is undefined
-    const isEnabled = newDrop?.enabled;
-
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<ProductResult[]>([]);
+    const [selectedProductDetails, setSelectedProductDetails] = useState<ProductResult[]>([]);
+
+    // Determine enabled state
+    const isEnabled = newDrop?.enabled;
+
+    // Search Effect
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (searchQuery.length > 2) {
+                try {
+                    const res = await fetch(`/api/admin/products/search?q=${encodeURIComponent(searchQuery)}`);
+                    const data = await res.json();
+                    setSearchResults(data);
+                    setIsSearching(true);
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                setSearchResults([]);
+                setIsSearching(false);
+            }
+        }, 300); // Debounce
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Fetch details for selected items (since we store IDs only)
+    // In a real app, you might want to fetch these details on mount if editing an existing product.
+    // For now, we'll try to keep local details when adding.
+    useEffect(() => {
+        // If we have IDs but no details (e.g. reload), we should ideally fetch them. 
+        // For new create flow, we add locally so we have them.
+        // Let's rely on search for now.
+    }, []);
 
     // Auto-set autoExpire to true when enabled, so we don't need a UI toggle for it
     useEffect(() => {
@@ -40,18 +70,18 @@ export function RecommendationsAndDropSection() {
         }
     }, [isEnabled, newDrop?.autoExpire, setValue]);
 
-    const toggleProduct = (productId: string) => {
+    const toggleProduct = (product: ProductResult) => {
         const current = frequentlyBought;
-        if (current.includes(productId)) {
-            setValue("frequentlyBoughtTogether", current.filter(id => id !== productId));
+        if (current.includes(product.id)) {
+            setValue("frequentlyBoughtTogether", current.filter(id => id !== product.id));
+            setSelectedProductDetails(prev => prev.filter(p => p.id !== product.id));
         } else {
-            setValue("frequentlyBoughtTogether", [...current, productId]);
+            setValue("frequentlyBoughtTogether", [...current, product.id]);
+            setSelectedProductDetails(prev => [...prev, product]);
         }
+        setSearchQuery(""); // Clear search after selection
+        setIsSearching(false);
     };
-
-    const filteredProducts = searchQuery
-        ? MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        : MOCK_PRODUCTS;
 
     return (
         <div className="pt-12 border-t border-neutral-100 dark:border-neutral-900 space-y-10">
@@ -78,13 +108,13 @@ export function RecommendationsAndDropSection() {
                                 <span className="text-xs text-neutral-400 self-center px-2">No products linked yet</span>
                             )}
                             {frequentlyBought.map(id => {
-                                const prod = MOCK_PRODUCTS.find(p => p.id === id);
+                                const prod = selectedProductDetails.find(p => p.id === id) || { name: 'Loading...', id };
                                 return (
                                     <Badge key={id} variant="secondary" className="h-8 pl-3 pr-1 rounded-full gap-2 text-[10px] uppercase tracking-wider font-bold bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-                                        {prod?.name || id}
+                                        {prod.name}
                                         <button
                                             type="button"
-                                            onClick={() => toggleProduct(id)}
+                                            onClick={() => toggleProduct({ id, name: prod.name, image: '' })}
                                             className="w-5 h-5 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"
                                         >
                                             <X className="w-3 h-3" />
@@ -102,18 +132,18 @@ export function RecommendationsAndDropSection() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsSearching(true)}
-                                onBlur={() => setTimeout(() => setIsSearching(false), 200)}
+                                // Removed onBlur to allow clicking items. Rely on toggle to close.
                                 className="pl-11 h-12 bg-white dark:bg-black font-bold text-sm border-neutral-200 dark:border-neutral-800"
                             />
 
                             {/* Search Results Dropdown */}
                             {isSearching && (
                                 <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-2xl z-20 max-h-60 overflow-y-auto p-2">
-                                    {filteredProducts.map(prod => (
+                                    {searchResults.map(prod => (
                                         <button
                                             key={prod.id}
                                             type="button"
-                                            onClick={() => toggleProduct(prod.id)}
+                                            onClick={() => toggleProduct(prod)}
                                             className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors group"
                                         >
                                             <span className={`text-xs font-bold uppercase tracking-wide ${frequentlyBought.includes(prod.id) ? 'text-emerald-500' : 'text-neutral-600 dark:text-neutral-300'}`}>
@@ -124,7 +154,7 @@ export function RecommendationsAndDropSection() {
                                             )}
                                         </button>
                                     ))}
-                                    {filteredProducts.length === 0 && (
+                                    {searchResults.length === 0 && (
                                         <div className="p-4 text-center text-xs text-neutral-400">No products found</div>
                                     )}
                                 </div>

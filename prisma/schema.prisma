@@ -241,6 +241,7 @@ model Product {
 
   images     ProductImage[]
   variants   ProductVariant[]
+  prices     ProductPrice[]
   orderItems OrderItem[]
   cartItems  CartItem[]
 
@@ -539,13 +540,27 @@ model Discount {
 }
 
 model Currency {
-  code      String   @id // "USD", "GHS", "EUR"
-  symbol    String // "$", "₵"
-  rate      Decimal  @db.Decimal(10, 4) // Exchange rate vs Base
-  isBase    Boolean  @default(false)
-  updatedAt DateTime @updatedAt
+  code          String         @id // "USD", "GHS", "EUR"
+  symbol        String // "$", "₵"
+  rate          Decimal        @db.Decimal(10, 4) // Exchange rate vs Base
+  isBase        Boolean        @default(false)
+  productPrices ProductPrice[]
+  updatedAt     DateTime       @updatedAt
 
   @@map("currency")
+}
+
+model ProductPrice {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currencyCode  String
+  currency      Currency @relation(fields: [currencyCode], references: [code])
+  price         Decimal  @db.Decimal(10, 2)
+  discountPrice Decimal? @db.Decimal(10, 2) // Optional override
+
+  @@unique([productId, currencyCode])
+  @@map("product_price")
 }
 
 model BodyMeasurement {

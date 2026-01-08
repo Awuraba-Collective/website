@@ -10,7 +10,7 @@ import { RecommendationsAndDropSection } from "./RecommendationsAndDropSection";
 import Link from 'next/link';
 
 export function ProductForm() {
-    const { form, submitForm, isUploading } = useProductForm();
+    const { form, submitForm, isUploading, discounts, currencies, calculatePricing } = useProductForm();
 
     return (
         <Form {...form}>
@@ -24,7 +24,11 @@ export function ProductForm() {
                 <div className="lg:col-span-8 space-y-16">
                     <BasicInfoSection />
                     <VariantsSection />
-                    <PricingSection />
+                    <PricingSection
+                        discounts={discounts}
+                        currencies={currencies}
+                        calculatePricing={calculatePricing}
+                    />
                     <RecommendationsAndDropSection />
 
                     {/* Actions */}

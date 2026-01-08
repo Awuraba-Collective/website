@@ -2,13 +2,24 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { productFormSchema, type ProductFormValues, type ProductApiPayload } from '@/lib/validations/product';
 import { uploadImagesToStorage } from '@/lib/utils/product-payload';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from "sonner";
 
 // Constants for Pricing
-const RATES = {
-    USD: 15, // 1 USD = 15 GHS
-};
+// Types for fetched data
+interface Currency {
+    code: string;
+    symbol: string;
+    rate: number;
+    isBase: boolean;
+}
+
+interface Discount {
+    id: string;
+    description: string;
+    type: 'PERCENTAGE' | 'FIXED_AMOUNT';
+    value: number;
+}
 
 export const useProductForm = () => {
     const [isUploading, setIsUploading] = useState(false);
@@ -24,13 +35,8 @@ export const useProductForm = () => {
             pricing: {
                 costPrice: 0,
                 projectedProfit: 0,
-                showDiscount: false,
-                discount: {
-                    type: 'percent',
-                    value: 0,
-                    startDate: '',
-                    expiryDate: '',
-                },
+                discountId: undefined,
+                currencyOverrides: undefined
             },
             variants: [
                 { id: '1', name: 'Emerald Green', available: true },
@@ -46,40 +52,105 @@ export const useProductForm = () => {
         },
     });
 
-    const calculatePricing = useCallback(() => {
-        const { costPrice, projectedProfit, showDiscount, discount } = form.getValues('pricing');
+    const [currencies, setCurrencies] = useState<Currency[]>([]);
+    const [discounts, setDiscounts] = useState<Discount[]>([]);
 
-        const retailPriceGHS = costPrice + projectedProfit;
+    // Fetch data on mount
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [currRes, discRes] = await Promise.all([
+                    fetch('/api/admin/currencies').then(r => r.json()),
+                    fetch('/api/admin/discounts/active').then(r => r.json())
+                ]);
+                // Safety check for array type (in case of error object)
+                if (Array.isArray(currRes)) setCurrencies(currRes);
+                if (Array.isArray(discRes)) setDiscounts(discRes);
+            } catch (e) {
+                console.error("Failed to fetch form data", e);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Calculate Pricing Logic
+    const calculatePricing = useCallback(() => {
+        const { costPrice, projectedProfit, discountId, currencyOverrides } = form.getValues('pricing');
+
+        // 1. Base Price (GHS)
+        const priceGHS = costPrice + projectedProfit;
         const marginPercentage = costPrice > 0 ? (projectedProfit / costPrice) * 100 : 0;
 
-        let discountAmountGHS = 0;
-        if (showDiscount && discount) {
-            if (discount.type === 'percent') {
-                discountAmountGHS = retailPriceGHS * (discount.value / 100);
+        // 2. Find selected discount
+        const selectedDiscount = discounts.find(d => d.id === discountId);
+
+        // 3. Calculate per-currency prices
+        const priceMap: Record<string, { price: number, discountPrice?: number }> = {};
+
+        currencies.forEach(currency => {
+            let finalPrice = 0;
+
+            // Convert Base GHS to Target Currency
+            // If Rate is "Exchange rate vs Base", e.g. USD rate 0.065 (1 GHS = 0.065 USD)
+            // Then PriceUSD = PriceGHS * Rate
+            // If Rate is defined as "GHS per USD" (e.g. 15), then division.
+            // Based on Seed: "rate: 0.065, isBase: false" -> This implies Multiplier.
+
+            if (currency.isBase) {
+                finalPrice = priceGHS;
             } else {
-                discountAmountGHS = discount.value;
+                // Use multiplication for multiplier rates
+                finalPrice = Number((priceGHS * Number(currency.rate)).toFixed(2));
+                // Standard retail rounding (e.g. ceil) if desired, but user didn't specify strict rounding yet other than previous code.
+                // Previous code used ceil. Let's keep ceil for nice numbers? 
+                // Actually, let's keep it simple first.
+                finalPrice = Math.ceil(finalPrice);
             }
-        }
 
-        const finalPriceGHS = Math.max(0, retailPriceGHS - discountAmountGHS);
+            // Apply Discount Rule
+            let discountPrice: number | undefined = undefined;
+            if (selectedDiscount) {
+                let deduction = 0;
+                if (selectedDiscount.type === 'PERCENTAGE') {
+                    // Percentage applies same to all currencies
+                    deduction = finalPrice * (Number(selectedDiscount.value) / 100);
+                } else if (selectedDiscount.type === 'FIXED_AMOUNT') {
+                    // Fixed amount (e.g. 50 GHS) needs conversion to target currency
+                    // deduction = 50 * Rate
+                    const fixedVal = Number(selectedDiscount.value);
+                    const rate = Number(currency.rate);
+                    // If base is GHS (rate 1), deduction is 50.
+                    // If USD (rate 0.065), deduction is 50 * 0.065 = 3.25.
+                    deduction = fixedVal * rate;
+                }
 
-        // USD Calculations (Rounded up)
-        const retailPriceUSD = Math.ceil(retailPriceGHS / RATES.USD);
-        const finalPriceUSD = Math.ceil(finalPriceGHS / RATES.USD);
-        // Approximation of discount in USD
-        const discountAmountUSD = retailPriceUSD - finalPriceUSD;
+                // Effective Price
+                const calcDiscountPrice = Math.max(0, finalPrice - deduction);
+                // Round it too
+                discountPrice = Math.ceil(calcDiscountPrice);
+            }
+
+            // Override Check
+            if (currencyOverrides && currencyOverrides[currency.code]) {
+                const override = currencyOverrides[currency.code];
+                finalPrice = override.price; // Admin manual price
+                if (override.discountPrice !== undefined) {
+                    discountPrice = override.discountPrice;
+                }
+            }
+
+            priceMap[currency.code] = { price: finalPrice, discountPrice };
+        });
 
         return {
-            retailPriceGHS,
-            finalPriceGHS,
             marginPercentage,
-            discountAmountGHS,
-            retailPriceUSD,
-            finalPriceUSD,
-            discountAmountUSD,
-            actualProfitGHS: finalPriceGHS - costPrice
+            priceGHS,
+            priceMap,
+            currencies, // Pass for UI to render
+            selectedDiscount
         };
-    }, [form]);
+
+    }, [form, currencies, discounts]);
 
     const submitForm = async (values: ProductFormValues) => {
         try {
@@ -106,21 +177,17 @@ export const useProductForm = () => {
                     projectedProfit: values.pricing.projectedProfit,
                     marginPercentage: calculation.marginPercentage,
 
-                    priceGHS: calculation.retailPriceGHS,
-                    priceUSD: calculation.retailPriceUSD,
+                    priceGHS: calculation.priceGHS,
+                    discountId: values.pricing.discountId,
 
-                    discount: values.pricing.showDiscount && values.pricing.discount ? {
-                        type: values.pricing.discount.type,
-                        value: values.pricing.discount.value,
-                        startDate: values.pricing.discount.startDate,
-                        expiryDate: values.pricing.discount.expiryDate
-                    } : undefined,
-
-                    finalPriceGHS: calculation.finalPriceGHS,
-                    finalPriceUSD: calculation.finalPriceUSD,
-
-                    discountAmountGHS: values.pricing.showDiscount ? calculation.discountAmountGHS : undefined,
-                    discountAmountUSD: values.pricing.showDiscount ? calculation.discountAmountUSD : undefined
+                    productPrices: calculation.currencies.map(c => {
+                        const calc = calculation.priceMap[c.code];
+                        return {
+                            currencyCode: c.code,
+                            price: calc.price,
+                            discountPrice: calc.discountPrice
+                        };
+                    })
                 },
 
                 variants: values.variants.map(v => ({
@@ -128,13 +195,29 @@ export const useProductForm = () => {
                     available: v.available
                 })),
 
-                images: values.productImages.map((img, index) => ({
-                    url: img.previewUrl || '', // Fallback, normally needs real URL
-                    alt: `${values.name} - ${img.wearingVariant || 'View'} ${index + 1}`,
-                    modelHeight: img.modelHeight,
-                    wearingSize: img.wearingSize,
-                    wearingVariant: img.wearingVariant
-                })),
+                images: values.productImages.map((img, index) => {
+                    // Start with preview
+                    let finalUrl = img.previewUrl || '';
+
+                    // If it was a file that got uploaded, find its URL
+                    // Logic: we filtered files. We need to find the index in 'files' array to get 'uploadedUrls' index.
+                    // This is brittle. Better: upload returns map or we track it.
+                    // Simple fix for now: assumption that ALL images in 'upload' form are new files.
+                    if (img.file) {
+                        // Find index of this file in the 'files' array we sent
+                        const fileIndex = files.indexOf(img.file);
+                        if (fileIndex !== -1 && uploadedUrls[fileIndex]) {
+                            finalUrl = uploadedUrls[fileIndex];
+                        }
+                    }
+                    return {
+                        url: finalUrl,
+                        alt: `${values.name} - ${img.wearingVariant || 'View'} ${index + 1}`,
+                        modelHeight: img.modelHeight,
+                        wearingSize: img.wearingSize,
+                        wearingVariant: img.wearingVariant
+                    };
+                }),
 
                 frequentlyBoughtTogether: values.frequentlyBoughtTogether,
 
@@ -167,6 +250,14 @@ export const useProductForm = () => {
         form,
         isUploading,
         submitForm,
-        calculatePricing
+        calculatePricing,
+        discounts,
+        currencies,
+        // Since we are calling calculatePricing inside the hook? No, calculatePricing returns data.
+        // Wait, calculatePricing is a function. I should expose the *result* or let the component call it?
+        // Pattern: useWatch in component triggers re-render. Hook exposes `calculatePricing`.
+        // Better: Hook exposes `pricingData` state or Memo.
+        // But `calculatePricing` is just a function.
+        // Let's stick to exposing data.
     };
 };

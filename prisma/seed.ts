@@ -178,6 +178,7 @@ async function main() {
   await prisma.bodyMeasurement.deleteMany();
   await prisma.lengthStandard.deleteMany();
   await prisma.looseFitMap.deleteMany();
+  await prisma.productPrice.deleteMany();
   await prisma.discount.deleteMany();
 
 
@@ -318,6 +319,23 @@ async function main() {
             isAvailable: v.isAvailable,
           })),
         },
+        prices: {
+          create: currencies
+            .filter(c => !c.isBase)
+            .map(c => {
+              // Calculate converted price (e.g. Price / Rate) or Price * Rate depending on definition
+              // In seed: Rate for USD is 0.065 (GHS -> USD implies PriceGHS * 0.065 = PriceUSD)
+              // But wait, useProductForm uses division: PriceGHS / 15. The seed says rate 0.065 (~1/15.38).
+              // Let's use multiplication by rate as defined in seed data (Rate is "Exchange rate vs Base").
+              // If Base is GHS=1, USD=0.065, then 100 GHS * 0.065 = 6.5 USD.
+              const convertedPrice = productData.price.mul(c.rate);
+              return {
+                currencyCode: c.code,
+                price: convertedPrice,
+                // No discountPrice override by default in seed
+              };
+            })
+        }
       },
     });
   }

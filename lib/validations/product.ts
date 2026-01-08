@@ -18,30 +18,27 @@ const productImageSchema = z.object({
 });
 
 // Discount schema
-const discountSchema = z.object({
-    type: z.enum(["percent", "fixed"]),
-    value: z.number().min(0, "Discount value must be positive"),
-    startDate: z.string().optional(),
-    expiryDate: z.string().optional(),
-});
-
-// New Drop schema
-const newDropSchema = z.object({
-    enabled: z.boolean(),
-    autoExpire: z.boolean(),
-    durationDays: z.number().optional(),
-    expiresAt: z.string().optional(),
+// Ideally user selects an existing database discount by ID
+const discountSelectionSchema = z.object({
+    discountId: z.string().optional(),
+    // Additional manual overrides could go here if we want per-product custom discounts not in DB?
+    // But plan says "fetch active Discounts". So just ID is enough for the rule.
 });
 
 // Pricing Schema (Form Layer)
-// We keep some calculated fields out of the user input schema, 
-// but we group the inputs logically.
 const pricingInputSchema = z.object({
     costPrice: z.number().min(0.01, "Cost price must be greater than 0"),
     projectedProfit: z.number().min(0, "Projected profit must be 0 or greater"),
-    // Discount configuration
-    showDiscount: z.boolean(),
-    discount: discountSchema.optional(),
+
+    // Discount selection
+    discountId: z.string().optional(),
+
+    // Currency overrides: Record<CurrencyCode, { price: number, discountPrice?: number }>
+    // We'll manage this state separately or as a field
+    currencyOverrides: z.record(z.string(), z.object({
+        price: z.number(),
+        discountPrice: z.number().optional()
+    })).optional()
 });
 
 // Main product form schema
@@ -70,19 +67,7 @@ export const productFormSchema = z.object({
     // New Drop
     newDrop: newDropSchema.optional(),
 })
-    .refine(
-        (data) => {
-            // If discount is enabled, validate discount fields
-            if (data.pricing.showDiscount && data.pricing.discount) {
-                return data.pricing.discount.value > 0;
-            }
-            return true;
-        },
-        {
-            message: "Discount value must be greater than 0 when discount is enabled",
-            path: ["pricing", "discount", "value"],
-        }
-    )
+    .refine((data) => true, { message: "Validation pass" }) // Placeholder for complex validation
     .refine(
         (data) => {
             // If new drop is enabled with auto-expire, duration is required
@@ -115,25 +100,18 @@ export interface ProductApiPayload {
         projectedProfit: number;
         marginPercentage: number;   // (profit / cost) * 100
 
-        // Retail prices (before discount)
-        priceGHS: number;            // cost + profit
-        priceUSD: number;            // Math.ceil(priceGHS / 15)
+        // Base Price (GHS)
+        priceGHS: number;
 
         // Discount configuration (optional)
-        discount?: {
-            type: "percent" | "fixed";
-            value: number;
-            startDate?: string;        // ISO date
-            expiryDate?: string;       // ISO date
-        };
+        discountId?: string;
 
-        // Final prices (after discount, if applicable)
-        finalPriceGHS: number;       // priceGHS - discount (or same if no discount)
-        finalPriceUSD: number;       // Math.ceil(finalPriceGHS / 15)
-
-        // Calculated discount amounts (for display)
-        discountAmountGHS?: number;  // Only if discount exists
-        discountAmountUSD?: number;  // Only if discount exists
+        // Final prices (per currency)
+        productPrices: Array<{
+            currencyCode: string;
+            price: number;
+            discountPrice?: number;
+        }>;
     };
 
     // Variants
