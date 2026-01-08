@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Plus, Trash2, Edit2, Coins } from "lucide-react";
+import { Plus, Trash2, Coins } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,10 +189,6 @@ export function CurrencyManager() {
                         ))}
                     </TableBody>
                 </Table>
-            </div>
-
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg text-amber-800 dark:text-amber-200 text-xs font-medium">
-                Note: Updating exchange rates here will immediately affect the calculated USD prices for all products.
             </div>
         </div>
     );
