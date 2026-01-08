@@ -9,3 +9,15 @@ export const getClientAuthSession = async () => {
 
   return session;
 };
+
+const signUpAdminByEmail = async (email: string, password: string) => {
+  const session = await authClient.signUp.email({
+    email,
+    password,
+    name: "Administrator",
+  });
+
+  return session;
+};
+
+// signUpAdminByEmail("helloawuraba@gmail.com", "nBkdySKH93EBypB");
