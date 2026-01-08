@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
   },
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "d17a17kld06uk8.cloudfront.net",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
