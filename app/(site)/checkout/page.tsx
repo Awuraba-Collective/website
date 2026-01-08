@@ -1,17 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { clearCart } from '@/store/slices/cartSlice';
 import { ArrowLeft, CheckCircle, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import posthog from 'posthog-js';
 
 export default function CheckoutPage() {
     const dispatch = useAppDispatch();
     const { items } = useAppSelector((state) => state.cart);
     const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const [checkoutTracked, setCheckoutTracked] = useState(false);
 
     const [step, setStep] = useState<'details' | 'success'>('details');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +58,43 @@ export default function CheckoutPage() {
         }
 
         setIsSubmitting(true);
+
+        // Store order data for PostHog event before clearing cart
+        const orderData = {
+            order_total: total,
+            item_count: items.length,
+            total_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+            items: items.map(item => ({
+                product_id: item.productId,
+                product_name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                selected_size: item.selectedSize,
+                selected_variant: item.selectedVariant,
+                selected_length: item.selectedLength,
+            })),
+            customer_first_name: formData.firstName,
+            customer_city: formData.city || null,
+            has_delivery_details: formData.hasDeliveryDetails,
+            contact_method: hasPhone ? 'phone' : 'whatsapp',
+            currency: 'GHS',
+        };
+
         setTimeout(() => {
+            // PostHog: Track order placed (conversion event)
+            posthog.capture('order_placed', orderData);
+
+            // PostHog: Identify user by phone/whatsapp for future correlation
+            const contactInfo = hasPhone ? formData.phone : formData.whatsapp;
+            posthog.identify(contactInfo, {
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                phone: formData.phone !== '+233' ? formData.phone : null,
+                whatsapp: formData.whatsapp || null,
+                city: formData.city || null,
+                address: formData.address || null,
+            });
+
             setStep('success');
             dispatch(clearCart());
             setIsSubmitting(false);
@@ -95,6 +133,29 @@ export default function CheckoutPage() {
             </div>
         );
     }
+
+    // PostHog: Track checkout started (only once per component mount)
+    useEffect(() => {
+        if (!checkoutTracked && items.length > 0) {
+            setCheckoutTracked(true);
+            posthog.capture('checkout_started', {
+                cart_total: total,
+                item_count: items.length,
+                total_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+                items: items.map(item => ({
+                    product_id: item.productId,
+                    product_name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    selected_size: item.selectedSize,
+                    selected_variant: item.selectedVariant,
+                    selected_length: item.selectedLength,
+                })),
+                currency: 'GHS',
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 py-12 lg:py-20">

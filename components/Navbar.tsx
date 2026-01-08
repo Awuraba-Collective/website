@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleCart } from "@/store/slices/cartSlice";
+import posthog from "posthog-js";
 
 const navLinks = [
     { name: "Home", href: "/" },
@@ -80,7 +81,15 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
                     {/* Cart Icon */}
                     <button
-                        onClick={() => dispatch(toggleCart())}
+                        onClick={() => {
+                            // PostHog: Track cart drawer opened
+                            posthog.capture('cart_drawer_opened', {
+                                cart_item_count: items.length,
+                                cart_total_quantity: cartCount,
+                                source: 'navbar_icon',
+                            });
+                            dispatch(toggleCart());
+                        }}
                         className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
                     >
                         <ShoppingBag className="h-5 w-5" />
@@ -130,6 +139,12 @@ export function Navbar() {
                     <button
                         onClick={() => {
                             setIsOpen(false);
+                            // PostHog: Track cart drawer opened from mobile nav
+                            posthog.capture('cart_drawer_opened', {
+                                cart_item_count: items.length,
+                                cart_total_quantity: cartCount,
+                                source: 'mobile_nav',
+                            });
                             dispatch(toggleCart());
                         }}
                         className="text-xl font-medium text-neutral-400 text-left flex items-center gap-2 pt-4 border-t border-neutral-100 dark:border-neutral-900"

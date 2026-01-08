@@ -10,6 +10,7 @@ import { EditItemModal } from '@/components/shop/EditItemModal';
 import { useState } from 'react';
 import { products } from '@/lib/shop-data';
 import { CartItem } from '@/types/shop';
+import posthog from 'posthog-js';
 
 export default function CartPage() {
     const dispatch = useAppDispatch();
@@ -96,7 +97,21 @@ export default function CartPage() {
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => dispatch(removeFromCart(item.id))}
+                                                    onClick={() => {
+                                                        // PostHog: Track cart item removed
+                                                        posthog.capture('cart_item_removed', {
+                                                            product_id: item.productId,
+                                                            product_name: item.name,
+                                                            price: item.price,
+                                                            quantity: item.quantity,
+                                                            selected_size: item.selectedSize,
+                                                            selected_variant: item.selectedVariant,
+                                                            selected_length: item.selectedLength,
+                                                            removal_location: 'cart_page',
+                                                            currency: 'GHS',
+                                                        });
+                                                        dispatch(removeFromCart(item.id));
+                                                    }}
                                                     className="p-2 text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
                                                     title="Remove Item"
                                                 >

@@ -8,6 +8,7 @@ import { ProductCard } from '@/components/shop/ProductCard';
 import { ShopHero } from '@/components/shop/ShopHero';
 import { ProductSkeleton } from '@/components/shop/ProductSkeleton';
 import { motion } from 'framer-motion';
+import posthog from 'posthog-js';
 
 export default function ShopClient() {
     const dispatch = useAppDispatch();
@@ -46,7 +47,17 @@ export default function ShopClient() {
                     {filters.map((filter) => (
                         <button
                             key={filter}
-                            onClick={() => dispatch(setFilter(filter))}
+                            onClick={() => {
+                                // PostHog: Track shop filter changed
+                                if (filter !== activeFilter) {
+                                    posthog.capture('shop_filter_changed', {
+                                        previous_filter: activeFilter,
+                                        new_filter: filter,
+                                        available_filters: filters,
+                                    });
+                                }
+                                dispatch(setFilter(filter));
+                            }}
                             className={`text-sm tracking-widest uppercase transition-colors pb-2 -mb-4 border-b-2
                 ${activeFilter === filter
                                     ? 'border-black dark:border-white text-black dark:text-white font-medium'

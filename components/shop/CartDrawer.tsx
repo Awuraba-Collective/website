@@ -6,6 +6,7 @@ import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleCart, removeFromCart, updateQuantity } from '@/store/slices/cartSlice';
 import { useEffect } from 'react';
+import posthog from 'posthog-js';
 
 export function CartDrawer() {
     const dispatch = useAppDispatch();
@@ -70,7 +71,21 @@ export function CartDrawer() {
                                         <div className="flex justify-between items-start">
                                             <h3 className="font-medium">{item.name}</h3>
                                             <button
-                                                onClick={() => dispatch(removeFromCart(item.id))}
+                                                onClick={() => {
+                                                    // PostHog: Track cart item removed
+                                                    posthog.capture('cart_item_removed', {
+                                                        product_id: item.productId,
+                                                        product_name: item.name,
+                                                        price: item.price,
+                                                        quantity: item.quantity,
+                                                        selected_size: item.selectedSize,
+                                                        selected_variant: item.selectedVariant,
+                                                        selected_length: item.selectedLength,
+                                                        removal_location: 'cart_drawer',
+                                                        currency: 'GHS',
+                                                    });
+                                                    dispatch(removeFromCart(item.id));
+                                                }}
                                                 className="text-neutral-400 hover:text-red-500"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -84,7 +99,21 @@ export function CartDrawer() {
 
                                     <div className="flex items-center gap-3">
                                         <button
-                                            onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity - 1 }))}
+                                            onClick={() => {
+                                                const newQuantity = item.quantity - 1;
+                                                // PostHog: Track cart item quantity changed
+                                                posthog.capture('cart_item_quantity_changed', {
+                                                    product_id: item.productId,
+                                                    product_name: item.name,
+                                                    price: item.price,
+                                                    old_quantity: item.quantity,
+                                                    new_quantity: newQuantity,
+                                                    change_type: 'decrease',
+                                                    location: 'cart_drawer',
+                                                    currency: 'GHS',
+                                                });
+                                                dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+                                            }}
                                             className="p-1 border rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
                                             disabled={item.quantity <= 1}
                                         >
@@ -92,7 +121,21 @@ export function CartDrawer() {
                                         </button>
                                         <span className="text-sm w-4 text-center">{item.quantity}</span>
                                         <button
-                                            onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity + 1 }))}
+                                            onClick={() => {
+                                                const newQuantity = item.quantity + 1;
+                                                // PostHog: Track cart item quantity changed
+                                                posthog.capture('cart_item_quantity_changed', {
+                                                    product_id: item.productId,
+                                                    product_name: item.name,
+                                                    price: item.price,
+                                                    old_quantity: item.quantity,
+                                                    new_quantity: newQuantity,
+                                                    change_type: 'increase',
+                                                    location: 'cart_drawer',
+                                                    currency: 'GHS',
+                                                });
+                                                dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+                                            }}
                                             className="p-1 border rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
                                         >
                                             <Plus className="w-3 h-3" />
@@ -121,7 +164,17 @@ export function CartDrawer() {
                             </Link>
                             <Link
                                 href="/checkout"
-                                onClick={() => dispatch(toggleCart())}
+                                onClick={() => {
+                                    // PostHog: Track proceed to checkout clicked
+                                    posthog.capture('proceed_to_checkout_clicked', {
+                                        cart_total: total,
+                                        item_count: items.length,
+                                        total_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+                                        source: 'cart_drawer',
+                                        currency: 'GHS',
+                                    });
+                                    dispatch(toggleCart());
+                                }}
                                 className="block w-full bg-black text-white dark:bg-white dark:text-black text-center py-4 uppercase tracking-[0.2em] text-xs font-bold hover:opacity-90 transition-opacity"
                             >
                                 Checkout

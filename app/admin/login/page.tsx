@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import posthog from 'posthog-js';
 
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('');
@@ -15,12 +16,29 @@ export default function AdminLoginPage() {
         e.preventDefault();
         setIsLoading(true);
 
+        // PostHog: Track admin login attempted
+        posthog.capture('admin_login_attempted', {
+            email: email,
+        });
+
         // Mock authentication
         setTimeout(() => {
             setIsLoading(false);
             if (email === 'admin@awuraba.co' && password === 'admin123') {
+                // PostHog: Identify admin user on successful login
+                posthog.identify(email, {
+                    email: email,
+                    role: 'admin',
+                });
+                posthog.capture('admin_login_success', {
+                    email: email,
+                });
                 router.push('/admin');
             } else {
+                posthog.capture('admin_login_failed', {
+                    email: email,
+                    reason: 'invalid_credentials',
+                });
                 alert('Invalid credentials. Use admin@awuraba.co / admin123');
             }
         }, 1500);
