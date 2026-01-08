@@ -146,11 +146,11 @@ export default function SizingPage() {
                             </thead>
                             <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
                                 {[
-                                    { label: "Short Sleeve", petite: "7", regular: "7.5", tall: "8" },
-                                    { label: "Long Sleeve", petite: "22", regular: "23", tall: "24" },
-                                    { label: "Short Length (Dress)", petite: "30-33", regular: "33-36", tall: "36-39" },
-                                    { label: "3/4 Length (Dress)", petite: "35-38", regular: "38-41", tall: "41-44" },
-                                    { label: "Full / Long Length", petite: "44-47", regular: "47-50", tall: "50-53" },
+                                    { label: "Short Sleeve", petite: "6", regular: "7", tall: "8.5" },
+                                    { label: "Long Sleeve", petite: "21", regular: "23", tall: "25" },
+                                    { label: "Short Length (Dress)", petite: "35-37", regular: "38-40", tall: "41-42" },
+                                    { label: "3/4 Length (Dress)", petite: "38-40", regular: "40-43", tall: "44-46" },
+                                    { label: "Full / Long Length", petite: "52-54", regular: "55-57", tall: "60-62" },
                                 ].map((row, i) => (
                                     <tr key={i} className="bg-white dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
                                         <td className="p-3 border border-neutral-200 dark:border-neutral-800 font-bold text-left pl-6">{row.label}</td>
