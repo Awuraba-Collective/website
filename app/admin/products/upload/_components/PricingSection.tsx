@@ -13,16 +13,25 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useFormContext, useWatch } from "react-hook-form";
-interface PricingSectionProps {
-    discounts: any[];
-    currencies: any[];
-    calculatePricing: () => any;
+import { ProductFormValues } from "@/lib/validations/product";
+import { Currency, Discount } from "../_hooks/useProductForm";
+
+interface PricingCalculationResult {
+    marginPercentage: number;
+    priceGHS: number;
+    priceMap: Record<string, { price: number; discountPrice?: number }>;
+    currencies: Currency[];
+    selectedDiscount?: Discount;
 }
 
-export function PricingSection({ discounts, currencies: availableCurrencies, calculatePricing }: PricingSectionProps) {
+interface PricingSectionProps {
+    discounts: Discount[];
+    calculatePricing: () => PricingCalculationResult;
+}
+
+export function PricingSection({ discounts, calculatePricing }: PricingSectionProps) {
     const { control } = useFormContext<ProductFormValues>();
 
     // Watch form state
@@ -30,7 +39,7 @@ export function PricingSection({ discounts, currencies: availableCurrencies, cal
     const showDiscount = pricing.showDiscount;
 
     // Calculate derived state on every render
-    const { priceGHS, priceMap, currencies: supportedCurrencies } = calculatePricing();
+    const { priceMap, currencies: supportedCurrencies } = calculatePricing();
 
     // Derived values for summary
     // Base GHS
@@ -106,80 +115,60 @@ export function PricingSection({ discounts, currencies: availableCurrencies, cal
                         )}
                     />
 
-                    {/* Discount Toggle & Fields */}
+                    {/* Discount Selection */}
                     <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
                         <FormField
                             control={control}
-                            name="pricing.showDiscount"
+                            name="pricing.discountId"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg p-0 space-y-0">
+                                <FormItem>
                                     <FormLabel className="text-xs font-black uppercase tracking-widest text-neutral-400">Apply Discount</FormLabel>
                                     <FormControl>
                                         <Select
-                                            value={field.value ? "true" : "false"}
-                                            onValueChange={(val) => field.onChange(val === "true")}
+                                            onValueChange={(value) => field.onChange(value === "none" ? undefined : value)}
+                                            value={field.value || "none"}
                                         >
-                                            <SelectTrigger className="w-[100px] bg-white dark:bg-black font-bold h-10">
-                                                <SelectValue />
+                                            <SelectTrigger className="bg-white dark:bg-black font-bold !h-12 w-full uppercase text-xs">
+                                                <SelectValue placeholder="No Discount" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="false">None</SelectItem>
-                                                <SelectItem value="true">Select...</SelectItem>
+                                                <SelectItem value="none">None</SelectItem>
+                                                {discounts.map((discount) => (
+                                                    <SelectItem key={discount.id} value={discount.id}>
+                                                        {discount.description} ({discount.type === 'PERCENTAGE' ? `${discount.value}%` : `₵${discount.value}`})
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
-
-                        {/* Render Discount Selection if enabled */}
-                        {pricing.showDiscount && (
-                            <FormField
-                                control={control}
-                                name="pricing.discountId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <SelectTrigger className="bg-white dark:bg-black font-bold !h-12 w-full uppercase text-xs">
-                                                    <SelectValue placeholder="Select Active Discount" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {discounts.map((discount) => (
-                                                        <SelectItem key={discount.id} value={discount.id}>
-                                                            {discount.description} ({discount.type === 'PERCENTAGE' ? `${discount.value}%` : `₵${discount.value}`})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        )}
-
                     </div>
-                </div>
 
+                </div>
                 {/* Summary / Display */}
                 <div className="space-y-8">
                     <div className="bg-black text-white dark:bg-white dark:text-black p-10 rounded-2xl shadow-xl relative overflow-hidden">
-                        <div className="relative z-10 space-y-10">
-                            <div className="grid grid-cols-1 grid-rows-2 gap-8 items-center border-y border-white/10 dark:border-black/10 py-6">
+                        <div className="relative z-10 space-y-8">
+                            <div className="grid grid-cols-1 grid-rows-2 gap-8 items-center border-y border-white/10 dark:border-black/10 ">
                                 {currencies.map((curr) => (
                                     <div key={curr.code} className="space-y-2">
                                         <div className="flex items-center gap-2 opacity-50">
                                             <span className="text-[10px] font-black uppercase tracking-widest">{curr.code} Projection</span>
                                         </div>
-                                        <div className="text-5xl font-black font-serif flex items-baseline gap-2">
-                                            <span className="text-xl opacity-50">{curr.label}</span>
-                                            {curr.selling.toLocaleString()}
-                                        </div>
-                                        {showDiscount && (
-                                            <div className="text-sm opacity-40 font-bold line-through">
-                                                {curr.label} {curr.retail.toLocaleString()}
+                                        <div className="flex items-baseline justify-between gap-2">
+                                            <div className="text-5xl font-black font-serif flex items-baseline gap-2">
+                                                <span className="text-xl opacity-50">{curr.label}</span>
+                                                {curr.selling.toLocaleString()}
                                             </div>
-                                        )}
+                                            {showDiscount && (
+                                                <div className="text-3xl opacity-40 font-bold line-through">
+                                                    {curr.label} {curr.retail.toLocaleString()}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -210,6 +199,8 @@ export function PricingSection({ discounts, currencies: availableCurrencies, cal
                     </div>
                 </div>
             </div>
+
+
         </div>
     );
 }

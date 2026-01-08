@@ -26,7 +26,6 @@ export function ProductForm() {
                     <VariantsSection />
                     <PricingSection
                         discounts={discounts}
-                        currencies={currencies}
                         calculatePricing={calculatePricing}
                     />
                     <RecommendationsAndDropSection />

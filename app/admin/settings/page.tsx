@@ -3,15 +3,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SettingsListManager } from "./_components/SettingsListManager";
 import { CurrencyManager } from "./_components/CurrencyManager";
-import { CurrencyManager } from "./_components/CurrencyManager";
 import { SizingStandardsManager } from "./_components/SizingStandardsManager";
 import { DiscountManager } from "./_components/DiscountManager";
 import { Separator } from "@/components/ui/separator";
-
-// MOCK DATA - In production this would come from an API/DB
-const MOCK_CATEGORIES = ["Dresses", "Sets", "Tops", "Bottoms", "Outerwear"];
-const MOCK_FIT_CATEGORIES = ["Standard", "Loose", "Oversized"];
-const MOCK_COLLECTIONS = ["January 25th Drop", "Essentials", "Resort 2024"];
 
 export default function SettingsPage() {
     return (
@@ -31,28 +25,25 @@ export default function SettingsPage() {
                     >
                         General & Lists
                     </TabsTrigger>
+
                     <TabsTrigger
                         value="currency"
                         className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
                     >
-                        <TabsTrigger
-                            value="currency"
-                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
-                        >
-                            Currency
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="discounts"
-                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
-                        >
-                            Discounts
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="sizing"
-                            className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
-                        >
-                            Sizing Standards
-                        </TabsTrigger>
+                        Currency
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="discounts"
+                        className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
+                    >
+                        Discounts
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="sizing"
+                        className="bg-transparent border-b-2 border-transparent data-[state=active]:border-b-black dark:data-[state=active]:border-white data-[state=active]:shadow-none rounded-none px-0 pb-4 text-xs font-black uppercase tracking-[0.2em] text-neutral-400 data-[state=active]:text-black dark:data-[state=active]:text-white transition-all"
+                    >
+                        Sizing Standards
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* GENERAL TAB */}
@@ -62,13 +53,13 @@ export default function SettingsPage() {
                             title="Product Categories"
                             description="Define the main categories for product organization."
                             placeholder="e.g. Bridal"
-                            initialItems={MOCK_CATEGORIES}
+                            apiEndpoint="/api/categories"
                         />
                         <SettingsListManager
                             title="Fit Categories"
                             description="Define fitting types available for products."
                             placeholder="e.g. Slim Fit"
-                            initialItems={MOCK_FIT_CATEGORIES}
+                            apiEndpoint="/api/fit-categories"
                         />
                     </div>
 
@@ -79,7 +70,7 @@ export default function SettingsPage() {
                             title="Collections"
                             description="Manage active collections for product grouping."
                             placeholder="e.g. Summer 2025"
-                            initialItems={MOCK_COLLECTIONS}
+                            apiEndpoint="/api/collections"
                         />
                     </div>
                 </TabsContent>

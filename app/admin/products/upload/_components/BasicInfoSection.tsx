@@ -16,12 +16,11 @@ import {
 } from "@/components/ui/select";
 import { useFormContext } from "react-hook-form";
 import { ProductFormValues } from "@/lib/validations/product";
-
-// Collections should ideally come from props or a hook
-const COLLECTIONS = ['January 25th Drop', 'Essentials', 'Resort 2024'];
+import { useProductForm } from "../_hooks/useProductForm";
 
 export function BasicInfoSection() {
     const form = useFormContext<ProductFormValues>();
+    const { fitCategories, categories, collections } = useProductForm();
 
     return (
         <div className="space-y-8">
@@ -65,11 +64,11 @@ export function BasicInfoSection() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="Dresses">Dresses</SelectItem>
-                                    <SelectItem value="Sets">Sets</SelectItem>
-                                    <SelectItem value="Tops">Tops</SelectItem>
-                                    <SelectItem value="Bottoms">Bottoms</SelectItem>
-                                    <SelectItem value="Outerwear">Outerwear</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -116,8 +115,11 @@ export function BasicInfoSection() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="Standard">Standard</SelectItem>
-                                    <SelectItem value="Loose">Loose</SelectItem>
+                                    {fitCategories.map((fitCat) => (
+                                        <SelectItem key={fitCat.id} value={fitCat.id}>
+                                            {fitCat.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -141,8 +143,10 @@ export function BasicInfoSection() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {COLLECTIONS.map((col) => (
-                                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                                    {collections.map((col) => (
+                                        <SelectItem key={col.id} value={col.id}>
+                                            {col.name}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

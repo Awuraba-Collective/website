@@ -12,18 +12,12 @@ const productImageSchema = z.object({
     id: z.string(),
     file: z.instanceof(File).nullable(),
     previewUrl: z.string().nullable(),
+    alt: z.string().optional(),
     modelHeight: z.string().optional(),
     wearingSize: z.string().optional(),
     wearingVariant: z.string().optional(),
 });
 
-// Discount schema
-// Ideally user selects an existing database discount by ID
-const discountSelectionSchema = z.object({
-    discountId: z.string().optional(),
-    // Additional manual overrides could go here if we want per-product custom discounts not in DB?
-    // But plan says "fetch active Discounts". So just ID is enough for the rule.
-});
 
 // Pricing Schema (Form Layer)
 const pricingInputSchema = z.object({
@@ -32,6 +26,7 @@ const pricingInputSchema = z.object({
 
     // Discount selection
     discountId: z.string().optional(),
+    showDiscount: z.boolean().optional(),
 
     // Currency overrides: Record<CurrencyCode, { price: number, discountPrice?: number }>
     // We'll manage this state separately or as a field
@@ -41,15 +36,20 @@ const pricingInputSchema = z.object({
     })).optional()
 });
 
+// New Drop Schema
+const newDropSchema = z.object({
+    enabled: z.boolean(),
+    autoExpire: z.boolean(),
+    durationDays: z.number().min(1).optional(),
+});
+
 // Main product form schema
 export const productFormSchema = z.object({
     // Basic Info
     name: z.string().min(3, "Product name must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
     category: z.string().min(1, "Category is required"),
-    fitCategory: z.enum(["Standard", "Loose"], {
-        required_error: "Fit category is required",
-    }),
+    fitCategory: z.string().min(1, "Fit category is required"),
     collection: z.string().optional(),
 
     // Pricing
@@ -90,7 +90,7 @@ export interface ProductApiPayload {
     name: string;
     description: string;
     category: string;
-    fitCategory: "Standard" | "Loose";
+    fitCategory: string;
     collection?: string;
 
     // Pricing (Multi-currency with pre-calculated values)

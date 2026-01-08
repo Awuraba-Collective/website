@@ -7,18 +7,36 @@ import { toast } from "sonner";
 
 // Constants for Pricing
 // Types for fetched data
-interface Currency {
+export interface Currency {
     code: string;
     symbol: string;
     rate: number;
     isBase: boolean;
 }
 
-interface Discount {
+export interface Discount {
     id: string;
     description: string;
     type: 'PERCENTAGE' | 'FIXED_AMOUNT';
     value: number;
+}
+
+export interface FitCategory {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+export interface Category {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+export interface Collection {
+    id: string;
+    name: string;
+    slug: string;
 }
 
 export const useProductForm = () => {
@@ -30,7 +48,7 @@ export const useProductForm = () => {
             name: '',
             description: '',
             category: '',
-            fitCategory: 'Standard',
+            fitCategory: '',
             collection: '',
             pricing: {
                 costPrice: 0,
@@ -38,10 +56,7 @@ export const useProductForm = () => {
                 discountId: undefined,
                 currencyOverrides: undefined
             },
-            variants: [
-                { id: '1', name: 'Emerald Green', available: true },
-                { id: '2', name: 'Midnight Black', available: true }
-            ],
+            variants: [],
             productImages: [],
             frequentlyBoughtTogether: [],
             newDrop: {
@@ -54,18 +69,33 @@ export const useProductForm = () => {
 
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [discounts, setDiscounts] = useState<Discount[]>([]);
+    const [fitCategories, setFitCategories] = useState<FitCategory[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [collections, setCollections] = useState<Collection[]>([]);
 
     // Fetch data on mount
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [currRes, discRes] = await Promise.all([
-                    fetch('/api/admin/currencies').then(r => r.json()),
-                    fetch('/api/admin/discounts/active').then(r => r.json())
+                const [currRes, discRes, fitCatRes, catRes, collRes] = await Promise.all([
+                    fetch('/api/currencies?active=true').then(r => r.json()),
+                    fetch('/api/discounts/active').then(r => r.json()),
+                    fetch('/api/fit-categories').then(r => r.json()),
+                    fetch('/api/categories').then(r => r.json()),
+                    fetch('/api/collections').then(r => r.json())
                 ]);
                 // Safety check for array type (in case of error object)
                 if (Array.isArray(currRes)) setCurrencies(currRes);
                 if (Array.isArray(discRes)) setDiscounts(discRes);
+                if (Array.isArray(fitCatRes)) {
+                    setFitCategories(fitCatRes);
+                    // Set default fitCategory to first one if available
+                    if (fitCatRes.length > 0 && !form.getValues('fitCategory')) {
+                        form.setValue('fitCategory', fitCatRes[0].id);
+                    }
+                }
+                if (Array.isArray(catRes)) setCategories(catRes);
+                if (Array.isArray(collRes)) setCollections(collRes);
             } catch (e) {
                 console.error("Failed to fetch form data", e);
             }
@@ -178,7 +208,7 @@ export const useProductForm = () => {
                     marginPercentage: calculation.marginPercentage,
 
                     priceGHS: calculation.priceGHS,
-                    discountId: values.pricing.discountId,
+                    ...(values.pricing.discountId && { discountId: values.pricing.discountId }),
 
                     productPrices: calculation.currencies.map(c => {
                         const calc = calculation.priceMap[c.code];
@@ -212,10 +242,10 @@ export const useProductForm = () => {
                     }
                     return {
                         url: finalUrl,
-                        alt: `${values.name} - ${img.wearingVariant || 'View'} ${index + 1}`,
+                        alt: img.alt || `${values.name} - ${img.wearingVariant || 'View'} ${index + 1}`,
                         modelHeight: img.modelHeight,
                         wearingSize: img.wearingSize,
-                        wearingVariant: img.wearingVariant
+                        wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant
                     };
                 }),
 
@@ -232,11 +262,21 @@ export const useProductForm = () => {
                 createdAt: new Date().toISOString()
             };
 
-            console.log('Final Payload:', JSON.stringify(payload, null, 2));
+            // 3. Send to API
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to publish product");
+            }
 
             // Navigate or reset
             toast.success("Product published successfully!");
-            // form.reset(); // Optional
+            form.reset();
 
         } catch (error) {
             console.error(error);
@@ -253,6 +293,9 @@ export const useProductForm = () => {
         calculatePricing,
         discounts,
         currencies,
+        fitCategories,
+        categories,
+        collections,
         // Since we are calling calculatePricing inside the hook? No, calculatePricing returns data.
         // Wait, calculatePricing is a function. I should expose the *result* or let the component call it?
         // Pattern: useWatch in component triggers re-render. Hook exposes `calculatePricing`.

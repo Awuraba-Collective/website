@@ -544,6 +544,7 @@ model Currency {
   symbol        String // "$", "₵"
   rate          Decimal        @db.Decimal(10, 4) // Exchange rate vs Base
   isBase        Boolean        @default(false)
+  isActive      Boolean        @default(true)
   productPrices ProductPrice[]
   updatedAt     DateTime       @updatedAt
 

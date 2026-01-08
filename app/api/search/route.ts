@@ -16,7 +16,7 @@ export async function GET(req: Request) {
                     contains: query,
                     mode: 'insensitive',
                 },
-                isArchived: false
+                isActive: true
             },
             take: 10,
             select: {
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
                 images: {
                     take: 1,
                     select: {
-                        url: true
+                        src: true
                     }
                 }
             }
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         const formatted = products.map(p => ({
             id: p.id,
             name: p.name,
-            image: p.images[0]?.url || ''
+            image: p.images[0]?.src || ''
         }));
 
         return NextResponse.json(formatted);

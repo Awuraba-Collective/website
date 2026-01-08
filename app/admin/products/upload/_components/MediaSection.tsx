@@ -51,6 +51,7 @@ export function MediaSection() {
                         id: Math.random().toString(36).substr(2, 9),
                         file: null,
                         previewUrl: null,
+                        alt: '',
                         modelHeight: '',
                         wearingSize: '',
                         wearingVariant: ''
@@ -114,6 +115,24 @@ export function MediaSection() {
                             <div className="space-y-4 pt-2">
                                 <FormField
                                     control={control}
+                                    name={`productImages.${index}.alt`}
+                                    render={({ field: inputField }) => (
+                                        <FormItem className="space-y-2">
+                                            <FormLabel className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Image Description (Alt Text)</FormLabel>
+                                            <FormControl>
+                                                <InputComponent
+                                                    {...inputField}
+                                                    placeholder="e.g. Front view of emerald green dress"
+                                                    className="h-10 text-[11px] font-bold bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={control}
                                     name={`productImages.${index}.modelHeight`}
                                     render={({ field: inputField }) => (
                                         <FormItem className="space-y-2">
@@ -157,14 +176,14 @@ export function MediaSection() {
                                                 <FormLabel className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Variant</FormLabel>
                                                 <Select onValueChange={selectField.onChange} value={selectField.value}>
                                                     <FormControl>
-                                                        <SelectTrigger className="h-10 text-[11px] font-bold bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800">
+                                                        <SelectTrigger className="h-10 text-[11px] w-full font-bold bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800">
                                                             <SelectValue placeholder="Select" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
                                                         {variants.map((v) => (
-                                                            <SelectItem key={v.id} value={v.name} className="uppercase font-bold text-xs">
-                                                                {v.name || 'Unnamed'}
+                                                            <SelectItem key={v.id} value={v.id} className="uppercase font-bold text-xs">
+                                                                {v.name || 'Unnamed Variant'}
                                                             </SelectItem>
                                                         ))}
                                                         {variants.length === 0 && (
@@ -190,6 +209,7 @@ export function MediaSection() {
                             id: Math.random().toString(36).substr(2, 9),
                             file: null,
                             previewUrl: null,
+                            alt: '',
                             modelHeight: '',
                             wearingSize: '',
                             wearingVariant: ''

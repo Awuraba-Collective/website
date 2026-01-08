@@ -12,7 +12,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { ProductFormValues } from "@/lib/validations/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Search, Sparkles, Tag } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Product interface for search results
 interface ProductResult {
@@ -29,6 +29,7 @@ export function RecommendationsAndDropSection() {
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<ProductResult[]>([]);
     const [selectedProductDetails, setSelectedProductDetails] = useState<ProductResult[]>([]);
+    const searchRef = useRef<HTMLDivElement>(null);
 
     // Determine enabled state
     const isEnabled = newDrop?.enabled;
@@ -38,7 +39,7 @@ export function RecommendationsAndDropSection() {
         const timer = setTimeout(async () => {
             if (searchQuery.length > 2) {
                 try {
-                    const res = await fetch(`/api/admin/products/search?q=${encodeURIComponent(searchQuery)}`);
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
                     const data = await res.json();
                     setSearchResults(data);
                     setIsSearching(true);
@@ -53,6 +54,17 @@ export function RecommendationsAndDropSection() {
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Handle Click Outside to close dropdown
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearching(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Fetch details for selected items (since we store IDs only)
     // In a real app, you might want to fetch these details on mount if editing an existing product.
@@ -125,40 +137,59 @@ export function RecommendationsAndDropSection() {
                         </div>
 
                         {/* Search Input */}
-                        <div className="relative">
+                        <div className="relative" ref={searchRef}>
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                             <Input
                                 placeholder="Search products directly..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsSearching(true)}
-                                // Removed onBlur to allow clicking items. Rely on toggle to close.
                                 className="pl-11 h-12 bg-white dark:bg-black font-bold text-sm border-neutral-200 dark:border-neutral-800"
                             />
 
                             {/* Search Results Dropdown */}
-                            {isSearching && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-2xl z-20 max-h-60 overflow-y-auto p-2">
-                                    {searchResults.map(prod => (
-                                        <button
-                                            key={prod.id}
-                                            type="button"
-                                            onClick={() => toggleProduct(prod)}
-                                            className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors group"
-                                        >
-                                            <span className={`text-xs font-bold uppercase tracking-wide ${frequentlyBought.includes(prod.id) ? 'text-emerald-500' : 'text-neutral-600 dark:text-neutral-300'}`}>
-                                                {prod.name}
-                                            </span>
-                                            {frequentlyBought.includes(prod.id) && (
-                                                <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-600 border-emerald-200">Selected</Badge>
-                                            )}
-                                        </button>
-                                    ))}
-                                    {searchResults.length === 0 && (
-                                        <div className="p-4 text-center text-xs text-neutral-400">No products found</div>
-                                    )}
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {isSearching && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 rounded-xl shadow-2xl z-20 max-h-60 overflow-y-auto p-2"
+                                    >
+                                        <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-50 dark:border-neutral-900 mb-1">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Search Results</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsSearching(false)}
+                                                className="text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-black dark:hover:text-white"
+                                            >
+                                                Close
+                                            </button>
+                                        </div>
+                                        {searchResults.map(prod => (
+                                            <button
+                                                key={prod.id}
+                                                type="button"
+                                                onClick={() => toggleProduct(prod)}
+                                                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors group"
+                                            >
+                                                <span className={`text-xs font-bold uppercase tracking-wide ${frequentlyBought.includes(prod.id) ? 'text-emerald-500' : 'text-neutral-600 dark:text-neutral-300'}`}>
+                                                    {prod.name}
+                                                </span>
+                                                {frequentlyBought.includes(prod.id) && (
+                                                    <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-600 border-emerald-200">Selected</Badge>
+                                                )}
+                                            </button>
+                                        ))}
+                                        {searchResults.length === 0 && searchQuery.length > 2 && (
+                                            <div className="p-4 text-center text-xs text-neutral-400">No products found</div>
+                                        )}
+                                        {searchQuery.length <= 2 && (
+                                            <div className="p-4 text-center text-xs text-neutral-400">Type at least 3 characters...</div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
