@@ -6,7 +6,7 @@ import {
     Bell,
     Search
 } from 'lucide-react';
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminSidebar } from "@/app/admin/_components/admin-sidebar";
 import {
     SidebarInset,
     SidebarProvider,

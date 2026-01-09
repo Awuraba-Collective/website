@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { shopService } from '@/services/shopService';
-import { ProductDetailClient } from '@/components/shop/ProductDetailClient';
 import { Metadata } from 'next';
+import { ProductDetailClient } from '../_components/ProductDetailClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;

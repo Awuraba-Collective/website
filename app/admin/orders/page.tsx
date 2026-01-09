@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/database";
-import { OrdersTable } from "@/components/admin/OrdersTable";
+import { OrdersTable } from "@/app/admin/_components/OrdersTable";
 
 export default async function OrdersPage() {
   const orders = await prisma.order.findMany({

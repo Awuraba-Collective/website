@@ -1,5 +1,5 @@
-import HomeClient from "@/components/home/HomeClient";
 import type { Metadata } from "next";
+import HomeClient from "./_components/HomeClient";
 
 export const metadata: Metadata = {
   title: "AWURABA | Elegant African Fashion",

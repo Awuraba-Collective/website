@@ -1,4 +1,4 @@
-import { Size, Length, FitCategory } from "@/app/generated/prisma/client";
+import { Size, Length, FitCategoryType } from "@/app/generated/prisma";
 import type {
   Size as ClientSize,
   Length as ClientLength,
@@ -55,10 +55,10 @@ export function mapLengthToEnum(length: ClientLength): Length {
 /**
  * Map client-side FitCategory type to Prisma enum
  */
-export function mapFitToEnum(fit: ClientFitCategory): FitCategory {
-  const mapping: Record<ClientFitCategory, FitCategory> = {
-    Standard: FitCategory.STANDARD,
-    Loose: FitCategory.LOOSE,
+export function mapFitToEnum(fit: ClientFitCategory): FitCategoryType {
+  const mapping: Record<ClientFitCategory, FitCategoryType> = {
+    Standard: FitCategoryType.STANDARD,
+    Loose: FitCategoryType.LOOSE,
   };
   return mapping[fit];
 }

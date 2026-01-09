@@ -6,7 +6,7 @@ import { Trash2, Minus, Plus, ArrowLeft, Ruler, Edit, MessageCircle } from 'luci
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { removeFromCart, updateQuantity, updateCartItem } from '@/store/slices/cartSlice';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EditItemModal } from '@/components/shop/EditItemModal';
+import { EditItemModal } from '@/app/(site)/shop/shop/EditItemModal';
 import { useState } from 'react';
 import { products } from '@/lib/shop-data';
 import { CartItem } from '@/types/shop';

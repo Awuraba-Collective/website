@@ -9,8 +9,8 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleCart } from "@/store/slices/cartSlice";
-import { CurrencySwitcher } from "./shop/CurrencySwitcher";
 import posthog from "posthog-js";
+import { CurrencySwitcher } from "@/app/(site)/shop/_components/CurrencySwitcher";
 
 const navLinks = [
     { name: "Home", href: "/" },

@@ -1,4 +1,4 @@
-import ShopClient from "@/components/shop/ShopClient";
+import ShopClient from "@/app/(site)/shop/shop/ShopClient";
 import type { Metadata, ResolvingMetadata } from "next";
 import { Suspense } from "react";
 import type { PageProps } from "@/types";

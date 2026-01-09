@@ -7,9 +7,12 @@ import {
   mapLengthToEnum,
   mapFitToEnum,
 } from "@/lib/order";
-import { OrderStatus, PaymentStatus } from "@/app/generated/prisma/client";
+import {
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+} from "@/app/generated/prisma";
 import type { CartItem } from "@/types/shop";
-import { Decimal } from "../generated/prisma/internal/prismaNamespace";
 
 interface CustomerInfo {
   firstName: string;
@@ -76,10 +79,10 @@ export async function createOrder(
         guestPhone: customer.phone || customer.whatsapp,
 
         // Pricing
-        subtotal: new Decimal(subtotal),
-        shippingCost: new Decimal(shippingCost),
-        discount: new Decimal(discount),
-        total: new Decimal(total),
+        subtotal: new Prisma.Decimal(subtotal),
+        shippingCost: new Prisma.Decimal(shippingCost),
+        discount: new Prisma.Decimal(discount),
+        total: new Prisma.Decimal(total),
         currency: "GHS",
 
         // Shipping address
@@ -96,9 +99,9 @@ export async function createOrder(
             variantId: item.productId, // Will need proper variantId mapping when products are in DB
             productName: item.name,
             variantName: item.selectedVariant,
-            unitPrice: new Decimal(item.price),
+            unitPrice: new Prisma.Decimal(item.price),
             quantity: item.quantity,
-            totalPrice: new Decimal(item.price * item.quantity),
+            totalPrice: new Prisma.Decimal(item.price * item.quantity),
             selectedSize: mapSizeToEnum(item.selectedSize),
             selectedLength: mapLengthToEnum(item.selectedLength),
             fitCategory: mapFitToEnum(item.fitCategory),
@@ -114,7 +117,7 @@ export async function createOrder(
         // Initial payment record (placeholder for Paystack)
         payments: {
           create: {
-            amount: new Decimal(total),
+            amount: new Prisma.Decimal(total),
             currency: "GHS",
             status: PaymentStatus.PENDING,
             provider: "paystack", // Placeholder

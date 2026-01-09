@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { WhatWeOffer } from "@/components/home/WhatWeOffer";
-import { HowToOrder } from "@/components/home/HowToOrder";
+import { WhatWeOffer } from "./WhatWeOffer";
+import { HowToOrder } from "./HowToOrder";
+
 
 export default function HomeClient() {
     return (
