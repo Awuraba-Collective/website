@@ -67,13 +67,35 @@ export function RecommendationsAndDropSection() {
     }, []);
 
     // Fetch details for selected items (since we store IDs only)
-    // In a real app, you might want to fetch these details on mount if editing an existing product.
-    // For now, we'll try to keep local details when adding.
     useEffect(() => {
-        // If we have IDs but no details (e.g. reload), we should ideally fetch them. 
-        // For new create flow, we add locally so we have them.
-        // Let's rely on search for now.
-    }, []);
+        const fetchLinkedProducts = async () => {
+            if (frequentlyBought.length > 0 && selectedProductDetails.length === 0) {
+                try {
+                    // Simple search query or dedicated endpoint?
+                    // For now, let's fetch each one or assume search handles it?
+                    // Actually, let's just fetch them if we don't have details.
+                    const prods = await Promise.all(
+                        frequentlyBought.map(async (id) => {
+                            const res = await fetch(`/api/products/${id}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                return {
+                                    id: data.id,
+                                    name: data.name,
+                                    image: data.images?.[0]?.src || ''
+                                };
+                            }
+                            return null;
+                        })
+                    );
+                    setSelectedProductDetails(prods.filter(p => p !== null) as ProductResult[]);
+                } catch (e) {
+                    console.error("Failed to fetch linked product details", e);
+                }
+            }
+        };
+        fetchLinkedProducts();
+    }, [frequentlyBought, selectedProductDetails.length]);
 
     // Auto-set autoExpire to true when enabled, so we don't need a UI toggle for it
     useEffect(() => {

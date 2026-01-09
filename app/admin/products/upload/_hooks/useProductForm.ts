@@ -4,6 +4,7 @@ import { productFormSchema, type ProductFormValues, type ProductApiPayload } fro
 import { uploadImagesToStorage } from '@/lib/utils/product-payload';
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from "sonner";
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // Constants for Pricing
 // Types for fetched data
@@ -41,6 +42,12 @@ export interface Collection {
 
 export const useProductForm = () => {
     const [isUploading, setIsUploading] = useState(false);
+    const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const rawProductId = searchParams.get('id');
+    const productId = rawProductId && rawProductId !== 'undefined' ? rawProductId : null;
+    const [originalCreatedAt, setOriginalCreatedAt] = useState<string | null>(null);
 
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(productFormSchema),
@@ -66,7 +73,7 @@ export const useProductForm = () => {
             },
         },
     });
-
+    console.log(form.formState.errors);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [discounts, setDiscounts] = useState<Discount[]>([]);
     const [fitCategories, setFitCategories] = useState<FitCategory[]>([]);
@@ -84,28 +91,89 @@ export const useProductForm = () => {
                     fetch('/api/categories').then(r => r.json()),
                     fetch('/api/collections').then(r => r.json())
                 ]);
-                // Safety check for array type (in case of error object)
+
                 if (Array.isArray(currRes)) setCurrencies(currRes);
                 if (Array.isArray(discRes)) setDiscounts(discRes);
                 if (Array.isArray(fitCatRes)) {
                     setFitCategories(fitCatRes);
-                    // Set default fitCategory to first one if available
-                    if (fitCatRes.length > 0 && !form.getValues('fitCategory')) {
+                    if (fitCatRes.length > 0 && !form.getValues('fitCategory') && !productId) {
                         form.setValue('fitCategory', fitCatRes[0].id);
                     }
                 }
                 if (Array.isArray(catRes)) setCategories(catRes);
                 if (Array.isArray(collRes)) setCollections(collRes);
+
+                // Load existing product if ID is present
+                if (productId) {
+                    setIsLoadingProduct(true);
+                    const prodRes = await fetch(`/api/products/${productId}`);
+                    if (prodRes.ok) {
+                        const product = await prodRes.json();
+
+                        setOriginalCreatedAt(product.createdAt);
+
+                        // Calculate duration days if expiresAt is present
+                        let durationDays = 14;
+                        if (product.newDropExpiresAt && product.createdAt) {
+                            const start = new Date(product.createdAt).getTime();
+                            const end = new Date(product.newDropExpiresAt).getTime();
+                            durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                        }
+
+                        // Map product data to form values
+                        form.reset({
+                            name: product.name,
+                            description: product.description || '',
+                            category: product.categoryId || '',
+                            fitCategory: product.fitCategoryId || '',
+                            collection: product.collectionId || '',
+                            pricing: {
+                                costPrice: Number(product.costPrice) || 0,
+                                projectedProfit: (Number(product.price) || 0) - (Number(product.costPrice) || 0),
+                                discountId: product.discountId || undefined,
+                                currencyOverrides: product.prices?.reduce((acc: any, p: any) => {
+                                    acc[p.currencyCode] = {
+                                        price: Number(p.price),
+                                        discountPrice: p.discountPrice ? Number(p.discountPrice) : undefined
+                                    };
+                                    return acc;
+                                }, {})
+                            },
+                            variants: product.variants?.map((v: any) => ({
+                                id: v.id,
+                                name: v.name,
+                                available: v.isAvailable
+                            })) || [],
+                            productImages: product.images?.map((img: any) => ({
+                                id: img.id,
+                                previewUrl: img.src,
+                                file: null,
+                                alt: img.alt || '',
+                                modelHeight: img.modelHeight || '',
+                                wearingSize: img.modelWearingSize || '',
+                                wearingVariant: product.variants?.find((v: any) => v.name === img.modelWearingVariant)?.id || img.modelWearingVariant
+                            })) || [],
+                            frequentlyBoughtTogether: product.relatedProducts?.map((rp: any) => rp.id) || [],
+                            newDrop: {
+                                enabled: product.isNewDrop || false,
+                                autoExpire: product.newDropAutoExpire || false,
+                                durationDays: durationDays,
+                            }
+                        });
+                    }
+                }
             } catch (e) {
                 console.error("Failed to fetch form data", e);
+            } finally {
+                setIsLoadingProduct(false);
             }
         };
         fetchData();
-    }, []);
+    }, [productId, form]);
 
     // Calculate Pricing Logic
-    const calculatePricing = useCallback(() => {
-        const { costPrice, projectedProfit, discountId, currencyOverrides } = form.getValues('pricing');
+    const calculatePricing = useCallback((pricingInput?: ProductFormValues['pricing']) => {
+        const { costPrice, projectedProfit, discountId, currencyOverrides } = pricingInput || form.getValues('pricing');
 
         // 1. Base Price (GHS)
         const priceGHS = costPrice + projectedProfit;
@@ -180,17 +248,21 @@ export const useProductForm = () => {
             selectedDiscount
         };
 
-    }, [form, currencies, discounts]);
+    }, [currencies, discounts]);
 
     const submitForm = async (values: ProductFormValues) => {
         try {
             setIsUploading(true);
 
-            // 1. Upload Images
-            const files = values.productImages.map(img => img.file).filter(file => file !== null) as File[];
-            // In a real scenario, we'd map the returned URLs back to the correct image object indices
-            // For this mock, we assume order is preserved and all valid files are uploaded
-            const uploadedUrls = await uploadImagesToStorage(files);
+            // 1. Upload Images (Only those that have a new File object)
+            const filesToUpload = values.productImages
+                .filter(img => img.file instanceof File)
+                .map(img => img.file) as File[];
+
+            // Only call upload if there are new files
+            const uploadedUrls = filesToUpload.length > 0
+                ? await uploadImagesToStorage(filesToUpload)
+                : [];
 
             // 2. Prepare API Payload
             const calculation = calculatePricing();
@@ -226,26 +298,27 @@ export const useProductForm = () => {
                 })),
 
                 images: values.productImages.map((img, index) => {
-                    // Start with preview
-                    let finalUrl = img.previewUrl || '';
-
-                    // If it was a file that got uploaded, find its URL
-                    // Logic: we filtered files. We need to find the index in 'files' array to get 'uploadedUrls' index.
-                    // This is brittle. Better: upload returns map or we track it.
-                    // Simple fix for now: assumption that ALL images in 'upload' form are new files.
-                    if (img.file) {
-                        // Find index of this file in the 'files' array we sent
-                        const fileIndex = files.indexOf(img.file);
+                    // 1. If we have a new file, it was uploaded already in Step 1
+                    if (img.file instanceof File) {
+                        const fileIndex = filesToUpload.indexOf(img.file);
                         if (fileIndex !== -1 && uploadedUrls[fileIndex]) {
-                            finalUrl = uploadedUrls[fileIndex];
+                            return {
+                                url: uploadedUrls[fileIndex],
+                                alt: img.alt || `${values.name} - ${index + 1}`,
+                                modelHeight: img.modelHeight || undefined,
+                                wearingSize: img.wearingSize || undefined,
+                                wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined
+                            };
                         }
                     }
+
+                    // 2. If it's an existing image (persisted URL)
                     return {
-                        url: finalUrl,
-                        alt: img.alt || `${values.name} - ${img.wearingVariant || 'View'} ${index + 1}`,
-                        modelHeight: img.modelHeight,
-                        wearingSize: img.wearingSize,
-                        wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant
+                        url: img.previewUrl || '',
+                        alt: img.alt || `${values.name} - ${index + 1}`,
+                        modelHeight: img.modelHeight || undefined,
+                        wearingSize: img.wearingSize || undefined,
+                        wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined
                     };
                 }),
 
@@ -255,32 +328,34 @@ export const useProductForm = () => {
                     enabled: true,
                     autoExpire: values.newDrop.autoExpire,
                     durationDays: values.newDrop.durationDays,
-                    // Calculate expiry date if not manually provided?
-                    // For now pass as is or let backend handle
+                    expiresAt: new Date(new Date(originalCreatedAt || new Date()).getTime() + ((values.newDrop.durationDays || 14) * 24 * 60 * 60 * 1000)).toISOString()
                 } : undefined,
 
-                createdAt: new Date().toISOString()
+                createdAt: originalCreatedAt || new Date().toISOString()
             };
 
             // 3. Send to API
-            const res = await fetch('/api/products', {
-                method: 'POST',
+            const res = await fetch(productId ? `/api/products/${productId}` : '/api/products', {
+                method: productId ? 'PATCH' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error || "Failed to publish product");
+                throw new Error(err.error || `Failed to ${productId ? 'update' : 'publish'} product`);
             }
 
-            // Navigate or reset
-            toast.success("Product published successfully!");
-            form.reset();
+            toast.success(`Product ${productId ? 'updated' : 'published'} successfully!`);
+            if (!productId) {
+                form.reset();
+            } else {
+                router.push('/admin/products');
+            }
 
         } catch (error) {
             console.error(error);
-            toast.error("Failed to publish product.");
+            toast.error(`Failed to ${productId ? 'update' : 'publish'} product.`);
         } finally {
             setIsUploading(false);
         }
@@ -289,6 +364,8 @@ export const useProductForm = () => {
     return {
         form,
         isUploading,
+        isLoadingProduct,
+        isEditMode: !!productId,
         submitForm,
         calculatePricing,
         discounts,
@@ -296,11 +373,5 @@ export const useProductForm = () => {
         fitCategories,
         categories,
         collections,
-        // Since we are calling calculatePricing inside the hook? No, calculatePricing returns data.
-        // Wait, calculatePricing is a function. I should expose the *result* or let the component call it?
-        // Pattern: useWatch in component triggers re-render. Hook exposes `calculatePricing`.
-        // Better: Hook exposes `pricingData` state or Memo.
-        // But `calculatePricing` is just a function.
-        // Let's stick to exposing data.
     };
 };

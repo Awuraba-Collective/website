@@ -30,71 +30,71 @@ export async function POST(req: Request) {
         const slug = generateSlug(name);
 
         // Transaction to ensure all related data is created correctly
-        const result = await prisma.$transaction(async (tx) => {
-            // 1. Create the Product
-            const product = await tx.product.create({
-                data: {
-                    name,
-                    slug,
-                    description,
-                    price: pricing.priceGHS,
-                    costPrice: pricing.costPrice,
-                    discountId: pricing.discountId || null,
-
-                    // New Drop Logic
-                    isNewDrop: !!newDrop?.enabled,
-                    newDropExpiresAt: newDrop?.expiresAt ? new Date(newDrop.expiresAt) : null,
-
-                    // Relations (IDs)
-                    categoryId: category,
-                    collectionId: collection || null,
-                    fitCategoryId: fitCategory || null,
-
-                    // Variants
-                    variants: {
-                        create: variants.map((v: any) => ({
-                            name: v.name,
-                            isAvailable: v.available,
-                        })),
-                    },
-
-                    // Images
-                    images: {
-                        create: images.map((img: any, index: number) => ({
-                            src: img.url,
-                            alt: img.alt,
-                            position: index,
-                            modelHeight: img.modelHeight,
-                            modelWearingSize: img.wearingSize,
-                            modelWearingVariant: img.wearingVariant,
-                        })),
-                    },
-
-                    // Multi-currency Prices
-                    prices: {
-                        create: pricing.productPrices.map((p: any) => ({
-                            currencyCode: p.currencyCode,
-                            price: p.price,
-                            discountPrice: p.discountPrice || null,
-                        })),
-                    },
-                },
-            });
-
-            // 2. Handle Frequently Bought Together (Self-relation)
-            if (frequentlyBoughtTogether && frequentlyBoughtTogether.length > 0) {
-                await tx.product.update({
-                    where: { id: product.id },
+        const result = await prisma.$transaction(
+            async (tx) => {
+                // 1. Create the Product and related data in one go
+                const product = await tx.product.create({
                     data: {
-                        relatedProducts: {
-                            connect: frequentlyBoughtTogether.map((id: string) => ({ id })),
+                        name,
+                        slug,
+                        description,
+                        price: pricing.priceGHS,
+                        costPrice: pricing.costPrice,
+                        discountId: pricing.discountId || null,
+
+                        // New Drop Logic
+                        isNewDrop: !!newDrop?.enabled,
+                        newDropExpiresAt: newDrop?.expiresAt ? new Date(newDrop.expiresAt) : null,
+
+                        // Relations (IDs)
+                        categoryId: category,
+                        collectionId: collection || null,
+                        fitCategoryId: fitCategory || null,
+
+                        // Variants
+                        variants: {
+                            create: variants.map((v: any) => ({
+                                name: v.name,
+                                isAvailable: v.available,
+                            })),
                         },
+
+                        // Images
+                        images: {
+                            create: images.map((img: any, index: number) => ({
+                                src: img.url,
+                                alt: img.alt,
+                                position: index,
+                                modelHeight: img.modelHeight,
+                                modelWearingSize: img.wearingSize,
+                                modelWearingVariant: img.wearingVariant,
+                            })),
+                        },
+
+                        // Multi-currency Prices
+                        prices: {
+                            create: pricing.productPrices.map((p: any) => ({
+                                currencyCode: p.currencyCode,
+                                price: p.price,
+                                discountPrice: p.discountPrice || null,
+                            })),
+                        },
+
+                        // Handle Frequently Bought Together links immediately
+                        ...(frequentlyBoughtTogether && frequentlyBoughtTogether.length > 0 && {
+                            relatedProducts: {
+                                connect: frequentlyBoughtTogether.map((id: string) => ({ id })),
+                            },
+                        }),
                     },
                 });
-            }
 
-            return product;
-        });
+                return product;
+            },
+            {
+                timeout: 20000, // 20 seconds
+            }
+        );
 
         return NextResponse.json(result, { status: 201 });
     } catch (error) {
@@ -106,23 +106,46 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
+        const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
+        const skip = (page - 1) * limit;
+
         const categoryId = searchParams.get("categoryId");
+        const collectionId = searchParams.get("collectionId");
+        const search = searchParams.get("search");
 
-        const products = await prisma.product.findMany({
-            where: {
-                isActive: true,
-                ...(categoryId && { categoryId }),
-            },
-            take: limit,
-            include: {
-                images: { orderBy: { position: 'asc' }, take: 1 },
-                category: true,
-            },
-            orderBy: { createdAt: 'desc' },
+        const where: any = {
+            ...(categoryId && { categoryId }),
+            ...(collectionId && { collectionId }),
+            ...(search && {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { description: { contains: search, mode: 'insensitive' } },
+                ]
+            }),
+        };
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    images: { orderBy: { position: 'asc' }, take: 1 },
+                    category: true,
+                    collection: true,
+                },
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return NextResponse.json({
+            products,
+            total,
+            pages: Math.ceil(total / limit),
+            currentPage: page
         });
-
-        return NextResponse.json(products);
     } catch (error) {
         console.error("Failed to fetch products:", error);
         return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });

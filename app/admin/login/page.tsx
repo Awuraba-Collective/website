@@ -99,13 +99,23 @@ export default function AdminLoginPage() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md space-y-8"
       >
-        <div className="text-center">
-          <h1 className="font-serif text-4xl font-bold tracking-tight text-black dark:text-white uppercase">
-            AWURABA
-          </h1>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400 font-light tracking-wide">
-            Admin Dashboard Access
-          </p>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="relative w-64 h-20 md:w-96 md:h-52 -mb-16">
+            {/* Light Mode Logo */}
+            <img
+              src="/logos/black.svg"
+              alt="AWURABA Collective"
+              className="w-full h-full object-contain dark:hidden"
+            />
+            {/* Dark Mode Logo */}
+            <img
+              src="/logos/white.svg"
+              alt="AWURABA Collective"
+              className="w-full h-full object-contain hidden dark:block"
+            />
+          </div>
+          <p className="text-neutral-600 dark:text-neutral-400 font-light tracking-[0.2em] text-[10px] uppercase">
+            Admin Dashboard Access          </p>
         </div>
 
         {error && (

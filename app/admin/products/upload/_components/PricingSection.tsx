@@ -28,7 +28,7 @@ interface PricingCalculationResult {
 
 interface PricingSectionProps {
     discounts: Discount[];
-    calculatePricing: () => PricingCalculationResult;
+    calculatePricing: (pricingInput?: ProductFormValues['pricing']) => PricingCalculationResult;
 }
 
 export function PricingSection({ discounts, calculatePricing }: PricingSectionProps) {
@@ -36,16 +36,10 @@ export function PricingSection({ discounts, calculatePricing }: PricingSectionPr
 
     // Watch form state
     const pricing = useWatch({ control, name: "pricing" });
-    const showDiscount = pricing.showDiscount;
+    const hasDiscount = !!pricing.discountId;
 
     // Calculate derived state on every render
-    const { priceMap, currencies: supportedCurrencies } = calculatePricing();
-
-    // Derived values for summary
-    // Base GHS
-    const ghsCalc = priceMap && priceMap['GHS'] ? priceMap['GHS'] : { price: 0 };
-    const finalPriceGHS = ghsCalc.discountPrice ?? ghsCalc.price;
-    const actualProfitGHS = finalPriceGHS - (pricing.costPrice || 0);
+    const { priceMap, currencies: supportedCurrencies } = calculatePricing(pricing);
 
     const currencies = (supportedCurrencies || []).map((curr) => {
         const calc = (priceMap && priceMap[curr.code]) || { price: 0 };
@@ -56,6 +50,13 @@ export function PricingSection({ discounts, calculatePricing }: PricingSectionPr
             retail: calc.price
         };
     });
+
+    const ghsCode = currencies.find(c => c.isBase)?.code || 'GHS';
+    const ghsCalc = priceMap && priceMap[ghsCode] ? priceMap[ghsCode] : { price: 0 };
+    const finalPriceGHS = ghsCalc.discountPrice ?? ghsCalc.price;
+    const actualProfitGHS = finalPriceGHS - (Number(pricing.costPrice) || 0);
+
+
 
     return (
         <div className="pt-12 border-t border-neutral-100 dark:border-neutral-900 space-y-12">
@@ -163,7 +164,7 @@ export function PricingSection({ discounts, calculatePricing }: PricingSectionPr
                                                 <span className="text-xl opacity-50">{curr.label}</span>
                                                 {curr.selling.toLocaleString()}
                                             </div>
-                                            {showDiscount && (
+                                            {hasDiscount && (
                                                 <div className="text-3xl opacity-40 font-bold line-through">
                                                     {curr.label} {curr.retail.toLocaleString()}
                                                 </div>

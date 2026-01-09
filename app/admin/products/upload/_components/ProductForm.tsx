@@ -10,7 +10,28 @@ import { RecommendationsAndDropSection } from "./RecommendationsAndDropSection";
 import Link from 'next/link';
 
 export function ProductForm() {
-    const { form, submitForm, isUploading, discounts, currencies, calculatePricing } = useProductForm();
+    const {
+        form,
+        submitForm,
+        isUploading,
+        isLoadingProduct,
+        isEditMode,
+        discounts,
+        currencies,
+        calculatePricing,
+        fitCategories,
+        categories,
+        collections
+    } = useProductForm();
+
+    if (isLoadingProduct) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Archiving Product Archives...</p>
+            </div>
+        );
+    }
 
     return (
         <Form {...form}>
@@ -22,7 +43,11 @@ export function ProductForm() {
 
                 {/* Right Column: Form Fields */}
                 <div className="lg:col-span-8 space-y-16">
-                    <BasicInfoSection />
+                    <BasicInfoSection
+                        categories={categories}
+                        collections={collections}
+                        fitCategories={fitCategories}
+                    />
                     <VariantsSection />
                     <PricingSection
                         discounts={discounts}
@@ -44,7 +69,9 @@ export function ProductForm() {
                             disabled={isUploading}
                             className="bg-black dark:bg-white text-white dark:text-black px-12 h-12 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:-translate-y-0.5 transition-all"
                         >
-                            {isUploading ? 'Finalizing Drop...' : 'Launch Product'}
+                            {isUploading
+                                ? (isEditMode ? 'Syncing Update...' : 'Finalizing Drop...')
+                                : (isEditMode ? 'Update Creation' : 'Launch Product')}
                         </Button>
                     </div>
                 </div>
@@ -52,3 +79,5 @@ export function ProductForm() {
         </Form>
     );
 }
+
+import { Loader2 } from 'lucide-react';

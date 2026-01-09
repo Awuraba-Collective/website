@@ -16,11 +16,16 @@ import {
 } from "@/components/ui/select";
 import { useFormContext } from "react-hook-form";
 import { ProductFormValues } from "@/lib/validations/product";
-import { useProductForm } from "../_hooks/useProductForm";
+import { Category, Collection, FitCategory } from "../_hooks/useProductForm";
 
-export function BasicInfoSection() {
+interface BasicInfoSectionProps {
+    categories: Category[];
+    collections: Collection[];
+    fitCategories: FitCategory[];
+}
+
+export function BasicInfoSection({ categories, collections, fitCategories }: BasicInfoSectionProps) {
     const form = useFormContext<ProductFormValues>();
-    const { fitCategories, categories, collections } = useProductForm();
 
     return (
         <div className="space-y-8">
