@@ -292,8 +292,8 @@ export default function ProductsPage() {
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-16 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex items-center justify-center overflow-hidden shrink-0">
-                                                {product.images?.[0]?.src ? (
-                                                    <img src={product.images[0].src} alt={product.name} className="w-full h-full object-cover" />
+                                                {product.media?.[0]?.src ? (
+                                                    <img src={product.media[0].src} alt={product.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <Package className="w-5 h-5 text-neutral-200" />
                                                 )}
@@ -438,7 +438,7 @@ export default function ProductsPage() {
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
                                                 transition={{ duration: 0.3 }}
-                                                src={previewProduct.images?.[activeImageIndex]?.src || previewProduct.images?.[0]?.src}
+                                                src={previewProduct.media?.[activeImageIndex]?.src || previewProduct.media?.[0]?.src}
                                                 alt={previewProduct.name}
                                                 className="w-full h-full object-cover"
                                             />
@@ -446,7 +446,7 @@ export default function ProductsPage() {
                                     </motion.div>
 
                                     <div className="grid grid-cols-5 gap-2 md:gap-3">
-                                        {previewProduct.images?.map((img: any, i: number) => (
+                                        {previewProduct.media?.map((img: any, i: number) => (
                                             <button
                                                 key={i}
                                                 onClick={() => setActiveImageIndex(i)}

@@ -10,7 +10,7 @@ export async function GET(
         const product = await prisma.product.findUnique({
             where: { id },
             include: {
-                images: { orderBy: { position: 'asc' } },
+                media: { orderBy: { position: 'asc' } },
                 variants: true,
                 category: true,
                 collection: true,
@@ -116,13 +116,14 @@ export async function PATCH(
                     }))
                 });
 
-                // 3. Reconcile Images
-                await tx.productImage.deleteMany({ where: { productId: id } });
-                await tx.productImage.createMany({
+                // 3. Reconcile Media (Images)
+                await tx.productMedia.deleteMany({ where: { productId: id } });
+                await tx.productMedia.createMany({
                     data: images.map((img: any, index: number) => ({
                         productId: id,
                         src: img.url,
                         alt: img.alt,
+                        type: "IMAGE",
                         position: index,
                         modelHeight: img.modelHeight,
                         modelWearingSize: img.wearingSize,

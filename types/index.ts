@@ -1,5 +1,16 @@
 import type { Prisma } from "@/app/generated/prisma/client";
 
+// Helper to convert Prisma types to serializable client-safe types
+export type Serialize<T> = T extends { toNumber(): number }
+  ? number
+  : T extends Date
+  ? Date
+  : T extends Array<infer U>
+  ? Array<Serialize<U>>
+  : T extends object
+  ? { [K in keyof T]: Serialize<T[K]> }
+  : T;
+
 export type PageProps<P> = {
   params: Promise<P>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -8,12 +19,14 @@ export type PageProps<P> = {
 // Product with all relations for shop display
 export type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
-    images: true;
+    media: true;
     variants: true;
     category: true;
     collection: true;
   };
 }>;
+
+export type SerializableProduct = Serialize<ProductWithRelations>;
 
 // Cart item type (client-side, for Redux store)
 export type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Custom";

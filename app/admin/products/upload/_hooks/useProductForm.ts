@@ -144,7 +144,7 @@ export const useProductForm = () => {
                                 name: v.name,
                                 available: v.isAvailable
                             })) || [],
-                            productImages: product.images?.map((img: any) => ({
+                            productImages: product.media?.map((img: any) => ({
                                 id: img.id,
                                 previewUrl: img.src,
                                 file: null,

@@ -5,10 +5,10 @@ import { ProductCard } from "./ProductCard";
 import { ShopHero } from "./ShopHero";
 import { motion } from "framer-motion";
 import posthog from "posthog-js";
-import type { ProductWithRelations } from "@/types";
+import type { SerializableProduct } from "@/types";
 
 interface ShopClientProps {
-  products: ProductWithRelations[];
+  products: SerializableProduct[];
   activeFilter: string;
   filters: string[];
 }

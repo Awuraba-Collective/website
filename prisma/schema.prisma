@@ -239,7 +239,7 @@ model Product {
   relatedProducts Product[] @relation("RelatedProducts")
   parents         Product[] @relation("RelatedProducts")
 
-  images     ProductImage[]
+  media      ProductMedia[]
   variants   ProductVariant[]
   prices     ProductPrice[]
   orderItems OrderItem[]
@@ -256,21 +256,27 @@ model Product {
   @@map("product")
 }
 
-model ProductImage {
-  id        String  @id @default(cuid())
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model ProductMedia {
+  id        String    @id @default(cuid())
   src       String
   alt       String
-  position  Int     @default(0)
+  type      MediaType @default(IMAGE)
+  position  Int       @default(0)
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  // Model info for this image
+  // Model info for this image/video
   modelHeight         String?
   modelWearingSize    String?
   modelWearingVariant String?
 
   @@index([productId])
-  @@map("product_image")
+  @@map("product_media")
 }
 
 model ProductVariant {

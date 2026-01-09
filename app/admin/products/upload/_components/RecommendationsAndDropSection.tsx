@@ -82,7 +82,7 @@ export function RecommendationsAndDropSection() {
                                 return {
                                     id: data.id,
                                     name: data.name,
-                                    image: data.images?.[0]?.src || ''
+                                    image: data.media?.[0]?.src || ''
                                 };
                             }
                             return null;

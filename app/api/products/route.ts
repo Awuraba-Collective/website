@@ -60,10 +60,11 @@ export async function POST(req: Request) {
                         },
 
                         // Images
-                        images: {
+                        media: {
                             create: images.map((img: any, index: number) => ({
                                 src: img.url,
                                 alt: img.alt,
+                                type: "IMAGE",
                                 position: index,
                                 modelHeight: img.modelHeight,
                                 modelWearingSize: img.wearingSize,
@@ -131,7 +132,7 @@ export async function GET(req: Request) {
                 skip,
                 take: limit,
                 include: {
-                    images: { orderBy: { position: 'asc' }, take: 1 },
+                    media: { orderBy: { position: 'asc' }, take: 1 },
                     category: true,
                     collection: true,
                 },

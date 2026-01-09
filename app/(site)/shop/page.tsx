@@ -58,7 +58,7 @@ export default async function ShopPage({
   const products = await prisma.product.findMany({
     where: { isActive: true },
     include: {
-      images: { orderBy: { position: "asc" } },
+      media: { orderBy: { position: "asc" } },
       variants: true,
       category: true,
       collection: true,
@@ -66,15 +66,22 @@ export default async function ShopPage({
     orderBy: { createdAt: "desc" },
   });
 
-  // Filter products on server
-  const filteredProducts = products.filter((product) => {
-    if (activeFilter === "All") return true;
-    if (activeFilter === "New Drop") return product.isNewDrop;
-    return (
-      product.category.name === activeFilter ||
-      product.collection?.name === activeFilter
-    );
-  });
+  // Filter and serialize products for client side
+  const filteredProducts = products
+    .filter((product) => {
+      if (activeFilter === "All") return true;
+      if (activeFilter === "New Drop") return product.isNewDrop;
+      return (
+        product.category.name === activeFilter ||
+        product.collection?.name === activeFilter
+      );
+    })
+    .map((product) => ({
+      ...product,
+      price: product.price ? Number(product.price) : 0,
+      costPrice: product.costPrice ? Number(product.costPrice) : null,
+      discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+    }));
 
   return (
     <Suspense
