@@ -1,8 +1,8 @@
-import ShopClient from "@/app/(site)/shop/shop/ShopClient";
 import type { Metadata, ResolvingMetadata } from "next";
 import { Suspense } from "react";
 import type { PageProps } from "@/types";
 import { prisma } from "@/lib/database";
+import ShopClient from "./_components/ShopClient";
 
 type Props = PageProps<Record<string, never>>;
 

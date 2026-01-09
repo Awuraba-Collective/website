@@ -5,7 +5,6 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import StoreProvider from "@/store/StoreProvider";
-import { CartDrawer } from "@/app/(site)/shop/shop/CartDrawer";
 import { Toaster } from 'sonner';
 
 const geistSans = Geist({

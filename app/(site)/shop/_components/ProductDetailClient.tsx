@@ -624,7 +624,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {isFBT ? 'Frequently Bought Together' : 'You Might Also Like'}
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {relatedProducts.map((p: Product) => (
+                            {recommendations.map((p: Product) => (
                                 <div key={p.id} className="group cursor-pointer" onClick={() => {
                                     // PostHog: Track related product clicked
                                     posthog.capture('related_product_clicked', {

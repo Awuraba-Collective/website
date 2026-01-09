@@ -4,7 +4,10 @@ import { ChevronLeft } from 'lucide-react';
 import { ProductForm } from './_components/ProductForm';
 import { useSearchParams } from 'next/navigation';
 
-export default function UploadPage() {
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
+
+function UploadPageContent() {
     const searchParams = useSearchParams();
     const productId = searchParams.get('id');
     const isEditMode = !!productId;
@@ -30,5 +33,18 @@ export default function UploadPage() {
 
             <ProductForm />
         </div>
+    );
+}
+
+export default function UploadPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+                <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Loading Product Creator...</p>
+            </div>
+        }>
+            <UploadPageContent />
+        </Suspense>
     );
 }

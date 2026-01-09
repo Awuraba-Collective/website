@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { ProductCard } from "@/components/shop/ProductCard";
-import { ShopHero } from "@/components/shop/ShopHero";
+import { ProductCard } from "./ProductCard";
+import { ShopHero } from "./ShopHero";
 import { motion } from "framer-motion";
 import posthog from "posthog-js";
 import type { ProductWithRelations } from "@/types";
@@ -58,10 +58,9 @@ export default function ShopClient({
               key={filter}
               onClick={() => handleFilterClick(filter)}
               className={`text-sm tracking-widest uppercase transition-colors pb-2 -mb-4 border-b-2
-                ${
-                  activeFilter === filter
-                    ? "border-black dark:border-white text-black dark:text-white font-medium"
-                    : "border-transparent text-neutral-500 hover:text-black dark:hover:text-white"
+                ${activeFilter === filter
+                  ? "border-black dark:border-white text-black dark:text-white font-medium"
+                  : "border-transparent text-neutral-500 hover:text-black dark:hover:text-white"
                 }
               `}
             >
