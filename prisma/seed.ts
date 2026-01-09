@@ -1,6 +1,5 @@
 import { prisma } from "../lib/database";
-import { FitCategoryType, DiscountType } from "../app/generated/prisma/client";
-import { Decimal } from "@/app/generated/prisma/internal/prismaNamespace";
+import { DiscountType, Prisma } from "../app/generated/prisma";
 
 // Seed data based on lib/shop-data.ts
 const categories = [
@@ -55,8 +54,8 @@ const products = [
     slug: "elegant-maxi-dress",
     description:
       "Our signature silhouette designed for effortless elegance. Features a flowing drape that flatters every curve. Perfect for both casual outings and formal events.",
-    price: new Decimal(450),
-    discountPrice: new Decimal(380),
+    price: new Prisma.Decimal(450),
+    discountPrice: new Prisma.Decimal(380),
     discountEndsAt: new Date("2026-01-20T23:59:59Z"),
     isNewDrop: true,
     isActive: true,
@@ -89,7 +88,7 @@ const products = [
     slug: "classic-silk-set",
     description:
       "Luxurious comfort meets modern style. This two-piece set is crafted from premium silk-blend fabric, ensuring you look polished even while relaxing.",
-    price: new Decimal(600),
+    price: new Prisma.Decimal(600),
     isNewDrop: false,
     isActive: true,
     categorySlug: "sets",
@@ -115,7 +114,7 @@ const products = [
     slug: "statement-wrap-top",
     description:
       "A versatile top with adjustable wrap ties, allowing for multiple styling options. The structured sleeves add a touch of drama to any outfit.",
-    price: new Decimal(250),
+    price: new Prisma.Decimal(250),
     isNewDrop: true,
     isActive: true,
     categorySlug: "tops",
@@ -141,7 +140,7 @@ const products = [
     slug: "flow-midi-skirt",
     description:
       "A high-waisted midi skirt with a soft A-line flare. Moves beautifully with every step you take.",
-    price: new Decimal(350),
+    price: new Prisma.Decimal(350),
     isNewDrop: false,
     isActive: true,
     categorySlug: "bottoms",
@@ -342,7 +341,7 @@ async function main() {
     {
       description: "Summer Sale 2026",
       type: DiscountType.PERCENTAGE,
-      value: new Decimal(10),
+      value: new Prisma.Decimal(10),
       startDate: new Date(),
       isActive: true,
       code: "SUMMER10",
@@ -350,7 +349,7 @@ async function main() {
     {
       description: "Welcome Offer",
       type: DiscountType.FIXED_AMOUNT,
-      value: new Decimal(50),
+      value: new Prisma.Decimal(50),
       startDate: new Date(),
       isActive: true,
       code: "WELCOME50",
