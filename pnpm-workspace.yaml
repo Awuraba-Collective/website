@@ -7,5 +7,6 @@ ignoredBuiltDependencies:
 
 onlyBuiltDependencies:
   - '@prisma/engines'
+  - core-js
   - esbuild
   - prisma

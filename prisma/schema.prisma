@@ -447,21 +447,6 @@ model LooseFitMap {
   @@map("loose_fit_map")
 }
 
-enum FitCategoryType {
-  STANDARD
-  LOOSE
-}
-
-enum Size {
-  XS
-  S
-  M
-  L
-  XL
-  XXL
-  CUSTOM
-}
-
 enum Length {
   PETITE
   REGULAR

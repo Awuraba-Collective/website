@@ -3,17 +3,42 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { usePaystackPayment } from "react-paystack";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { clearCart } from "@/store/slices/cartSlice";
-import { ArrowLeft, CheckCircle, Info, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Info,
+  Loader2,
+  CreditCard,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import posthog from "posthog-js";
-import { createOrder } from "@/app/actions/order-actions";
+
+// Paystack public key from environment
+const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
 
 interface OrderResult {
   success: boolean;
   orderNumber?: string;
   error?: string;
+}
+
+interface PaystackConfig {
+  reference: string;
+  email: string;
+  amount: number;
+  publicKey: string;
+  currency: string;
+  metadata: {
+    custom_fields: Array<{
+      display_name: string;
+      variable_name: string;
+      value: string;
+    }>;
+  };
 }
 
 export function CheckoutForm() {
@@ -28,10 +53,14 @@ export function CheckoutForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [paymentConfig, setPaymentConfig] = useState<PaystackConfig | null>(
+    null
+  );
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phone: "+233",
     whatsapp: "",
     address: "",
@@ -50,9 +79,22 @@ export function CheckoutForm() {
     return ghanaRegex.test(cleanNumber);
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Initialize payment via API
+  const initializePayment = async () => {
     setError(null);
+    setIsSubmitting(true);
+
+    // Validation
+    if (!formData.email || !validateEmail(formData.email)) {
+      setError("Please enter a valid email address for payment receipt.");
+      setIsSubmitting(false);
+      return;
+    }
 
     const hasPhone =
       formData.phone.trim() !== "+233" && formData.phone.trim() !== "";
@@ -61,6 +103,7 @@ export function CheckoutForm() {
 
     if (!hasPhone && !hasWhatsapp) {
       setError("Please provide either a Calling Number or a WhatsApp Number.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -68,78 +111,155 @@ export function CheckoutForm() {
       setError(
         "Please enter a valid Ghanaian phone number (e.g., +233 123456789)"
       );
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      // Prepare order data for PostHog
-      const orderData = {
-        order_total: total,
-        item_count: items.length,
-        total_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-        items: items.map((item) => ({
-          product_id: item.productId,
-          product_name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          selected_size: item.selectedSize,
-          selected_variant: item.selectedVariant,
-          selected_length: item.selectedLength,
-        })),
-        customer_first_name: formData.firstName,
-        customer_city: formData.city || null,
-        has_delivery_details: formData.hasDeliveryDetails,
-        contact_method: hasPhone ? "phone" : "whatsapp",
-        currency: "GHS",
-      };
-
-      // Call server action
-      const result: OrderResult = await createOrder({
-        customer: {
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          phone: hasPhone ? formData.phone : formData.whatsapp,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          phone: hasPhone ? formData.phone : undefined,
-          whatsapp: hasWhatsapp ? formData.whatsapp : undefined,
           address: formData.address || undefined,
           city: formData.city || undefined,
-        },
-        items: items,
+          items: items.map((item) => ({
+            productId: item.productId,
+            name: item.name,
+            variant: item.selectedVariant,
+            price: item.price,
+            quantity: item.quantity,
+            selectedSize: item.selectedSize,
+            selectedLength: item.selectedLength,
+            fitCategory: item.fitCategory,
+            customMeasurements: item.customMeasurements,
+            note: item.note,
+          })),
+        }),
       });
 
-      if (!result.success) {
-        setError(result.error || "Failed to place order. Please try again.");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(
+          result.error || "Failed to initialize payment. Please try again."
+        );
         setIsSubmitting(false);
         return;
       }
 
-      // PostHog: Track order placed (conversion event)
-      posthog.capture("order_placed", {
-        ...orderData,
-        order_number: result.orderNumber,
+      // Track checkout initiated
+      posthog.capture("checkout_payment_initiated", {
+        order_total: total,
+        item_count: items.length,
+        payment_reference: result.reference,
       });
 
-      // PostHog: Identify user by phone/whatsapp for future correlation
-      const contactInfo = hasPhone ? formData.phone : formData.whatsapp;
-      posthog.identify(contactInfo, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        phone: formData.phone !== "+233" ? formData.phone : null,
-        whatsapp: formData.whatsapp || null,
-        city: formData.city || null,
-        address: formData.address || null,
-      });
+      // Store order number for success tracking
+      setOrderNumber(result.orderNumber);
 
-      setOrderNumber(result.orderNumber || null);
-      setStep("success");
-      dispatch(clearCart());
-    } catch {
+      // Set up Paystack config for popup
+      setPaymentConfig({
+        reference: result.reference,
+        email: formData.email,
+        amount: Math.round(total * 100), // Convert to pesewas
+        publicKey: PAYSTACK_PUBLIC_KEY,
+        currency: "GHS",
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Customer Name",
+              variable_name: "customer_name",
+              value: `${formData.firstName} ${formData.lastName}`,
+            },
+            {
+              display_name: "Phone",
+              variable_name: "phone",
+              value: hasPhone ? formData.phone : formData.whatsapp,
+            },
+          ],
+        },
+      });
+    } catch (err) {
+      console.error("Payment initialization error:", err);
       setError("Something went wrong. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Paystack success handler
+  const onPaymentSuccess = async () => {
+    // Track successful payment
+    posthog.capture("order_payment_completed", {
+      order_number: orderNumber,
+      order_total: total,
+      item_count: items.length,
+    });
+
+    // Identify user
+    posthog.identify(formData.email, {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      phone: formData.phone !== "+233" ? formData.phone : null,
+      whatsapp: formData.whatsapp || null,
+    });
+
+    setStep("success");
+    dispatch(clearCart());
+    setIsSubmitting(false);
+    setPaymentConfig(null);
+  };
+
+  // Paystack close handler (popup closed without completing)
+  const onPaymentClose = () => {
+    posthog.capture("checkout_payment_abandoned", {
+      order_total: total,
+      item_count: items.length,
+    });
+
+    setIsSubmitting(false);
+    setPaymentConfig(null);
+    setError(
+      "Payment was cancelled. Your order is still pending - you can try again."
+    );
+  };
+
+  // Paystack payment hook - only initialize when config is ready
+  const initPaystack = usePaystackPayment(
+    paymentConfig || {
+      reference: "",
+      email: "",
+      amount: 0,
+      publicKey: PAYSTACK_PUBLIC_KEY,
+    }
+  );
+
+  // Effect to trigger Paystack popup when config is ready
+  const handlePayNow = () => {
+    if (paymentConfig) {
+      initPaystack({
+        onSuccess: onPaymentSuccess,
+        onClose: onPaymentClose,
+      });
+    } else {
+      initializePayment();
+    }
+  };
+
+  // When paymentConfig changes and isSubmitting is true, open popup
+  if (paymentConfig && isSubmitting) {
+    // Use setTimeout to defer the popup opening
+    setTimeout(() => {
+      initPaystack({
+        onSuccess: onPaymentSuccess,
+        onClose: onPaymentClose,
+      });
+    }, 100);
+  }
 
   if (step === "success") {
     return (
@@ -148,19 +268,19 @@ export function CheckoutForm() {
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-10 h-10" />
           </div>
-          <h1 className="text-3xl font-serif">Order Confirmed!</h1>
+          <h1 className="text-3xl font-serif">Payment Successful!</h1>
           {orderNumber && (
             <p className="text-sm text-neutral-500 uppercase tracking-widest">
               Order #{orderNumber}
             </p>
           )}
           <p className="text-neutral-600 dark:text-neutral-400">
-            Thank you for your selection, {formData.firstName}. We will contact
-            you at{" "}
+            Thank you for your order, {formData.firstName}! We&apos;ve received
+            your payment and will contact you at{" "}
             <span className="text-black dark:text-white font-bold">
               {formData.phone !== "+233" ? formData.phone : formData.whatsapp}
             </span>{" "}
-            shortly to arrange delivery and confirm payment.
+            to confirm delivery details.
           </p>
           <Link
             href="/shop"
@@ -203,8 +323,14 @@ export function CheckoutForm() {
           {/* Form Section */}
           <div className="space-y-8">
             <div className="bg-white dark:bg-black p-6 sm:p-8 shadow-sm rounded-sm">
-              <h2 className="font-serif text-2xl mb-6">Contact Details</h2>
-              <form onSubmit={handlePlaceOrder} className="space-y-4">
+              <h2 className="font-serif text-2xl mb-6">Contact & Payment</h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handlePayNow();
+                }}
+                className="space-y-4"
+              >
                 {error && (
                   <div className="bg-red-50 text-red-600 p-3 text-sm rounded-sm border border-red-100 mb-4">
                     {error}
@@ -234,6 +360,24 @@ export function CheckoutForm() {
                       onChange={handleInputChange}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="your@email.com"
+                    className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
+                    Required for payment receipt
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -328,9 +472,15 @@ export function CheckoutForm() {
                         Processing...
                       </>
                     ) : (
-                      "Place Order"
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        Pay ₵{total.toFixed(2)} Now
+                      </>
                     )}
                   </button>
+                  <p className="text-[10px] text-center text-neutral-400 mt-3 uppercase tracking-widest">
+                    Secure payment powered by Paystack
+                  </p>
                 </div>
               </form>
             </div>
@@ -362,7 +512,7 @@ export function CheckoutForm() {
                         {item.name}
                       </p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
-                        {item.selectedSize} / {item.selectedVariant}
+                        {item.selectedSize} / {item.selectedVariant.name}
                       </p>
                       {item.note && (
                         <p className="text-[10px] text-neutral-400 italic mt-1 line-clamp-1">
@@ -387,7 +537,7 @@ export function CheckoutForm() {
                     <span className="text-neutral-500">Delivery Fee</span>
                   </div>
                   <span className="text-xs text-neutral-400 italic opacity-60">
-                    Pay on Delivery
+                    Calculated at delivery
                   </span>
                 </div>
                 <div className="flex justify-between text-xl font-serif border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-2">
@@ -399,8 +549,7 @@ export function CheckoutForm() {
                 <div className="flex items-center gap-2 pt-4 opacity-70">
                   <Info className="w-3 h-3 text-neutral-400 flex-shrink-0" />
                   <p className="text-[9px] uppercase tracking-widest leading-relaxed text-neutral-500">
-                    We will contact you to finalize delivery and confirm
-                    payment.
+                    Delivery fee will be confirmed separately after payment.
                   </p>
                 </div>
               </div>
