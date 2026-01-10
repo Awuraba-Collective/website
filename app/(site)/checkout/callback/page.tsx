@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
@@ -14,9 +14,8 @@ interface VerificationResult {
   message?: string;
 }
 
-export default function CheckoutCallbackPage() {
+function CheckoutCallbackContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState<VerificationStatus>("loading");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -59,7 +58,7 @@ export default function CheckoutCallbackPage() {
     }
 
     verifyPayment();
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   if (status === "loading") {
     return (
@@ -134,5 +133,24 @@ export default function CheckoutCallbackPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black px-4">
+      <div className="text-center space-y-6">
+        <Loader2 className="w-16 h-16 animate-spin mx-auto text-neutral-400" />
+        <h1 className="text-2xl font-serif">Loading...</h1>
+      </div>
+    </div>
+  );
+}
+
+export default function CheckoutCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CheckoutCallbackContent />
+    </Suspense>
   );
 }
