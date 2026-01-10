@@ -5,7 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import StoreProvider from "@/store/StoreProvider";
-import { Toaster } from 'sonner';
+import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,10 +27,20 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://awuraba.co"),
   title: {
     default: "AWURABA | Elegant African Fashion",
-    template: "%s | AWURABA"
+    template: "%s | AWURABA",
   },
-  description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between. Handcrafted with love in Ghana.",
-  keywords: ["African fashion", "Ghanaian fashion", "Ready-to-wear", "Elegant fashion", "Awuraba", "African print dresses", "Modern African clothing", "Luxury African fashion"],
+  description:
+    "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between. Handcrafted with love in Ghana.",
+  keywords: [
+    "African fashion",
+    "Ghanaian fashion",
+    "Ready-to-wear",
+    "Elegant fashion",
+    "Awuraba",
+    "African print dresses",
+    "Modern African clothing",
+    "Luxury African fashion",
+  ],
   authors: [{ name: "AWURABA Collective" }],
   creator: "AWURABA Collective",
   publisher: "AWURABA Collective",
@@ -43,7 +54,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AWURABA | Elegant African Fashion",
-    description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
+    description:
+      "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
     url: "https://awuraba.co",
     siteName: "AWURABA",
     images: [],
@@ -53,7 +65,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "AWURABA | Elegant African Fashion",
-    description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
+    description:
+      "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
     images: [],
   },
   robots: {
@@ -77,21 +90,22 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "AWURABA",
-    "url": "https://awuraba.co",
-    "logo": "https://awuraba.co/logos/icon.png",
-    "sameAs": [
+    name: "AWURABA",
+    url: "https://awuraba.co",
+    logo: "https://awuraba.co/logos/icon.png",
+    sameAs: [
       "https://www.instagram.com/shopawuraba",
       "https://www.facebook.com/shopawuraba",
       // "https://www.pinterest.com/shopawuraba",
       "https://www.tiktok.com/shopawuraba",
     ],
-    "description": "Curated elegant African ready-to-wear pieces handcrafted in Ghana.",
-    "address": {
+    description:
+      "Curated elegant African ready-to-wear pieces handcrafted in Ghana.",
+    address: {
       "@type": "PostalAddress",
-      "addressLocality": "Accra",
-      "addressCountry": "GH"
-    }
+      addressLocality: "Accra",
+      addressCountry: "GH",
+    },
   };
 
   return (
@@ -109,6 +123,7 @@ export default function RootLayout({
           {children}
           <Toaster position="top-right" richColors />
         </StoreProvider>
+        <Analytics />
       </body>
     </html>
   );

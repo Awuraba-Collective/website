@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
   try {
     const body: InitializePaymentRequest = await request.json();
     const { email, phone, firstName, lastName, address, city, items } = body;
-    console.log("🚀 ~ POST ~ items:", items);
 
     // Validate request
     if (!email || !items?.length) {
