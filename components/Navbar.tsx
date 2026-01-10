@@ -80,29 +80,33 @@ export function Navbar() {
 
                 {/* Right side icons (Mobile menu toggle) */}
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:block">
-                        <CurrencySwitcher />
-                    </div>
-                    {/* Cart Icon */}
-                    <button
-                        onClick={() => {
-                            // PostHog: Track cart drawer opened
-                            posthog.capture('cart_drawer_opened', {
-                                cart_item_count: items.length,
-                                cart_total_quantity: cartCount,
-                                source: 'navbar_icon',
-                            });
-                            dispatch(toggleCart());
-                        }}
-                        className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
-                    >
-                        <ShoppingBag className="h-5 w-5" />
-                        {cartCount > 0 && (
-                            <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-black text-white dark:bg-white dark:text-black text-[10px] flex items-center justify-center font-bold">
-                                {cartCount}
-                            </span>
-                        )}
-                    </button>
+                    {pathname !== "/" && (
+                        <>
+                            <div className="hidden sm:block">
+                                <CurrencySwitcher />
+                            </div>
+                            {/* Cart Icon */}
+                            <button
+                                onClick={() => {
+                                    // PostHog: Track cart drawer opened
+                                    posthog.capture('cart_drawer_opened', {
+                                        cart_item_count: items.length,
+                                        cart_total_quantity: cartCount,
+                                        source: 'navbar_icon',
+                                    });
+                                    dispatch(toggleCart());
+                                }}
+                                className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                            >
+                                <ShoppingBag className="h-5 w-5" />
+                                {cartCount > 0 && (
+                                    <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-black text-white dark:bg-white dark:text-black text-[10px] flex items-center justify-center font-bold">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </button>
+                        </>
+                    )}
 
                     {/* Cart Drawer is moved to RootLayout for global access and z-index stability */}
 

@@ -7,16 +7,28 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { removeFromCart, updateQuantity, updateCartItem } from '@/store/slices/cartSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditItemModal } from '@/app/(site)/shop/_components/EditItemModal';
-import { useState } from 'react';
-import { products } from '@/lib/shop-data';
+import { useState, useEffect } from 'react';
+import { fetchProducts } from '@/store/slices/shopSlice';
 import { CartItem } from '@/types/shop';
 import posthog from 'posthog-js';
+import { formatPrice } from '@/lib/utils/currency';
 
 export default function CartPage() {
     const dispatch = useAppDispatch();
     const { items } = useAppSelector((state) => state.cart);
+    const { products, loading, currency } = useAppSelector((state) => state.shop);
     const [editingItem, setEditingItem] = useState<CartItem | null>(null);
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    useEffect(() => {
+        if (products.length === 0) {
+            dispatch(fetchProducts());
+        }
+    }, [dispatch, products.length]);
+
+    const total = items.reduce((sum, item) => {
+        const itemPrice = currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price;
+        return sum + itemPrice * item.quantity;
+    }, 0);
 
     if (items.length === 0) {
         return (
@@ -51,7 +63,7 @@ export default function CartPage() {
                     </div>
                     <div className="hidden sm:block text-right">
                         <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Subtotal</p>
-                        <p className="text-2xl font-bold">₵ {total.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{formatPrice(total, currency)}</p>
                     </div>
                 </div>
 
@@ -72,12 +84,16 @@ export default function CartPage() {
                                     {/* Product Image */}
                                     <div className="sm:col-span-4 lg:col-span-3">
                                         <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800">
-                                            <Image
-                                                src={item.image}
-                                                alt={item.name}
-                                                fill
-                                                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                            />
+                                            {item.image ? (
+                                                <Image
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    fill
+                                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-xs text-neutral-400 font-bold uppercase">No Image</div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -86,7 +102,7 @@ export default function CartPage() {
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="text-xl font-serif mb-1 group-hover:underline underline-offset-4 decoration-neutral-200 transition-all">{item.name}</h3>
-                                                <p className="text-sm font-bold tracking-wider">₵ {item.price.toFixed(2)}</p>
+                                                <p className="text-sm font-bold tracking-wider">{formatPrice(currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price, currency)}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
@@ -138,19 +154,6 @@ export default function CartPage() {
 
                                         {/* Custom Measurements & Notes */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                                            {item.customMeasurements && (
-                                                <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm space-y-3">
-                                                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-bold">
-                                                        <Ruler className="w-3 h-3" /> Custom Fit
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-y-2 text-xs">
-                                                        <div><span className="text-neutral-500">Bust:</span> {item.customMeasurements.bust}"</div>
-                                                        <div><span className="text-neutral-500">Waist:</span> {item.customMeasurements.waist}"</div>
-                                                        <div><span className="text-neutral-500">Hips:</span> {item.customMeasurements.hips}"</div>
-                                                        <div><span className="text-neutral-500">Height:</span> {item.customMeasurements.height}</div>
-                                                    </div>
-                                                </div>
-                                            )}
 
                                             {item.note && (
                                                 <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm space-y-3">
@@ -181,7 +184,7 @@ export default function CartPage() {
                                                 </button>
                                             </div>
                                             <p className="text-sm font-bold">
-                                                ₵ {(item.price * item.quantity).toFixed(2)}
+                                                {formatPrice((currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price) * item.quantity, currency)}
                                             </p>
                                         </div>
                                     </div>
@@ -206,7 +209,7 @@ export default function CartPage() {
                                 </div> */}
                                 <div className=" border-neutral-200 dark:border-neutral-800 flex justify-between items-end">
                                     <span className="font-serif text-xl">Total</span>
-                                    <span className="text-2xl font-bold">₵ {total.toFixed(2)}</span>
+                                    <span className="text-2xl font-bold">{formatPrice(total, currency)}</span>
                                 </div>
                             </div>
 
@@ -231,6 +234,8 @@ export default function CartPage() {
                     <EditItemModal
                         item={editingItem}
                         variants={products.find(p => p.id === editingItem.productId)?.variants || []}
+                        media={products.find(p => p.id === editingItem.productId)?.media as any}
+                        fitCategory={(products.find(p => p.id === editingItem.productId) as any)?.fitCategory}
                         onClose={() => setEditingItem(null)}
                         onSave={(updatedItem) => {
                             dispatch(updateCartItem({ id: editingItem.id, newItem: updatedItem }));

@@ -14,7 +14,7 @@ export default function FAQPage() {
     const faqs = [
         {
             question: "What items do you sell?",
-            answer: "We specialize in elegant African ready-to-wear pieces for women, including dresses, tops, and sets handcrafted with love in Ghana.",
+            answer: "We specialize in elegant African ready-to-wear pieces for women, including dresses, tops, and sets.",
         },
         {
             question: "When are new collections released?",
@@ -22,33 +22,34 @@ export default function FAQPage() {
         },
         {
             question: "What is 'The 25th Drop'?",
-            answer: "It is our monthly launch event. Shopping during the drop period gives you access to exclusive launch prices. After the drop window, items remain available but return to their standard pricing.",
+            answer: "It is our monthly launch event. Shopping during the drop period gives you access to exclusive launch prices. After the drop window, items remain available at their standard pricing.",
         },
         {
             question: "How do I place an order?",
-            answer: "You can place an order directly on our website. Simply browse our collections, select your preferred size and length, and proceed to checkout. We will contact you via phone or WhatsApp to confirm your order and finalize delivery.",
+            answer: "You can place an order directly on our website. Simply browse our collections, select your preferred size and length, and proceed to checkout. We will contact you via phone or WhatsApp to confirm your order and finalize delivery details.",
         },
         {
             question: "Can I provide my own measurements?",
-            answer: "Yes, we offer a 'Custom' sizing option for every piece. You can provide your specific measurements during checkout. However, please note that we cannot be held responsible if the item does not fit as expected based on self-provided measurements.",
+            answer: "Yes. We offer a 'Custom' sizing option for every piece. You can include your specific measurements in the order notes on the product details page. Custom orders are made based on the measurements provided, so fit outcomes depend on the accuracy of the details shared.",
         },
         {
             question: "Do you offer sizes above XXL?",
-            answer: "Absolutely. While our standard chart lists up to XXL, we are happy to create pieces for larger sizes via our custom sizing option. Please reach out if you need assistance.",
+            answer: "Absolutely. While our standard size chart goes up to XXL, we are happy to create pieces in larger sizes. Please reach out to us directly if you need assistance.",
         },
         {
             question: "How long does production take?",
-            answer: "Each AWURABA piece is crafted with care and built to last. Please allow 5 working days for production after your order is confirmed before it is shipped.",
+            answer: "Each AWURABA piece is thoughtfully made with attention to detail. Production typically takes 5–7 days after your order is confirmed, and delivery is arranged as soon as your piece is ready.",
         },
         {
             question: "Do you offer delivery?",
-            answer: "Yes, we offer nationwide delivery across Ghana. Delivery fees are calculated based on your location and are payable on delivery.",
+            answer: "Yes, we offer nationwide delivery across Ghana, as well as international delivery. We will reach out to arrange delivery and confirm fees (payable on delivery) once production is complete.",
         },
         {
             question: "Can I return an item?",
-            answer: "As each piece is made to order, all sales are final. We ensure rigorous quality checks before delivery, but if you have any concerns upon receiving your order, please contact us via WhatsApp immediately.",
+            answer: "As each piece is made to order, all sales are final. We carry out careful quality checks before delivery, but if you notice any issues upon receiving your order, please contact us via WhatsApp immediately so we can assist.",
         },
     ];
+
 
     return (
         <div className="bg-white dark:bg-black w-full min-h-screen">

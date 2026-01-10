@@ -1,4 +1,4 @@
-import type { Prisma } from "@/app/generated/prisma/client";
+import type { Prisma } from "@/app/generated/prisma";
 
 // Helper to convert Prisma types to serializable client-safe types
 export type Serialize<T> = T extends { toNumber(): number }
@@ -23,15 +23,29 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     variants: true;
     category: true;
     collection: true;
+    discount: true;
+    prices: true;
+    fitCategory: {
+      include: {
+        sizes: true;
+      }
+    },
+    relatedProducts: {
+      include: {
+        media: true,
+        prices: true,
+        discount: true
+      }
+    }
   };
 }>;
 
-export type SerializableProduct = Serialize<ProductWithRelations>;
+export type SerializableProduct = Omit<Serialize<ProductWithRelations>, 'costPrice'>;
 
 // Cart item type (client-side, for Redux store)
-export type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Custom";
+export type Size = string;
 export type Length = "Petite" | "Regular" | "Tall";
-export type FitCategory = "Standard" | "Loose";
+export type FitCategory = string;
 
 export interface CustomMeasurements {
   bust?: string;
@@ -55,3 +69,7 @@ export interface CartItem {
   note?: string;
   quantity: number;
 }
+
+export type SerializableMeasurementType = Serialize<Prisma.MeasurementTypeGetPayload<{}>>;
+export type SerializableLengthStandard = Serialize<Prisma.LengthStandardGetPayload<{}>>;
+export type SerializableFitSize = Serialize<Prisma.FitSizeGetPayload<{}>>;

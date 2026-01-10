@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Product } from '@/types/shop';
+import { SerializableProduct } from '@/types';
 import { shopService } from '@/services/shopService';
 
 interface ShopState {
-    products: Product[];
-    filteredProducts: Product[];
+    products: SerializableProduct[];
+    filteredProducts: SerializableProduct[];
     activeFilter: string;
-    currency: 'GHS' | 'USD';
+    currency: string;
     loading: boolean;
     error: string | null;
 }
@@ -40,10 +40,13 @@ const shopSlice = createSlice({
             } else if (filter === 'New Drop') {
                 state.filteredProducts = state.products.filter(p => p.isNewDrop);
             } else {
-                state.filteredProducts = state.products.filter(p => p.category === filter || p.collection === filter);
+                state.filteredProducts = state.products.filter(p =>
+                    (p.category as any)?.name === filter ||
+                    (p.collection as any)?.name === filter
+                );
             }
         },
-        setCurrency: (state, action: PayloadAction<'GHS' | 'USD'>) => {
+        setCurrency: (state, action: PayloadAction<string>) => {
             state.currency = action.payload;
         },
     },
@@ -53,7 +56,7 @@ const shopSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchProducts.fulfilled, (state, action: PayloadAction<Product[]>) => {
+            .addCase(fetchProducts.fulfilled, (state, action: PayloadAction<SerializableProduct[]>) => {
                 state.loading = false;
                 state.products = action.payload;
                 // Re-apply filter on new data
@@ -63,7 +66,10 @@ const shopSlice = createSlice({
                 } else if (filter === 'New Drop') {
                     state.filteredProducts = action.payload.filter(p => p.isNewDrop);
                 } else {
-                    state.filteredProducts = action.payload.filter(p => p.category === filter || p.collection === filter);
+                    state.filteredProducts = action.payload.filter(p =>
+                        (p.category as any)?.name === filter ||
+                        (p.collection as any)?.name === filter
+                    );
                 }
             })
             .addCase(fetchProducts.rejected, (state, action) => {

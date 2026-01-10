@@ -1,6 +1,6 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import { Suspense } from "react";
-import type { PageProps } from "@/types";
+import type { PageProps, SerializableProduct } from "@/types";
 import { prisma } from "@/lib/database";
 import ShopClient from "./_components/ShopClient";
 
@@ -53,35 +53,89 @@ export default async function ShopPage({
 }: PageProps<Record<string, never>>) {
   const resolvedSearchParams = await searchParams;
   const activeFilter = (resolvedSearchParams.category as string) || "All";
+  const searchQuery = (resolvedSearchParams.search as string) || "";
 
-  // Fetch products with related data from database
+  // Fetch unique categories for filters
+  const categories = await prisma.category.findMany({
+    where: { products: { some: { isActive: true } } },
+    select: { name: true },
+    orderBy: { name: 'asc' }
+  });
+
+  const categoryNames = categories.map(c => c.name);
+  const allFilters = ["All", "New Drop", ...categoryNames];
+
+  // Base where clause
+  const where: any = {
+    isActive: true,
+  };
+
+  // Apply search query
+  if (searchQuery) {
+    where.OR = [
+      { name: { contains: searchQuery, mode: 'insensitive' } },
+      { description: { contains: searchQuery, mode: 'insensitive' } },
+    ];
+  }
+
+  // Apply category/drop filters
+  if (activeFilter === "New Drop") {
+    where.isNewDrop = true;
+  } else if (activeFilter !== "All") {
+    where.OR = [
+      { category: { name: activeFilter } },
+      { collection: { name: activeFilter } },
+    ];
+  }
+
   const products = await prisma.product.findMany({
-    where: { isActive: true },
+    where,
     include: {
       media: { orderBy: { position: "asc" } },
       variants: true,
       category: true,
       collection: true,
+      discount: true,
+      prices: true,
+      fitCategory: {
+        include: {
+          sizes: true,
+        },
+      },
+      relatedProducts: {
+        include: {
+          media: true,
+          prices: true,
+          discount: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // Filter and serialize products for client side
-  const filteredProducts = products
-    .filter((product) => {
-      if (activeFilter === "All") return true;
-      if (activeFilter === "New Drop") return product.isNewDrop;
-      return (
-        product.category.name === activeFilter ||
-        product.collection?.name === activeFilter
-      );
-    })
-    .map((product) => ({
-      ...product,
-      price: product.price ? Number(product.price) : 0,
-      costPrice: product.costPrice ? Number(product.costPrice) : null,
-      discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
-    }));
+  const filteredProducts: SerializableProduct[] = products.map(({ costPrice, ...product }) => ({
+    ...product,
+    discount: product.discount ? {
+      ...product.discount,
+      value: Number(product.discount.value),
+    } : null,
+    prices: product.prices?.map(p => ({
+      ...p,
+      price: Number(p.price),
+    })) || [],
+    fitCategory: product.fitCategory ? {
+      ...product.fitCategory,
+      sizes: product.fitCategory.sizes.map(s => ({
+        ...s,
+        measurements: s.measurements as any
+      }))
+    } : null,
+    relatedProducts: product.relatedProducts?.map(rp => ({
+      ...rp,
+      prices: rp.prices?.map(p => ({ ...p, price: Number(p.price) })) || [],
+      discount: rp.discount ? { ...rp.discount, value: Number(rp.discount.value) } : null,
+    })) || [],
+  })) as any; // Cast as any if still complex, but structure is now correct for the type
 
   return (
     <Suspense
@@ -90,7 +144,7 @@ export default async function ShopPage({
       <ShopClient
         products={filteredProducts}
         activeFilter={activeFilter}
-        filters={[...FILTERS]}
+        filters={allFilters}
       />
     </Suspense>
   );

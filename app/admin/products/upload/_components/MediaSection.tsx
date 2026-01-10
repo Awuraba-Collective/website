@@ -18,10 +18,10 @@ import { Label } from "@/components/ui/label";
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { ProductFormValues } from "@/lib/validations/product";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 
 export function MediaSection() {
-    const { control } = useFormContext<ProductFormValues>();
+    const { control, getValues } = useFormContext<ProductFormValues>();
     const { fields, append, remove, update } = useFieldArray({
         control,
         name: "productImages",
@@ -32,10 +32,13 @@ export function MediaSection() {
 
     const handleImageChange = (index: number, file: File) => {
         const url = URL.createObjectURL(file);
+        const type = file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE';
+        const currentField = getValues(`productImages.${index}`);
         update(index, {
-            ...fields[index],
+            ...currentField,
             file,
-            previewUrl: url
+            previewUrl: url,
+            type
         });
     };
 
@@ -54,7 +57,8 @@ export function MediaSection() {
                         alt: '',
                         modelHeight: '',
                         wearingSize: '',
-                        wearingVariant: ''
+                        wearingVariant: '',
+                        type: 'IMAGE'
                     })}
                     className="h-8 rounded-full text-[9px] font-black uppercase tracking-widest px-4 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
@@ -83,12 +87,31 @@ export function MediaSection() {
                             {/* Image Preview / Upload Area */}
                             <div className="aspect-[3/4] rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors overflow-hidden relative group/image">
                                 {field.previewUrl ? (
-                                    <>
-                                        <img src={field.previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center">
-                                            <span className="text-[9px] text-white font-black uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Change</span>
-                                        </div>
-                                    </>
+                                    field.type === 'VIDEO' ? (
+                                        <>
+                                            <video
+                                                src={field.previewUrl?.startsWith('blob:') ? field.previewUrl : field.previewUrl?.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                                                className="w-full h-full object-cover"
+                                                muted
+                                                autoPlay
+                                                loop
+                                                playsInline
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center z-10">
+                                                <span className="text-[9px] text-white font-black uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Change</span>
+                                            </div>
+                                            <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-sm z-0">
+                                                <VideoIcon className="w-3 h-3 text-white" />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <img src={field.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center">
+                                                <span className="text-[9px] text-white font-black uppercase tracking-widest bg-black/50 px-3 py-1 rounded-full backdrop-blur-md">Change</span>
+                                            </div>
+                                        </>
+                                    )
                                 ) : (
                                     <>
                                         <div className="w-10 h-10 rounded-full bg-white dark:bg-black flex items-center justify-center shadow-sm">
@@ -101,7 +124,7 @@ export function MediaSection() {
                                 )}
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/*,video/*"
                                     className="absolute inset-0 opacity-0 cursor-pointer"
                                     onChange={(e) => {
                                         if (e.target.files?.[0]) {
@@ -212,7 +235,8 @@ export function MediaSection() {
                             alt: '',
                             modelHeight: '',
                             wearingSize: '',
-                            wearingVariant: ''
+                            wearingVariant: '',
+                            type: 'IMAGE'
                         })}
                         className="aspect-[3/4] rounded-2xl border-2 border-dashed border-neutral-100 dark:border-neutral-800 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all group"
                     >

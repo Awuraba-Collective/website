@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
             {
               folder: "awuraba/products",
               resource_type: "auto",
+              ...(file.type.startsWith("video/") && { format: "mp4" }),
             },
             (
               error: Error | undefined,

@@ -43,9 +43,9 @@ const fitCategories = [
 
 const currencies = [
   { code: "GHS", symbol: "₵", rate: 1.0, isBase: true },
-  { code: "USD", symbol: "$", rate: 0.065, isBase: false }, // ~15.38 GHS/USD
-  { code: "EUR", symbol: "€", rate: 0.06, isBase: false },
-  { code: "GBP", symbol: "£", rate: 0.05, isBase: false },
+  { code: "USD", symbol: "$", rate: 15.38, isBase: false }, // 1 USD = 15.38 GHS
+  { code: "EUR", symbol: "€", rate: 16.5, isBase: false },
+  { code: "GBP", symbol: "£", rate: 19.5, isBase: false },
 ];
 
 const products = [
@@ -174,7 +174,7 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.cart.deleteMany();
-  await prisma.productImage.deleteMany();
+  await prisma.productMedia.deleteMany();
   await prisma.productVariant.deleteMany();
   await prisma.product.deleteMany();
   await prisma.collection.deleteMany();
@@ -182,11 +182,11 @@ async function main() {
   // New cleanups
   await prisma.fitCategory.deleteMany();
   await prisma.currency.deleteMany();
-  await prisma.bodyMeasurement.deleteMany();
+  await prisma.fitSize.deleteMany();
   await prisma.lengthStandard.deleteMany();
-  await prisma.looseFitMap.deleteMany();
   await prisma.productPrice.deleteMany();
   await prisma.discount.deleteMany();
+  await prisma.measurementType.deleteMany();
 
   // Create categories
   console.log("Creating categories...");
@@ -208,14 +208,91 @@ async function main() {
     collectionMap[col.slug] = created.id;
   }
 
-  // Create Fit Categories
+  // Create Fit Categories (Size Scales)
   console.log("Creating fit categories...");
   const fitCategoryMap: Record<string, string> = {};
-  for (const fit of fitCategories) {
-    const created = await prisma.fitCategory.create({
-      data: fit,
+
+  // Common Measurement Types
+  const measurementTypes = ["Bust", "Waist", "Hips", "Thigh", "Back", "Under Bust", "Shoulder", "Length", "Leg Opening"];
+  for (const [index, name] of measurementTypes.entries()) {
+    await prisma.measurementType.create({
+      data: { name, order: index }
     });
-    fitCategoryMap[fit.slug] = created.id;
+  }
+
+  // Standard Scale
+  const standardFit = await prisma.fitCategory.create({
+    data: {
+      name: "Standard Fit",
+      slug: "standard",
+      isStandard: true,
+      description: "Regular fit true to size. Includes full body measurements.",
+      measurementLabels: ["Bust", "Waist", "Hips", "Thigh", "Back", "Under Bust"],
+      sizes: {
+        create: [
+          { name: "XS", order: 1, measurements: { "Bust": "30-33", "Waist": "23-26", "Hips": "34-37", "Thigh": "20-22", "Back": "14.5-15.5", "Under Bust": "13-14" } },
+          { name: "S", order: 2, measurements: { "Bust": "33-36", "Waist": "26-29", "Hips": "37-40", "Thigh": "22-24", "Back": "15-16", "Under Bust": "13.5-14.5" } },
+          { name: "M", order: 3, measurements: { "Bust": "36-39", "Waist": "29-32", "Hips": "40-43", "Thigh": "24-26", "Back": "15.5-16.5", "Under Bust": "14-15" } },
+          { name: "L", order: 4, measurements: { "Bust": "39-42", "Waist": "32-36", "Hips": "43-46", "Thigh": "26-28", "Back": "16-17", "Under Bust": "14.5-15.5" } },
+          { name: "XL", order: 5, measurements: { "Bust": "42-46", "Waist": "36-40", "Hips": "46-50", "Thigh": "28-31", "Back": "16.5-17.5", "Under Bust": "15-16" } },
+          { name: "XXL", order: 6, measurements: { "Bust": "46-50", "Waist": "40-45", "Hips": "50-54", "Thigh": "31-34", "Back": "17-18", "Under Bust": "16-17" } },
+        ]
+      }
+    }
+  });
+  fitCategoryMap["standard"] = standardFit.id;
+
+  // Loose Scale
+  const looseFit = await prisma.fitCategory.create({
+    data: {
+      name: "Loose Fit",
+      slug: "loose",
+      isStandard: false,
+      description: "Relaxed, comfortable fit. Mapped to standard measurement ranges.",
+      measurementLabels: [], // Loose fits usually just show mapping
+      sizes: {
+        create: [
+          { name: "S", order: 1, standardMapping: "Standard XS - S" },
+          { name: "M", order: 2, standardMapping: "Standard M - L" },
+          { name: "L", order: 3, standardMapping: "Standard XL - XXL" },
+        ]
+      }
+    }
+  });
+  fitCategoryMap["loose"] = looseFit.id;
+
+  // UK Scale Example
+  const ukFit = await prisma.fitCategory.create({
+    data: {
+      name: "UK Sizing",
+      slug: "uk-sizing",
+      isStandard: false,
+      description: "Traditional UK numeric sizing.",
+      measurementLabels: ["Bust", "Waist", "Hips"],
+      sizes: {
+        create: [
+          { name: "6", order: 1, measurements: { "Bust": "31", "Waist": "24", "Hips": "34" } },
+          { name: "8", order: 2, measurements: { "Bust": "32", "Waist": "25", "Hips": "35" } },
+          { name: "10", order: 3, measurements: { "Bust": "34", "Waist": "27", "Hips": "37" } },
+          { name: "12", order: 4, measurements: { "Bust": "36", "Waist": "29", "Hips": "39" } },
+        ]
+      }
+    }
+  });
+  fitCategoryMap["uk-sizing"] = ukFit.id;
+
+  // Create Length Standards
+  console.log("Creating length standards...");
+  const lengthStandards = [
+    { part: "Short Sleeve", petite: "6", regular: "7", tall: "8.5", order: 0 },
+    { part: "Long Sleeve", petite: "21", regular: "23", tall: "25", order: 1 },
+    { part: "Short Length (Dress)", petite: "35-37", regular: "38-40", tall: "41-42", order: 2 },
+    { part: "3/4 Length (Dress)", petite: "38-40", regular: "40-43", tall: "44-46", order: 3 },
+    { part: "Full / Long Length", petite: "52-54", regular: "55-57", tall: "60-62", order: 4 },
+  ];
+
+  for (const length of lengthStandards) {
+    await prisma.lengthStandard.create({ data: length });
   }
 
   // Create Currencies
@@ -224,119 +301,8 @@ async function main() {
     await prisma.currency.create({ data: curr });
   }
 
-  // Define Sizing Data
-  // Body Measurements
-  const bodySizes = [
-    {
-      size: "XS",
-      bust: "30-33",
-      waist: "23-26",
-      hips: "34-37",
-      thigh: "20-22",
-      back: "14.5-15.5",
-      underBust: "13-14",
-      order: 1,
-    },
-    {
-      size: "S",
-      bust: "33-36",
-      waist: "26-29",
-      hips: "37-40",
-      thigh: "22-24",
-      back: "15-16",
-      underBust: "13.5-14.5",
-      order: 2,
-    },
-    {
-      size: "M",
-      bust: "36-39",
-      waist: "29-32",
-      hips: "40-43",
-      thigh: "24-26",
-      back: "15.5-16.5",
-      underBust: "14-15",
-      order: 3,
-    },
-    {
-      size: "L",
-      bust: "39-42",
-      waist: "32-36",
-      hips: "43-46",
-      thigh: "26-28",
-      back: "16-17",
-      underBust: "14.5-15.5",
-      order: 4,
-    },
-    {
-      size: "XL",
-      bust: "42-46",
-      waist: "36-40",
-      hips: "46-50",
-      thigh: "28-31",
-      back: "16.5-17.5",
-      underBust: "15-16",
-      order: 5,
-    },
-    {
-      size: "XXL",
-      bust: "46-50",
-      waist: "40-45",
-      hips: "50-54",
-      thigh: "31-34",
-      back: "17-18",
-      underBust: "16-17",
-      order: 6,
-    },
-  ];
-  console.log("Creating body measurements...");
-  for (const size of bodySizes) {
-    await prisma.bodyMeasurement.create({ data: size });
-  }
-
-  // Length Guide
-  const lengths = [
-    { part: "Short Sleeve", petite: "6", regular: "7", tall: "8.5", order: 1 },
-    { part: "Long Sleeve", petite: "21", regular: "23", tall: "25", order: 2 },
-    {
-      part: "Short Length (Dress)",
-      petite: "35-37",
-      regular: "38-40",
-      tall: "41-42",
-      order: 3,
-    },
-    {
-      part: "3/4 Length (Dress)",
-      petite: "38-40",
-      regular: "40-43",
-      tall: "44-46",
-      order: 4,
-    },
-    {
-      part: "Full / Long Length",
-      petite: "52-54",
-      regular: "55-57",
-      tall: "60-62",
-      order: 5,
-    },
-  ];
-  console.log("Creating length standards...");
-  for (const len of lengths) {
-    await prisma.lengthStandard.create({ data: len });
-  }
-
-  // Loose Fit Map
-  const looseFits = [
-    { looseSize: "S", fitsStandard: "Standard XS - S", order: 1 },
-    { looseSize: "M", fitsStandard: "Standard M - L", order: 2 },
-    { looseSize: "L", fitsStandard: "Standard XL - XXL", order: 3 },
-  ];
-  console.log("Creating loose fit map...");
-  for (const map of looseFits) {
-    await prisma.looseFitMap.create({ data: map });
-  }
-
-  // Create Discounts
-  console.log("Creating discounts...");
+  // Create products with images and variants
+  console.log("Creating products...");
   const discounts = [
     {
       description: "Summer Sale 2026",
@@ -364,6 +330,9 @@ async function main() {
   console.log("Creating products...");
   for (const product of products) {
     const {
+      price,
+      discountPrice,
+      discountEndsAt,
       categorySlug,
       collectionSlug,
       fitCategorySlug,
@@ -386,7 +355,7 @@ async function main() {
         // Wait, schema has: // fitCategory FitCategoryType @default(STANDARD) (Commented out in model, but what about actualDB column?)
         // If I commented it out in schema, Prisma won't try to write to it via client. That's good.
 
-        images: {
+        media: {
           create: images.map((img) => ({
             src: img.src,
             alt: img.alt,
@@ -403,21 +372,21 @@ async function main() {
           })),
         },
         prices: {
-          create: currencies
-            .filter(c => !c.isBase)
-            .map(c => {
-              // Calculate converted price (e.g. Price / Rate) or Price * Rate depending on definition
-              // In seed: Rate for USD is 0.065 (GHS -> USD implies PriceGHS * 0.065 = PriceUSD)
-              // But wait, useProductForm uses division: PriceGHS / 15. The seed says rate 0.065 (~1/15.38).
-              // Let's use multiplication by rate as defined in seed data (Rate is "Exchange rate vs Base").
-              // If Base is GHS=1, USD=0.065, then 100 GHS * 0.065 = 6.5 USD.
-              const convertedPrice = productData.price.mul(c.rate);
-              return {
-                currencyCode: c.code,
-                price: convertedPrice,
-                // No discountPrice override by default in seed
-              };
-            })
+          create: [
+            {
+              currencyCode: "GHS",
+              price: price,
+            },
+            ...currencies
+              .filter(c => !c.isBase)
+              .map(c => {
+                const convertedPrice = price.div(c.rate);
+                return {
+                  currencyCode: c.code,
+                  price: convertedPrice,
+                };
+              })
+          ]
         }
       },
     });

@@ -38,7 +38,6 @@ export async function POST(req: Request) {
                         name,
                         slug,
                         description,
-                        price: pricing.priceGHS,
                         costPrice: pricing.costPrice,
                         discountId: pricing.discountId || null,
 
@@ -64,7 +63,7 @@ export async function POST(req: Request) {
                             create: images.map((img: any, index: number) => ({
                                 src: img.url,
                                 alt: img.alt,
-                                type: "IMAGE",
+                                type: img.type || "IMAGE",
                                 position: index,
                                 modelHeight: img.modelHeight,
                                 modelWearingSize: img.wearingSize,
@@ -77,7 +76,6 @@ export async function POST(req: Request) {
                             create: pricing.productPrices.map((p: any) => ({
                                 currencyCode: p.currencyCode,
                                 price: p.price,
-                                discountPrice: p.discountPrice || null,
                             })),
                         },
 

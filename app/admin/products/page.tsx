@@ -16,11 +16,11 @@ import {
   Package,
   Loader2,
   X as CloseIcon,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
@@ -300,9 +300,6 @@ export default function ProductsPage() {
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
                   Collections
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400 text-right">
-                  Selling Price
-                </th>
                 <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
                   Actions
                 </th>
@@ -334,11 +331,10 @@ export default function ProductsPage() {
                           className="scale-75 data-[state=checked]:bg-emerald-500"
                         />
                         <span
-                          className={`text-[8px] font-black uppercase tracking-widest ${
-                            product.isActive
-                              ? "text-emerald-500 shadow-emerald-500/20"
-                              : "text-neutral-300"
-                          }`}
+                          className={`text-[8px] font-black uppercase tracking-widest ${product.isActive
+                            ? "text-emerald-500 shadow-emerald-500/20"
+                            : "text-neutral-300"
+                            }`}
                         >
                           {product.isActive ? "Active" : "Hidden"}
                         </span>
@@ -348,11 +344,22 @@ export default function ProductsPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-16 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex items-center justify-center overflow-hidden shrink-0">
                           {product.media?.[0]?.src ? (
-                            <img
-                              src={product.media[0].src}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
+                            product.media[0].type === 'VIDEO' ? (
+                              <video
+                                src={product.media[0].src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                                className="w-full h-full object-cover"
+                                muted
+                                autoPlay
+                                loop
+                                playsInline
+                              />
+                            ) : (
+                              <img
+                                src={product.media[0].src}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            )
                           ) : (
                             <Package className="w-5 h-5 text-neutral-200" />
                           )}
@@ -379,16 +386,6 @@ export default function ProductsPage() {
                       <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest truncate">
                         {product.collection?.name || "N/A"}
                       </p>
-                    </td>
-                    <td className="px-6 py-6 text-right">
-                      <p className="text-[11px] font-black text-black dark:text-white uppercase tracking-wider">
-                        GH₵ {product.price}
-                      </p>
-                      {product.discountId && (
-                        <p className="text-[8px] font-black text-emerald-500 mt-0.5 uppercase tracking-widest">
-                          Discount Applied
-                        </p>
-                      )}
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -531,19 +528,35 @@ export default function ProductsPage() {
                       className="aspect-[3/4] rounded-2xl md:rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black shadow-xl relative group"
                     >
                       <AnimatePresence mode="wait">
-                        <motion.img
-                          key={activeImageIndex}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          src={
-                            previewProduct.media?.[activeImageIndex]?.src ||
-                            previewProduct.media?.[0]?.src
-                          }
-                          alt={previewProduct.name}
-                          className="w-full h-full object-cover"
-                        />
+                        {previewProduct.media?.[activeImageIndex]?.type === 'VIDEO' ? (
+                          <motion.video
+                            key={activeImageIndex}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            src={previewProduct.media[activeImageIndex].src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                            className="w-full h-full object-cover"
+                            controls
+                            autoPlay
+                            loop
+                            muted
+                          />
+                        ) : (
+                          <motion.img
+                            key={activeImageIndex}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            src={
+                              previewProduct.media?.[activeImageIndex]?.src ||
+                              previewProduct.media?.[0]?.src
+                            }
+                            alt={previewProduct.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </AnimatePresence>
                     </motion.div>
 
@@ -552,17 +565,29 @@ export default function ProductsPage() {
                         <button
                           key={i}
                           onClick={() => setActiveImageIndex(i)}
-                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${
-                            activeImageIndex === i
-                              ? "border-black dark:border-white ring-2 ring-black/5 dark:ring-white/5 scale-105"
-                              : "border-neutral-100 dark:border-neutral-800 opacity-50 hover:opacity-100"
-                          } bg-white dark:bg-black`}
+                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${activeImageIndex === i
+                            ? "border-black dark:border-white ring-2 ring-black/5 dark:ring-white/5 scale-105"
+                            : "border-neutral-100 dark:border-neutral-800 opacity-50 hover:opacity-100"
+                            } bg-white dark:bg-black`}
                         >
-                          <img
-                            src={img.src}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
+                          {img.type === 'VIDEO' ? (
+                            <div className="relative w-full h-full">
+                              <video
+                                src={img.src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                                className="w-full h-full object-cover"
+                                muted
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Video className="w-4 h-4 text-white drop-shadow-md" />
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={img.src}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -671,11 +696,10 @@ export default function ProductsPage() {
                             </p>
                             <div className="flex flex-col">
                               <p
-                                className={`text-xl md:text-2xl font-black tracking-tighter ${
-                                  price.discountPrice
-                                    ? "text-emerald-500"
-                                    : "text-black dark:text-white"
-                                }`}
+                                className={`text-xl md:text-2xl font-black tracking-tighter ${price.discountPrice
+                                  ? "text-emerald-500"
+                                  : "text-black dark:text-white"
+                                  }`}
                               >
                                 {price.discountPrice?.toLocaleString() ||
                                   price.price.toLocaleString()}
@@ -703,18 +727,16 @@ export default function ProductsPage() {
                           {previewProduct.variants?.map((v: any) => (
                             <div
                               key={v.id}
-                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${
-                                v.isAvailable
-                                  ? "border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/20 hover:border-black dark:hover:border-white"
-                                  : "border-rose-100/50 bg-rose-50/30 text-rose-400"
-                              }`}
+                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${v.isAvailable
+                                ? "border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/20 hover:border-black dark:hover:border-white"
+                                : "border-rose-100/50 bg-rose-50/30 text-rose-400"
+                                }`}
                             >
                               <span
-                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${
-                                  v.isAvailable
-                                    ? "text-neutral-700 dark:text-neutral-300"
-                                    : "text-rose-400"
-                                }`}
+                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${v.isAvailable
+                                  ? "text-neutral-700 dark:text-neutral-300"
+                                  : "text-rose-400"
+                                  }`}
                               >
                                 {v.name}
                               </span>

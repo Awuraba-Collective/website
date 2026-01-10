@@ -121,6 +121,11 @@ export const useProductForm = () => {
                         }
 
                         // Map product data to form values
+                        // Get GHS price from prices array
+                        const ghsPrice = product.prices?.find((p: any) => p.currencyCode === 'GHS');
+                        const basePrice = ghsPrice ? Number(ghsPrice.price) : 0;
+                        const costPrice = Number(product.costPrice) || 0;
+
                         form.reset({
                             name: product.name,
                             description: product.description || '',
@@ -128,16 +133,10 @@ export const useProductForm = () => {
                             fitCategory: product.fitCategoryId || '',
                             collection: product.collectionId || '',
                             pricing: {
-                                costPrice: Number(product.costPrice) || 0,
-                                projectedProfit: (Number(product.price) || 0) - (Number(product.costPrice) || 0),
+                                costPrice: costPrice,
+                                projectedProfit: basePrice - costPrice,
                                 discountId: product.discountId || undefined,
-                                currencyOverrides: product.prices?.reduce((acc: any, p: any) => {
-                                    acc[p.currencyCode] = {
-                                        price: Number(p.price),
-                                        discountPrice: p.discountPrice ? Number(p.discountPrice) : undefined
-                                    };
-                                    return acc;
-                                }, {})
+                                currencyOverrides: undefined
                             },
                             variants: product.variants?.map((v: any) => ({
                                 id: v.id,
@@ -151,7 +150,8 @@ export const useProductForm = () => {
                                 alt: img.alt || '',
                                 modelHeight: img.modelHeight || '',
                                 wearingSize: img.modelWearingSize || '',
-                                wearingVariant: product.variants?.find((v: any) => v.name === img.modelWearingVariant)?.id || img.modelWearingVariant
+                                wearingVariant: product.variants?.find((v: any) => v.name === img.modelWearingVariant)?.id || img.modelWearingVariant,
+                                type: img.type || 'IMAGE'
                             })) || [],
                             frequentlyBoughtTogether: product.relatedProducts?.map((rp: any) => rp.id) || [],
                             newDrop: {
@@ -197,11 +197,9 @@ export const useProductForm = () => {
             if (currency.isBase) {
                 finalPrice = priceGHS;
             } else {
-                // Use multiplication for multiplier rates
-                finalPrice = Number((priceGHS * Number(currency.rate)).toFixed(2));
-                // Standard retail rounding (e.g. ceil) if desired, but user didn't specify strict rounding yet other than previous code.
-                // Previous code used ceil. Let's keep ceil for nice numbers? 
-                // Actually, let's keep it simple first.
+                // Use division for "Base per Target" rates (e.g. 15 GHS per 1 USD)
+                finalPrice = Number((priceGHS / Number(currency.rate)).toFixed(2));
+                // Standard retail rounding (e.g. ceil) if desired
                 finalPrice = Math.ceil(finalPrice);
             }
 
@@ -214,12 +212,11 @@ export const useProductForm = () => {
                     deduction = finalPrice * (Number(selectedDiscount.value) / 100);
                 } else if (selectedDiscount.type === 'FIXED_AMOUNT') {
                     // Fixed amount (e.g. 50 GHS) needs conversion to target currency
-                    // deduction = 50 * Rate
+                    // deduction = 50 / Rate
                     const fixedVal = Number(selectedDiscount.value);
                     const rate = Number(currency.rate);
-                    // If base is GHS (rate 1), deduction is 50.
-                    // If USD (rate 0.065), deduction is 50 * 0.065 = 3.25.
-                    deduction = fixedVal * rate;
+                    // If USD rate is 15, then 50 GHS / 15 = 3.33 USD
+                    deduction = fixedVal / rate;
                 }
 
                 // Effective Price
@@ -307,7 +304,8 @@ export const useProductForm = () => {
                                 alt: img.alt || `${values.name} - ${index + 1}`,
                                 modelHeight: img.modelHeight || undefined,
                                 wearingSize: img.wearingSize || undefined,
-                                wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined
+                                wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined,
+                                type: img.type || 'IMAGE'
                             };
                         }
                     }
@@ -318,7 +316,8 @@ export const useProductForm = () => {
                         alt: img.alt || `${values.name} - ${index + 1}`,
                         modelHeight: img.modelHeight || undefined,
                         wearingSize: img.wearingSize || undefined,
-                        wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined
+                        wearingVariant: values.variants.find(v => v.id === img.wearingVariant)?.name || img.wearingVariant || undefined,
+                        type: img.type || 'IMAGE'
                     };
                 }),
 

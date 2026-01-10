@@ -1,13 +1,21 @@
 import { notFound } from 'next/navigation';
-import { shopService } from '@/services/shopService';
 import { Metadata } from 'next';
 import { ProductDetailClient } from '../_components/ProductDetailClient';
+import { prisma } from '@/lib/database';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
-    const product = await shopService.getProductBySlug(slug);
+
+    const product = await prisma.product.findUnique({
+        where: { slug, isActive: true },
+        include: {
+            media: { orderBy: { position: "asc" } },
+        },
+    });
 
     if (!product) return {};
+
+    const poster = product.media.find((m) => m.type === "IMAGE") || product.media[0];
 
     return {
         title: product.name,
@@ -15,54 +23,98 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         openGraph: {
             title: `${product.name} | AWURABA`,
             description: product.description,
-            images: [{ url: product.images[0].src }],
+            images: poster ? [{ url: poster.src }] : [],
         },
         twitter: {
             card: "summary_large_image",
             title: product.name,
             description: product.description,
-            images: [product.images[0].src],
+            images: poster ? [poster.src] : [],
         }
     };
 }
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const product = await shopService.getProductBySlug(slug);
+
+    const [product, measurementTypes, lengthStandards] = await Promise.all([
+        prisma.product.findUnique({
+            where: { slug },
+            include: {
+                media: { orderBy: { position: 'asc' } },
+                variants: { orderBy: { id: 'asc' } },
+                category: true,
+                collection: true,
+                discount: true,
+                prices: true,
+                fitCategory: {
+                    include: {
+                        sizes: { orderBy: { order: 'asc' } }
+                    }
+                },
+                relatedProducts: {
+                    include: {
+                        media: { orderBy: { position: 'asc' } },
+                        category: true,
+                        prices: true,
+                        discount: true,
+                    }
+                }
+            }
+        }),
+        prisma.measurementType.findMany({ orderBy: { order: 'asc' } }),
+        prisma.lengthStandard.findMany({ orderBy: { order: 'asc' } }),
+    ]);
 
     if (!product) {
         notFound();
     }
 
+    // Cast to any for easier processing of includes
+    const prod = product as any;
+
+    // Convert Decimals to numbers for serializability
+    const serializableProduct = {
+        ...prod,
+        prices: prod.prices.map((p: any) => ({
+            ...p,
+            price: p.price.toNumber()
+        })),
+        relatedProducts: prod.relatedProducts?.map((rp: any) => ({
+            ...rp,
+            prices: rp.prices.map((p: any) => ({
+                ...p,
+                price: p.price.toNumber()
+            }))
+        }))
+    } as any;
+
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
-        "name": product.name,
-        "image": product.images.map(img => img.src),
-        "description": product.description,
-        "brand": {
-            "@type": "Brand",
-            "name": "AWURABA"
-        },
+        "name": prod.name,
+        "image": prod.media.map((m: any) => m.src),
+        "description": prod.description,
+        "sku": prod.variants[0]?.sku || prod.slug,
         "offers": {
             "@type": "Offer",
-            "url": `https://awuraba.co/shop/${product.slug}`,
+            "price": serializableProduct.prices.find((p: any) => p.currencyCode === 'GHS')?.price,
             "priceCurrency": "GHS",
-            "price": product.discountPrice ?? product.price,
-            "availability": product.variants.some(v => v.isAvailable)
-                ? "https://schema.org/InStock"
-                : "https://schema.org/OutOfStock",
-            "priceValidUntil": product.discountEndsAt ? new Date(product.discountEndsAt).toISOString().split('T')[0] : undefined
+            "availability": prod.variants.some((v: any) => v.isAvailable) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
         }
     };
 
     return (
-        <>
+        <div className="product-detail-container">
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <ProductDetailClient product={product} />
-        </>
+            <ProductDetailClient
+                product={serializableProduct}
+                measurementTypes={measurementTypes as any}
+                lengthStandards={lengthStandards as any}
+            />
+        </div>
     );
 }

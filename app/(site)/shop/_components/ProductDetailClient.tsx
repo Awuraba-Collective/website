@@ -3,51 +3,43 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
-import { Product, Size, LooseSize, Length, } from '@/types/shop';
+import { Size, LooseSize, Length, } from '@/types/shop';
+import type { SerializableProduct } from '@/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
-import { Check, ChevronRight, Info, Ruler, Share2, X } from 'lucide-react';
+import { Check, ChevronRight, Info, Play, Ruler, Share2, X } from 'lucide-react';
 import Link from 'next/link';
 import posthog from 'posthog-js';
-
-// Sizing Data
-const BODY_MEASUREMENTS = [
-    { label: "Bust", xs: "30-33", s: "33-36", m: "36-39", l: "39-42", xl: "42-46", xxl: "46-50" },
-    { label: "Waist", xs: "23-26", s: "26-29", m: "29-32", l: "32-36", xl: "36-40", xxl: "40-45" },
-    { label: "Hip", xs: "34-37", s: "37-40", m: "40-43", l: "43-46", xl: "46-50", xxl: "50-54" },
-    { label: "Thigh", xs: "20-22", s: "22-24", m: "24-26", l: "26-28", xl: "28-31", xxl: "31-34" },
-];
-
-const LENGTH_GUIDE = [
-    { label: "Short Sleeve", petite: "6\"", regular: "7\"", tall: "8.5\"" },
-    { label: "Long Sleeve", petite: "21\"", regular: "23\"", tall: "25\"" },
-    { label: "Short Dress", petite: "35-37\"", regular: "38-40\"", tall: "41-42\"" },
-    { label: "3/4 Dress", petite: "38-40\"", regular: "40-43\"", tall: "44-46\"" },
-    { label: "Full Length", petite: "52-54\"", regular: "55-57\"", tall: "60-62\"" },
-];
+import { getProductPrice, formatPrice } from '@/lib/utils/currency';
+import type { SerializableMeasurementType, SerializableLengthStandard, SerializableFitSize } from '@/types';
 
 interface ProductDetailClientProps {
-    product: Product;
+    product: Omit<SerializableProduct, 'relatedProducts' | 'fitCategory'> & {
+        relatedProducts?: any[],
+        fitCategory: {
+            name: string;
+            isStandard: boolean;
+            sizes: SerializableFitSize[];
+            measurementLabels?: string[];
+        }
+    };
+    measurementTypes: SerializableMeasurementType[];
+    lengthStandards: SerializableLengthStandard[];
 }
 
-export function ProductDetailClient({ product }: ProductDetailClientProps) {
+export function ProductDetailClient({
+    product,
+    measurementTypes,
+    lengthStandards,
+}: ProductDetailClientProps) {
     const dispatch = useAppDispatch();
 
     // Selections
     const { currency } = useAppSelector((state) => state.shop);
-    const [selectedVariant, setSelectedVariant] = useState(product.variants[0].name);
+    const [selectedVariant, setSelectedVariant] = useState(product.variants[0]?.name || "");
     const [selectedSize, setSelectedSize] = useState<Size | LooseSize | null>(null);
     const [selectedLength, setSelectedLength] = useState<Length>('Regular');
-
-    // Custom Size Inputs
-    const [customMeasurements, setCustomMeasurements] = useState({
-        bust: '',
-        waist: '',
-        hips: '',
-        height: '',
-        additionalNotes: ''
-    });
 
     // Note
     const [note, setNote] = useState('');
@@ -60,34 +52,33 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         setActiveImage(0);
     }, [selectedVariant]);
 
+    const { price, discountPrice } = getProductPrice(product, currency);
+
     const handleAddToCart = () => {
         if (!selectedSize) {
             toast.error('Please select a size before adding to bag');
             return;
         }
 
-        // Validate custom
-        if (selectedSize === 'Custom') {
-            if (!customMeasurements.bust || !customMeasurements.waist || !customMeasurements.hips) {
-                toast.error('Please fill in your bust, waist, and hip measurements');
-                return;
-            }
+        if (!selectedSize) {
+            toast.error('Please select a size before adding to bag');
+            return;
         }
+
+        const { price: ghsPrice } = getProductPrice(product, 'GHS');
+        const { price: usdPrice } = getProductPrice(product, 'USD');
 
         dispatch(addToCart({
             id: `${product.id}-${selectedVariant}-${selectedSize}-${selectedLength}`,
             productId: product.id,
             name: product.name,
-            price: currency === 'USD'
-                ? (product.discountPriceUSD ?? (product.discountPrice ? product.discountPrice / 15 : (product.priceUSD ?? product.price / 15)))
-                : (product.discountPrice ?? product.price),
-            priceUSD: product.discountPriceUSD ?? product.priceUSD ?? ((product.discountPrice ?? product.price) / 15),
-            image: product.images[0].src,
+            price: ghsPrice,
+            priceUSD: usdPrice,
+            image: activeMedia.find(m => m.type === 'IMAGE')?.src || activeMedia[0]?.src || "",
             selectedSize: selectedSize as Size,
             selectedLength,
             selectedVariant,
-            fitCategory: product.fitCategory,
-            customMeasurements: selectedSize === 'Custom' ? customMeasurements : undefined,
+            fitCategory: (product.fitCategory as any)?.name || 'Standard',
             note: note,
             quantity: 1,
         }));
@@ -97,18 +88,16 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             product_id: product.id,
             product_name: product.name,
             product_slug: product.slug,
-            product_category: product.category,
-            product_collection: product.collection,
-            price: product.discountPrice ?? product.price,
-            original_price: product.price,
-            has_discount: !!product.discountPrice,
+            product_category: (product.category as any)?.name,
+            product_collection: (product.collection as any)?.name,
+            price: currency === 'GHS' ? ghsPrice : usdPrice,
+            original_price: currency === 'GHS' ? ghsPrice : usdPrice,
             selected_variant: selectedVariant,
             selected_size: selectedSize,
             selected_length: selectedLength,
-            fit_category: product.fitCategory,
-            is_custom_size: selectedSize === 'Custom',
+            fit_category: (product.fitCategory as any)?.name || 'Standard',
             has_note: !!note,
-            currency: 'GHS',
+            currency: currency,
         });
 
         toast.success(`${product.name} added to your bag!`);
@@ -139,10 +128,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 product_id: product.id,
                 product_name: product.name,
                 product_slug: product.slug,
-                product_category: product.category,
+                product_category: (product.category as any)?.name,
                 share_method: shareMethod,
-                price: product.discountPrice ?? product.price,
-                currency: 'GHS',
+                price: discountPrice ?? price,
+                currency: currency,
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -165,30 +154,35 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     // Recommendations Logic: FBT or Fallback
     const recommendations = (() => {
-        if (product.frequentlyBoughtTogether && product.frequentlyBoughtTogether.length > 0) {
-            return allProducts.filter(p => product.frequentlyBoughtTogether?.includes(p.id));
+        if (product.relatedProducts && product.relatedProducts.length > 0) {
+            return product.relatedProducts;
         }
 
         // Fallback: Randomly generated from same category
-        const sameCategory = allProducts.filter(p => p.id !== product.id && p.category === product.category);
+        const sameCategory = allProducts.filter(p => p.id !== product.id && (p.category as any)?.id === (product.category as any)?.id);
         return [...sameCategory].sort(() => 0.5 - Math.random()).slice(0, 4);
     })();
 
-    const isFBT = product.frequentlyBoughtTogether && product.frequentlyBoughtTogether.length > 0;
+    const isFBT = product.relatedProducts && product.relatedProducts.length > 0;
 
-    // Filter images by selected variant
-    const filteredImages = (() => {
-        const variantImages = product.images.filter(img =>
-            img.alt.toLowerCase().includes(selectedVariant.toLowerCase()) ||
-            (product.modelInfo?.wearingVariant === selectedVariant)
+    // Filter media by selected variant
+    const activeMedia = (() => {
+        const variantMedia = product.media.filter(m =>
+            m.modelWearingVariant?.toLowerCase() === selectedVariant.toLowerCase() ||
+            m.alt.toLowerCase().includes(selectedVariant.toLowerCase())
         );
-        // Fallback to all images if no matches
-        return variantImages.length > 0 ? variantImages : product.images;
+        // Fallback to all media if no matches
+        const finalMedia = variantMedia.length > 0 ? variantMedia : product.media;
+
+        // Sort: Images first, then Videos
+        return [...finalMedia].sort((a, b) => {
+            if (a.type === 'IMAGE' && b.type === 'VIDEO') return -1;
+            if (a.type === 'VIDEO' && b.type === 'IMAGE') return 1;
+            return 0;
+        });
     })();
 
-    const standardSizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'];
-    const looseSizes: LooseSize[] = ['S', 'M', 'L'];
-    const sizes = product.fitCategory === 'Loose' ? looseSizes : standardSizes;
+    const sizes = product.fitCategory.sizes.map(s => s.name);
     const lengths: Length[] = ['Petite', 'Regular', 'Tall'];
 
     return (
@@ -198,7 +192,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 mb-8 lg:mb-12 overflow-x-auto whitespace-nowrap pb-2">
                     <Link href="/shop" className="hover:text-black dark:hover:text-white transition-colors">Shop</Link>
                     <ChevronRight className="w-3 h-3 text-neutral-300" />
-                    <Link href={`/shop?category=${product.category}`} className="hover:text-black dark:hover:text-white transition-colors uppercase">{product.category}</Link>
+                    <Link href={`/shop?category=${(product.category as any)?.name}`} className="hover:text-black dark:hover:text-white transition-colors uppercase">{(product.category as any)?.name}</Link>
                     <ChevronRight className="w-3 h-3 text-neutral-300" />
                     <span className="text-black dark:text-white">{product.name}</span>
                 </nav>
@@ -238,35 +232,30 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                 <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
                                                     <tr>
                                                         <th className="p-3 border border-neutral-700">Size</th>
-                                                        {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(s => (
-                                                            <th key={s} className="p-3 border border-neutral-700">{s}</th>
+                                                        {product.fitCategory.sizes.some(s => s.standardMapping) && (
+                                                            <th className="p-3 border border-neutral-700">Recommended Fit</th>
+                                                        )}
+                                                        {product.fitCategory.measurementLabels?.map((label: string) => (
+                                                            <th key={label} className="p-3 border border-neutral-700">{label}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {BODY_MEASUREMENTS.map((row, i) => (
+                                                    {product.fitCategory.sizes.map((row: any, i) => (
                                                         <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase">{row.label}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xs}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.s}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.m}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.l}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xl}</td>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xxl}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase">{row.name}</td>
+                                                            {product.fitCategory.sizes.some(s => s.standardMapping) && (
+                                                                <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.standardMapping || "-"}</td>
+                                                            )}
+                                                            {product.fitCategory.measurementLabels?.map((label: string) => (
+                                                                <td key={label} className="p-3 border border-neutral-200 dark:border-neutral-700">
+                                                                    {row.measurements?.[label] || "-"}
+                                                                </td>
+                                                            ))}
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
-                                            {product.fitCategory === 'Loose' && (
-                                                <div className="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
-                                                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2">Loose (Bola) Fit Guide</p>
-                                                    <div className="grid grid-cols-3 gap-4 text-center">
-                                                        <div><span className="block font-bold">S</span><span className="text-[10px] text-neutral-500">Fits XS-S</span></div>
-                                                        <div><span className="block font-bold">M</span><span className="text-[10px] text-neutral-500">Fits M-L</span></div>
-                                                        <div><span className="block font-bold">L</span><span className="text-[10px] text-neutral-500">Fits XL-XXL</span></div>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -294,9 +283,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {LENGTH_GUIDE.map((row, i) => (
+                                                    {lengthStandards.map((row, i) => (
                                                         <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
-                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold text-left">{row.label}</td>
+                                                            <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold text-left">{row.part}</td>
                                                             <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.petite}</td>
                                                             <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.regular}</td>
                                                             <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.tall}</td>
@@ -317,47 +306,73 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     {/* Image Gallery */}
                     <div className="space-y-4">
                         <div
-                            className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 cursor-zoom-in"
-                            onMouseMove={handleMouseMove}
-                            onMouseEnter={() => setIsHovering(true)}
+                            className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800"
+                            onMouseMove={activeMedia[activeImage]?.type === 'IMAGE' ? handleMouseMove : undefined}
+                            onMouseEnter={() => activeMedia[activeImage]?.type === 'IMAGE' && setIsHovering(true)}
                             onMouseLeave={() => setIsHovering(false)}
                         >
-                            <Image
-                                src={filteredImages[activeImage].src}
-                                alt={filteredImages[activeImage].alt}
-                                fill
-                                className={`object-cover transition-transform duration-200 ${isHovering ? 'scale-[1.5]' : 'scale-100'}`}
-                                style={isHovering ? {
-                                    transformOrigin: `${mousePos.x}% ${mousePos.y}%`
-                                } : undefined}
-                                priority
-                            />
+                            {activeMedia[activeImage]?.type === 'VIDEO' ? (
+                                <video
+                                    src={activeMedia[activeImage].src}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <Image
+                                    src={activeMedia[activeImage]?.src || ''}
+                                    alt={activeMedia[activeImage]?.alt || ''}
+                                    fill
+                                    className={`object-cover transition-transform duration-200 ${isHovering ? 'scale-[1.5]' : 'scale-100'}`}
+                                    style={isHovering ? {
+                                        transformOrigin: `${mousePos.x}% ${mousePos.y}%`
+                                    } : undefined}
+                                    priority
+                                />
+                            )}
                         </div>
-                        {product.modelInfo && (
+                        {activeMedia[activeImage]?.modelHeight && (
                             <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
                                 <p className="text-xs uppercase tracking-widest font-bold mb-2 flex items-center gap-2">
                                     <Info className="w-3 h-3" /> Model Guide
                                 </p>
                                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                    Model is <span className="font-medium text-black dark:text-white">{product.modelInfo.height}</span> wearing size <span className="font-medium text-black dark:text-white">{product.modelInfo.wearingSize}</span> in <span className="font-medium text-black dark:text-white font-serif">{product.modelInfo.wearingVariant}</span>.
+                                    Model is <span className="font-medium text-black dark:text-white">{activeMedia[activeImage].modelHeight}</span> wearing size <span className="font-medium text-black dark:text-white">{activeMedia[activeImage].modelWearingSize}</span> in <span className="font-medium text-black dark:text-white font-serif">{activeMedia[activeImage].modelWearingVariant}</span>.
                                 </p>
                             </div>
                         )}
-                        {filteredImages.length > 1 && (
+                        {activeMedia.length > 1 && (
                             <div className="flex gap-4 overflow-x-auto pb-2">
-                                {filteredImages.map((img, idx) => (
+                                {activeMedia.map((media, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setActiveImage(idx)}
                                         className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${activeImage === idx ? 'border-black dark:border-white opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
                                             }`}
                                     >
-                                        <Image
-                                            src={img.src}
-                                            alt={img.alt}
-                                            fill
-                                            className="object-cover"
-                                        />
+                                        {media.type === 'VIDEO' ? (
+                                            <div className="relative w-full h-full">
+                                                <video
+                                                    src={media.src}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                    <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center backdrop-blur-sm">
+                                                        <Play className="w-4 h-4 text-black fill-black" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <Image
+                                                src={media.src}
+                                                alt={media.alt}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -380,35 +395,24 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-baseline gap-4">
-                                    {currency === 'USD' ? (
-                                        product.discountPriceUSD ? (
-                                            <>
-                                                <span className="text-4xl font-bold text-black dark:text-white">$ {product.discountPriceUSD.toFixed(2)}</span>
-                                                <span className="text-lg text-neutral-400 line-through font-light">$ {(product.priceUSD ?? (product.price / 15)).toFixed(2)}</span>
-                                            </>
-                                        ) : (
-                                            <p className="text-3xl font-medium text-black dark:text-white">$ {(product.priceUSD ?? (product.price / 15)).toFixed(2)}</p>
-                                        )
+                                    {discountPrice ? (
+                                        <>
+                                            <span className="text-4xl font-bold text-black dark:text-white">{formatPrice(discountPrice, currency)}</span>
+                                            <span className="text-lg text-neutral-400 line-through font-light">{formatPrice(price, currency)}</span>
+                                        </>
                                     ) : (
-                                        product.discountPrice ? (
-                                            <>
-                                                <span className="text-4xl font-bold text-black dark:text-white">₵ {product.discountPrice.toFixed(2)}</span>
-                                                <span className="text-lg text-neutral-400 line-through font-light">₵ {product.price.toFixed(2)}</span>
-                                            </>
-                                        ) : (
-                                            <p className="text-3xl font-medium text-black dark:text-white">₵ {product.price.toFixed(2)}</p>
-                                        )
+                                        <p className="text-3xl font-medium text-black dark:text-white">{formatPrice(price, currency)}</p>
                                     )}
                                 </div>
 
-                                {product.discountEndsAt && (
+                                {product.discount?.endDate && (
                                     <div className="flex items-center gap-3">
                                         <span className="text-[10px] uppercase tracking-[0.25em] font-black text-white bg-black dark:bg-white dark:text-black px-2 py-0.5">
                                             Limited Offer
                                         </span>
                                         <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-neutral-500">
                                             {(() => {
-                                                const daysLeft = Math.ceil((new Date(product.discountEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                                const daysLeft = Math.ceil((new Date(product.discount.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                                                 return daysLeft > 0 ? `${daysLeft} days remaining at this price` : 'Ends soon';
                                             })()}
                                         </span>
@@ -424,12 +428,15 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Variants */}
                             <div>
-                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Color: <span className="text-neutral-500 font-normal capitalize">{selectedVariant}</span></span>
+                                <span className="block text-sm font-bold uppercase tracking-wider mb-3">Variant: <span className="text-neutral-500 font-normal capitalize">{selectedVariant}</span></span>
                                 <div className="flex flex-wrap gap-3">
                                     {product.variants.map((variant) => {
-                                        // Find the first image for this variant
-                                        const variantImage = product.images.find(img =>
-                                            img.alt.toLowerCase().includes(variant.name.toLowerCase())
+                                        // Find the first IMAGE for this variant preview
+                                        const variantPreview = product.media.find(img =>
+                                            img.type === 'IMAGE' && (
+                                                img.modelWearingVariant?.toLowerCase() === variant.name.toLowerCase() ||
+                                                img.alt.toLowerCase().includes(variant.name.toLowerCase())
+                                            )
                                         );
 
                                         return (
@@ -437,7 +444,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                 key={variant.name}
                                                 disabled={!variant.isAvailable}
                                                 onClick={() => setSelectedVariant(variant.name)}
-                                                className={`relative w-16 h-16 rounded-lg border-2 transition-all overflow-hidden ${selectedVariant === variant.name
+                                                className={`relative w-14 h-14 rounded-lg border-2 transition-all overflow-hidden ${selectedVariant === variant.name
                                                     ? 'border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2'
                                                     : variant.isAvailable
                                                         ? 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
@@ -445,12 +452,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                     }`}
                                                 title={variant.name}
                                             >
-                                                {variantImage ? (
+                                                {variantPreview ? (
                                                     <Image
-                                                        src={variantImage.src}
+                                                        src={variantPreview.src}
                                                         alt={variant.name}
                                                         fill
-                                                        className="object-cover"
+                                                        className="object-cover scale-150"
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
@@ -472,8 +479,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Size */}
                             <div>
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="block text-sm font-bold uppercase tracking-wider">Size {product.fitCategory === 'Loose' && <span className="text-[10px] font-normal text-neutral-500 ml-2">(Loose Fit Guide)</span>}</span>
+                                <div className="flex justify-between items-end">
+                                    <span className="block text-sm font-bold uppercase tracking-wider mb-3">Size ({product.fitCategory.name})</span>
                                     <button
                                         onClick={() => {
                                             setActiveGuide('size');
@@ -483,7 +490,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                 product_name: product.name,
                                                 product_slug: product.slug,
                                                 guide_type: 'size',
-                                                fit_category: product.fitCategory,
+                                                fit_category: product.fitCategory.name,
                                             });
                                         }}
                                         className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
@@ -507,43 +514,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 </div>
                             </div>
 
-                            {/* Custom Measurements Inputs */}
-                            {selectedSize === 'Custom' && (
-                                <div className="space-y-4 bg-neutral-50 dark:bg-neutral-900 p-6 rounded-md animate-in fade-in slide-in-from-top-4 duration-300">
-                                    <h4 className="font-serif text-lg flex items-center gap-2">Custom Measurements <Info className="w-4 h-4 text-neutral-400" /></h4>
-                                    <p className="text-xs text-neutral-500">Please provide your measurements in inches.</p>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Bust"
-                                            className="p-3 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-sm w-full text-sm"
-                                            value={customMeasurements.bust}
-                                            onChange={(e) => setCustomMeasurements({ ...customMeasurements, bust: e.target.value })}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Waist"
-                                            className="p-3 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-sm w-full text-sm"
-                                            value={customMeasurements.waist}
-                                            onChange={(e) => setCustomMeasurements({ ...customMeasurements, waist: e.target.value })}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Hips"
-                                            className="p-3 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-sm w-full text-sm"
-                                            value={customMeasurements.hips}
-                                            onChange={(e) => setCustomMeasurements({ ...customMeasurements, hips: e.target.value })}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Height (e.g. 5'7)"
-                                            className="p-3 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-sm w-full text-sm"
-                                            value={customMeasurements.height}
-                                            onChange={(e) => setCustomMeasurements({ ...customMeasurements, height: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Length */}
                             <div>
@@ -558,7 +528,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                                 product_name: product.name,
                                                 product_slug: product.slug,
                                                 guide_type: 'length',
-                                                fit_category: product.fitCategory,
+                                                fit_category: product.fitCategory.name,
                                             });
                                         }}
                                         className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 group"
@@ -624,7 +594,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {isFBT ? 'Frequently Bought Together' : 'You Might Also Like'}
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {recommendations.map((p: Product) => (
+                            {(recommendations as SerializableProduct[]).map((p) => (
                                 <div key={p.id} className="group cursor-pointer" onClick={() => {
                                     // PostHog: Track related product clicked
                                     posthog.capture('related_product_clicked', {
@@ -633,26 +603,38 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         clicked_product_id: p.id,
                                         clicked_product_name: p.name,
                                         clicked_product_slug: p.slug,
-                                        clicked_product_category: p.category,
-                                        clicked_product_price: p.discountPrice ?? p.price,
-                                        has_discount: !!p.discountPrice,
-                                        currency: 'GHS',
+                                        clicked_product_category: (p.category as any)?.name,
+                                        clicked_product_price: getProductPrice(p, currency).discountPrice ?? getProductPrice(p, currency).price,
+                                        has_discount: !!getProductPrice(p, currency).discountPrice,
+                                        currency: currency,
                                     });
                                     window.location.href = `/shop/${p.slug}`;
                                 }}>
                                     <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
-                                        <Image src={p.images[0].src} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        {(() => {
+                                            const imgSrc = p.media.find(m => m.type === 'IMAGE')?.src || p.media[0]?.src;
+                                            return imgSrc ? (
+                                                <Image src={imgSrc} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                            ) : (
+                                                <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-neutral-400 text-xs uppercase tracking-widest font-bold">
+                                                    No Image
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     <h3 className="text-sm font-medium">{p.name}</h3>
                                     <p className="text-sm">
-                                        {p.discountPrice ? (
-                                            <span className="flex gap-2">
-                                                <span className="font-bold">₵ {p.discountPrice.toFixed(2)}</span>
-                                                <span className="text-neutral-400 line-through">₵ {p.price.toFixed(2)}</span>
-                                            </span>
-                                        ) : (
-                                            <span className="text-neutral-500">₵ {p.price.toFixed(2)}</span>
-                                        )}
+                                        {(() => {
+                                            const { price: rp, discountPrice: rdp } = getProductPrice(p, currency);
+                                            return rdp ? (
+                                                <span className="flex gap-2">
+                                                    <span className="font-bold">{formatPrice(rdp, currency)}</span>
+                                                    <span className="text-neutral-400 line-through">{formatPrice(rp, currency)}</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-neutral-500">{formatPrice(rp, currency)}</span>
+                                            );
+                                        })()}
                                     </p>
                                 </div>
                             ))}
@@ -666,9 +648,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 <div className="flex-grow">
                     <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold line-clamp-1 mb-1">{product.name}</p>
                     <p className="font-bold">
-                        {currency === 'USD'
-                            ? `$ ${(product.discountPriceUSD ?? (product.discountPrice ? product.discountPrice / 15 : (product.priceUSD ?? product.price / 15))).toFixed(2)}`
-                            : `₵ ${(product.discountPrice ?? product.price).toFixed(2)}`}
+                        {formatPrice(discountPrice ?? price, currency)}
                     </p>
                 </div>
                 <button

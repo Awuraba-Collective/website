@@ -1,6 +1,6 @@
-export type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'Custom';
-export type LooseSize = 'S' | 'M' | 'L';
-export type FitCategory = 'Standard' | 'Loose';
+export type Size = string;
+export type LooseSize = string;
+export type FitCategory = string;
 export type Length = 'Petite' | 'Regular' | 'Tall';
 
 export interface ProductVariant {
@@ -19,6 +19,13 @@ export interface ProductImage {
     alt: string;
 }
 
+export interface ProductMedia {
+    src: string;
+    type: 'IMAGE' | 'VIDEO';
+    modelWearingVariant?: string | null;
+    alt: string;
+}
+
 export interface Product {
     id: string;
     slug: string;
@@ -27,6 +34,7 @@ export interface Product {
     priceUSD?: number;
     description: string;
     images: ProductImage[];
+    media?: ProductMedia[];
     variants: ProductVariant[];
     fitCategory: FitCategory;
     modelInfo?: ModelInfo;

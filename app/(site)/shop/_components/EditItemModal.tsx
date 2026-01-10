@@ -2,38 +2,56 @@
 
 import { useState, useEffect } from 'react';
 import { X, Ruler, Check, Info } from 'lucide-react';
-import { CartItem, Size, Length, CustomMeasurements, FitCategory, ProductVariant } from '@/types/shop';
+import Image from 'next/image';
+import { CartItem, Length, ProductVariant } from '@/types/shop';
+import { SerializableFitSize } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+
+const lengths: Length[] = ['Petite', 'Regular', 'Tall'];
 
 interface EditItemModalProps {
     item: CartItem;
     variants: ProductVariant[];
+    fitCategory?: {
+        name: string;
+        sizes: SerializableFitSize[];
+    };
+    media?: { src: string; type: string; modelWearingVariant?: string | null; alt: string; }[];
     onClose: () => void;
     onSave: (updatedItem: CartItem) => void;
 }
 
-const standardSizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Custom'];
-const looseSizes: Size[] = ['S', 'M', 'L', 'Custom'];
-const lengths: Length[] = ['Petite', 'Regular', 'Tall'];
-
-export function EditItemModal({ item, variants, onClose, onSave }: EditItemModalProps) {
-    const [selectedSize, setSelectedSize] = useState<Size>(item.selectedSize);
+export function EditItemModal({ item, variants, fitCategory, media, onClose, onSave }: EditItemModalProps) {
+    const [selectedSize, setSelectedSize] = useState<string>(item.selectedSize);
     const [selectedLength, setSelectedLength] = useState<Length>(item.selectedLength);
     const [selectedVariant, setSelectedVariant] = useState(item.selectedVariant);
-    const [customMeasurements, setCustomMeasurements] = useState<CustomMeasurements>(item.customMeasurements || {});
     const [note, setNote] = useState(item.note || '');
 
-    const sizes = item.fitCategory === 'Loose' ? looseSizes : standardSizes;
+    const sizes = fitCategory?.sizes.map(s => s.name) || ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
     const handleSave = () => {
+        // Find correct image for the new variant if media is provided
+        let newImage = item.image;
+        if (media) {
+            const variantImage = media.find(m =>
+                m.type === 'IMAGE' &&
+                (m.modelWearingVariant?.toLowerCase() === selectedVariant.toLowerCase() ||
+                    m.alt.toLowerCase().includes(selectedVariant.toLowerCase()))
+            );
+            if (variantImage) {
+                newImage = variantImage.src;
+            }
+        }
+
         const updatedItem: CartItem = {
             ...item,
             id: `${item.productId}-${selectedSize}-${selectedLength}-${selectedVariant}`,
             selectedSize,
             selectedLength,
             selectedVariant,
-            customMeasurements: selectedSize === 'Custom' ? customMeasurements : undefined,
+            image: newImage,
+            customMeasurements: undefined,
             note
         };
         onSave(updatedItem);
@@ -69,42 +87,62 @@ export function EditItemModal({ item, variants, onClose, onSave }: EditItemModal
                     <div className="space-y-4">
                         <div className="flex justify-between items-end">
                             <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">Select Variant</span>
-                            <span className="text-xs font-serif italic text-black dark:text-white">{selectedVariant}</span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            {variants.map((v) => (
-                                <button
-                                    key={v.name}
-                                    onClick={() => v.isAvailable && setSelectedVariant(v.name)}
-                                    disabled={!v.isAvailable}
-                                    className={clsx(
-                                        "px-4 py-2 text-xs uppercase tracking-widest border transition-all relative overflow-hidden",
-                                        selectedVariant === v.name
-                                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                                            : "border-neutral-200 text-neutral-500 hover:border-black dark:border-neutral-800 dark:hover:border-white",
-                                        !v.isAvailable && "opacity-30 cursor-not-allowed strike-through"
-                                    )}
-                                >
-                                    {v.name}
-                                    {!v.isAvailable && (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-full h-[1px] bg-neutral-400 -rotate-12" />
-                                        </div>
-                                    )}
-                                </button>
-                            ))}
+                        <div className="flex flex-wrap gap-3">
+                            {variants.map((v) => {
+                                // Find the first IMAGE for this variant preview
+                                const variantPreview = media?.find(img =>
+                                    img.type === 'IMAGE' && (
+                                        img.modelWearingVariant?.toLowerCase() === v.name.toLowerCase() ||
+                                        img.alt.toLowerCase().includes(v.name.toLowerCase())
+                                    )
+                                );
+
+                                return (
+                                    <button
+                                        key={v.name}
+                                        disabled={!v.isAvailable}
+                                        onClick={() => setSelectedVariant(v.name)}
+                                        className={clsx(
+                                            "relative w-16 h-16 rounded-lg border-2 transition-all overflow-hidden",
+                                            selectedVariant === v.name
+                                                ? "border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2"
+                                                : v.isAvailable
+                                                    ? "border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600"
+                                                    : "border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50"
+                                        )}
+                                        title={v.name}
+                                    >
+                                        {variantPreview && variantPreview.src ? (
+                                            <Image
+                                                src={variantPreview.src}
+                                                alt={v.name}
+                                                fill
+                                                className="object-cover scale-150"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
+                                                <span className="text-[10px] font-bold text-neutral-400 uppercase text-center px-1">
+                                                    {v.name.substring(0, 3)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!v.isAvailable && (
+                                            <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center">
+                                                <div className="w-full h-[2px] bg-neutral-400 dark:bg-neutral-600 rotate-45" />
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* Size Selection */}
                     <div className="space-y-4">
                         <div className="flex justify-between items-end">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">Select Size ({item.fitCategory} Fit)</span>
-                            <button className="text-[10px] uppercase tracking-widest flex items-center gap-1.5 text-neutral-400 hover:text-black dark:hover:text-white transition-colors">
-                                <Info className="w-3 h-3" /> Size Guide
-                            </button>
+                            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">Select Size ({item.fitCategory})</span>
                         </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                             {sizes.map((size) => (
                                 <button
                                     key={size}
@@ -122,35 +160,6 @@ export function EditItemModal({ item, variants, onClose, onSave }: EditItemModal
                         </div>
                     </div>
 
-                    {/* Custom Measurements (Conditional) */}
-                    <AnimatePresence>
-                        {selectedSize === 'Custom' && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800 overflow-hidden"
-                            >
-                                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-500">
-                                    <Ruler className="w-3 h-3" /> Measurements (Inches)
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    {['bust', 'waist', 'hips', 'height'].map((field) => (
-                                        <div key={field} className="space-y-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-neutral-400">{field}</label>
-                                            <input
-                                                type="text"
-                                                placeholder={field === 'height' ? "5'9\"" : '34"'}
-                                                value={(customMeasurements as any)[field] || ''}
-                                                onChange={(e) => setCustomMeasurements({ ...customMeasurements, [field]: e.target.value })}
-                                                className="w-full bg-neutral-50 dark:bg-neutral-800 border-none px-4 py-3 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white transition-all outline-none"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
 
                     {/* Length Selection */}
                     <div className="space-y-4">

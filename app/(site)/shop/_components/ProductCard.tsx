@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 import type { SerializableProduct } from "@/types";
+import { useAppSelector } from "@/store/hooks";
+import { getProductPrice, formatPrice } from "@/lib/utils/currency";
 
 interface ProductCardProps {
   product: SerializableProduct;
@@ -11,13 +15,14 @@ export function ProductCard({ product }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { currency } = useAppSelector((state) => state.shop);
 
   // Filter media
-  const poster = product.media.find((m) => m.type === "IMAGE");
-  const video = product.media.find((m) => m.type === "VIDEO");
+  const poster = product.media.find((m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm)$/i));
+  const video = product.media.find((m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm)$/i));
 
-  const price = product.price;
-  const discountPrice = product.discountPrice;
+  // Get currency-aware pricing
+  const { price, discountPrice } = getProductPrice(product, currency);
 
   // Handle Autoplay logic
   useEffect(() => {
@@ -67,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm">
         {/* Main Poster Image */}
-        {poster && (
+        {poster && poster.src && (
           <Image
             src={poster.src}
             alt={poster.alt}
@@ -94,7 +99,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Fallback Hover Image (only if no video and exists) */}
-        {!video && product.media[1] && product.media[1].type === "IMAGE" && (
+        {!video && product.media[1] && product.media[1].type === "IMAGE" && product.media[1].src && (
           <Image
             src={product.media[1].src}
             alt={product.media[1].alt}
@@ -127,15 +132,15 @@ export function ProductCard({ product }: ProductCardProps) {
           {discountPrice ? (
             <>
               <span className="text-sm font-bold text-black dark:text-white">
-                ₵ {discountPrice.toFixed(2)}
+                {formatPrice(discountPrice, currency)}
               </span>
               <span className="text-xs text-neutral-400 line-through font-medium">
-                ₵ {price.toFixed(2)}
+                {formatPrice(price, currency)}
               </span>
             </>
           ) : (
             <p className="text-sm text-black dark:text-white font-semibold">
-              ₵ {price.toFixed(2)}
+              {formatPrice(price, currency)}
             </p>
           )}
         </div>

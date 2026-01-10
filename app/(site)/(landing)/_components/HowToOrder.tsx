@@ -13,19 +13,19 @@ const steps = [
     {
         step: "02",
         title: "Find Your Fit",
-        desc: "Choose a standard size or enter your custom measurements for a tailored feel.",
+        desc: "Select your size and provide any additional measurements or context in the order notes for a perfect fit.",
         icon: <Ruler className="w-6 h-6" />
     },
     {
         step: "03",
         title: "Easy Checkout",
-        desc: "Place your order securely. We'll confirm your details personally.",
+        desc: "Place your order securely. We'll reach out to confirm your order and finalize delivery details.",
         icon: <MessageCircle className="w-6 h-6" />
     },
     {
         step: "04",
         title: "Delivery",
-        desc: "Sit back as we prepare and deliver your package with care.",
+        desc: "Sit back as we thoughtfully craft your piece in 5–7 days and arrange delivery as soon as it's ready.",
         icon: <Truck className="w-6 h-6" />
     }
 ];

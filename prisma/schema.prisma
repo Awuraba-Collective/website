@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../app/generated/prisma"
@@ -13,18 +7,445 @@ datasource db {
   provider = "postgresql"
 }
 
-// =============================================================================
-// ENUMS
-// Note: If check constraints are preferred over enums, create a custom migration
-// after running the base migration. Use: npx prisma migrate dev --create-only
-// Then add ALTER TABLE ... ADD CONSTRAINT statements manually.
-// =============================================================================
+model User {
+  id                  String    @id
+  name                String
+  email               String    @unique
+  emailVerified       Boolean   @default(false)
+  image               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  phoneNumber         String?   @unique
+  phoneNumberVerified Boolean?
+  banExpires          DateTime?
+  banReason           String?
+  banned              Boolean?  @default(false)
+  role                String?
+  accounts            Account[]
+  addresses           Address[]
+  cart                Cart?
+  orders              Order[]
+  sessions            Session[]
 
-// FitCategory Enum removed or kept for legacy if needed, but we are switching to Model.
-// We will remove the Enum to force usage of the Model if possible, or keep it if other models use it (CartItem, OrderItem).
-// CartItem and OrderItem also use FitCategory Enum. We should probably keep the Enum for now for those snapshots, or update them too.
-// The plan focus was on Product.
-// Let's keep the Enum for now for OrderItem/CartItem to avoid massive refactor, but Product will link to the Model.
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  impersonatedBy String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  image       String?
+  parentId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryChildren")
+  products    Product[]
+
+  @@map("category")
+}
+
+model FitCategory {
+  id                String    @id @default(cuid())
+  name              String    @unique
+  slug              String    @unique
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isStandard        Boolean   @default(false)
+  measurementLabels String[]  @default([])
+  sizes             FitSize[]
+  products          Product[]
+
+  @@map("fit_category")
+}
+
+model FitSize {
+  id              String      @id @default(cuid())
+  name            String
+  fitCategoryId   String
+  standardMapping String?
+  order           Int         @default(0)
+  measurements    Json        @default("{}")
+  fitCategory     FitCategory @relation(fields: [fitCategoryId], references: [id], onDelete: Cascade)
+
+  @@index([fitCategoryId])
+  @@map("fit_size")
+}
+
+model Collection {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  image       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("collection")
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  description      String
+  isNewDrop        Boolean          @default(false)
+  isActive         Boolean          @default(true)
+  categoryId       String
+  collectionId     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  costPrice        Decimal?         @db.Decimal(10, 2)
+  discountId       String?
+  fitCategoryId    String?
+  newDropExpiresAt DateTime?
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  category         Category         @relation(fields: [categoryId], references: [id])
+  collection       Collection?      @relation(fields: [collectionId], references: [id])
+  discount         Discount?        @relation(fields: [discountId], references: [id])
+  fitCategory      FitCategory?     @relation(fields: [fitCategoryId], references: [id])
+  media            ProductMedia[]
+  prices           ProductPrice[]
+  variants         ProductVariant[]
+  relatedProducts  Product[]        @relation("RelatedProducts")
+  relatedBy        Product[]        @relation("RelatedProducts")
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([collectionId])
+  @@index([fitCategoryId])
+  @@index([discountId])
+  @@map("product")
+}
+
+model ProductMedia {
+  id                  String    @id @default(cuid())
+  src                 String
+  alt                 String
+  type                MediaType @default(IMAGE)
+  position            Int       @default(0)
+  productId           String
+  modelHeight         String?
+  modelWearingSize    String?
+  modelWearingVariant String?
+  product             Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_media")
+}
+
+model ProductVariant {
+  id          String      @id @default(cuid())
+  name        String
+  sku         String?     @unique
+  isAvailable Boolean     @default(true)
+  productId   String
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variant")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  sessionId String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@index([sessionId])
+  @@map("cart")
+}
+
+model CartItem {
+  id             String         @id @default(cuid())
+  cartId         String
+  productId      String
+  variantId      String
+  quantity       Int            @default(1)
+  selectedLength Length
+  customBust     String?
+  customWaist    String?
+  customHips     String?
+  customHeight   String?
+  customNotes    String?
+  note           String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  selectedSize   String
+  fitCategory    String
+  cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id])
+  variant        ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_item")
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  orderNumber     String       @unique
+  userId          String?
+  guestEmail      String?
+  guestPhone      String?
+  status          OrderStatus  @default(PENDING)
+  subtotal        Decimal      @db.Decimal(10, 2)
+  shippingCost    Decimal      @default(0) @db.Decimal(10, 2)
+  discount        Decimal      @default(0) @db.Decimal(10, 2)
+  total           Decimal      @db.Decimal(10, 2)
+  currency        String       @default("GHS")
+  shippingName    String
+  shippingAddress String
+  shippingCity    String
+  shippingRegion  String?
+  shippingCountry String       @default("Ghana")
+  shippingPostal  String?
+  shippingPhone   String
+  billingName     String?
+  billingAddress  String?
+  billingCity     String?
+  billingRegion   String?
+  billingCountry  String?
+  billingPostal   String?
+  notes           String?
+  adminNotes      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  user            User?        @relation(fields: [userId], references: [id])
+  timeline        OrderEvent[]
+  items           OrderItem[]
+  payments        Payment[]
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@map("order")
+}
+
+model OrderItem {
+  id             String         @id @default(cuid())
+  orderId        String
+  productId      String
+  variantId      String
+  productName    String
+  variantName    String
+  unitPrice      Decimal        @db.Decimal(10, 2)
+  quantity       Int
+  totalPrice     Decimal        @db.Decimal(10, 2)
+  selectedLength Length
+  customBust     String?
+  customWaist    String?
+  customHips     String?
+  customHeight   String?
+  customNotes    String?
+  note           String?
+  createdAt      DateTime       @default(now())
+  selectedSize   String
+  fitCategory    String
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id])
+  variant        ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_item")
+}
+
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdBy String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_event")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("GHS")
+  status       PaymentStatus @default(PENDING)
+  provider     String        @default("paystack")
+  providerRef  String?
+  providerData Json?
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([providerRef])
+  @@map("payment")
+}
+
+model Coupon {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  description    String?
+  type           CouponType
+  value          Decimal    @db.Decimal(10, 2)
+  minOrderAmount Decimal?   @db.Decimal(10, 2)
+  maxUses        Int?
+  usedCount      Int        @default(0)
+  isActive       Boolean    @default(true)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("coupon")
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  label      String?
+  name       String
+  phone      String
+  address    String
+  city       String
+  region     String?
+  country    String   @default("Ghana")
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("address")
+}
+
+model Discount {
+  id          String       @id @default(cuid())
+  code        String?
+  description String
+  type        DiscountType
+  value       Decimal      @db.Decimal(10, 2)
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  products    Product[]
+
+  @@map("discount")
+}
+
+model Currency {
+  code          String         @id
+  symbol        String
+  rate          Decimal        @db.Decimal(10, 4)
+  isBase        Boolean        @default(false)
+  updatedAt     DateTime       @updatedAt
+  isActive      Boolean        @default(true)
+  productPrices ProductPrice[]
+
+  @@map("currency")
+}
+
+model ProductPrice {
+  id           String   @id @default(cuid())
+  productId    String
+  currencyCode String
+  price        Decimal  @db.Decimal(10, 2)
+  currency     Currency @relation(fields: [currencyCode], references: [code])
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, currencyCode])
+  @@map("product_price")
+}
+
+model MeasurementType {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  @@map("measurement_type")
+}
+
+model LengthStandard {
+  id      String  @id @default(cuid())
+  part    String
+  petite  String?
+  regular String?
+  tall    String?
+  order   Int     @default(0)
+
+  @@map("length_standard")
+}
+
+model LooseFitMap {
+  id           String @id @default(cuid())
+  looseSize    String
+  fitsStandard String
+  order        Int    @default(0)
+
+  @@map("loose_fit_map")
+}
 
 enum FitCategoryType {
   STANDARD
@@ -48,13 +469,13 @@ enum Length {
 }
 
 enum OrderStatus {
-  PENDING // Order placed, awaiting payment
-  CONFIRMED // Payment received
-  PROCESSING // Being prepared/tailored
-  SHIPPED // Handed to courier
-  DELIVERED // Customer received
-  CANCELLED // Order cancelled
-  REFUNDED // Money returned
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
 }
 
 enum PaymentStatus {
@@ -76,530 +497,7 @@ enum CouponType {
   FREE_SHIPPING
 }
 
-// =============================================================================
-// AUTHENTICATION (Better-Auth)
-// =============================================================================
-
-model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-
-  phoneNumber         String?
-  phoneNumberVerified Boolean?
-
-  role       String?
-  banned     Boolean?  @default(false)
-  banReason  String?
-  banExpires DateTime?
-
-  // E-commerce relations
-  cart      Cart?
-  orders    Order[]
-  addresses Address[]
-
-  @@unique([email])
-  @@unique([phoneNumber])
-  @@map("user")
-}
-
-model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  impersonatedBy String?
-
-  @@unique([token])
-  @@index([userId])
-  @@map("session")
-}
-
-model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  @@index([userId])
-  @@map("account")
-}
-
-model Verification {
-  id         String   @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([identifier])
-  @@map("verification")
-}
-
-// =============================================================================
-// PRODUCT CATALOG
-// =============================================================================
-
-model Category {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
-  description String?
-  image       String?
-  parentId    String?
-  parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryChildren")
-  products    Product[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  @@map("category")
-}
-
-model FitCategory {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("fit_category")
-}
-
-model Collection {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  image       String?
-  isActive    Boolean   @default(true)
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("collection")
-}
-
-model Product {
-  id          String @id @default(cuid())
-  name        String
-  slug        String @unique
-  description String
-
-  price     Decimal  @db.Decimal(10, 2)
-  costPrice Decimal? @db.Decimal(10, 2) // For profit calc
-
-  // Discount Relation
-  discountId String?
-  discount   Discount? @relation(fields: [discountId], references: [id])
-
-  // Legacy/Cache fields (derived from Discount but kept for sorting/performance)
-  discountPrice  Decimal?  @db.Decimal(10, 2)
-  discountEndsAt DateTime?
-
-  // New Drop Logic
-  isNewDrop        Boolean   @default(false)
-  newDropExpiresAt DateTime?
-
-  isActive Boolean @default(true)
-
-  categoryId    String
-  category      Category     @relation(fields: [categoryId], references: [id])
-  collectionId  String?
-  collection    Collection?  @relation(fields: [collectionId], references: [id])
-  fitCategoryId String?
-  fitCategory   FitCategory? @relation(fields: [fitCategoryId], references: [id])
-
-  // Frequently Bought Together (Self Relation)
-  relatedProducts Product[] @relation("RelatedProducts")
-  parents         Product[] @relation("RelatedProducts")
-
-  media      ProductMedia[]
-  variants   ProductVariant[]
-  prices     ProductPrice[]
-  orderItems OrderItem[]
-  cartItems  CartItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([slug])
-  @@index([categoryId])
-  @@index([collectionId])
-  @@index([fitCategoryId])
-  @@index([discountId])
-  @@map("product")
-}
-
 enum MediaType {
   IMAGE
   VIDEO
-}
-
-model ProductMedia {
-  id        String    @id @default(cuid())
-  src       String
-  alt       String
-  type      MediaType @default(IMAGE)
-  position  Int       @default(0)
-  productId String
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  // Model info for this image/video
-  modelHeight         String?
-  modelWearingSize    String?
-  modelWearingVariant String?
-
-  @@index([productId])
-  @@map("product_media")
-}
-
-model ProductVariant {
-  id          String  @id @default(cuid())
-  name        String // e.g., "Emerald Green", "Midnight Black"
-  sku         String? @unique
-  isAvailable Boolean @default(true)
-  productId   String
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  orderItems OrderItem[]
-  cartItems  CartItem[]
-
-  @@index([productId])
-  @@map("product_variant")
-}
-
-// =============================================================================
-// SHOPPING CART (Server-side persistence)
-// =============================================================================
-
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String?    @unique
-  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionId String? // For guest carts
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@index([sessionId])
-  @@map("cart")
-}
-
-model CartItem {
-  id        String         @id @default(cuid())
-  cartId    String
-  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product        @relation(fields: [productId], references: [id])
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-  quantity  Int            @default(1)
-
-  // Size & fit options
-  selectedSize   Size
-  selectedLength Length
-  fitCategory    FitCategoryType
-
-  // Custom measurements (for Custom size)
-  customBust   String?
-  customWaist  String?
-  customHips   String?
-  customHeight String?
-  customNotes  String?
-
-  note String? // Customer notes for this item
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([cartId])
-  @@index([productId])
-  @@map("cart_item")
-}
-
-// =============================================================================
-// ORDERS & CHECKOUT
-// =============================================================================
-
-model Order {
-  id          String  @id @default(cuid())
-  orderNumber String  @unique // Human-readable order number
-  userId      String?
-  user        User?   @relation(fields: [userId], references: [id])
-
-  // Guest checkout info (when userId is null)
-  guestEmail String?
-  guestPhone String?
-
-  status OrderStatus @default(PENDING)
-
-  // Pricing
-  subtotal     Decimal @db.Decimal(10, 2)
-  shippingCost Decimal @default(0) @db.Decimal(10, 2)
-  discount     Decimal @default(0) @db.Decimal(10, 2)
-  total        Decimal @db.Decimal(10, 2)
-  currency     String  @default("GHS")
-
-  // Shipping address
-  shippingName    String
-  shippingAddress String
-  shippingCity    String
-  shippingRegion  String?
-  shippingCountry String  @default("Ghana")
-  shippingPostal  String?
-  shippingPhone   String
-
-  // Billing (if different)
-  billingName    String?
-  billingAddress String?
-  billingCity    String?
-  billingRegion  String?
-  billingCountry String?
-  billingPostal  String?
-
-  notes      String? // Customer order notes
-  adminNotes String? // Internal staff notes
-
-  items    OrderItem[]
-  payments Payment[]
-  timeline OrderEvent[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([orderNumber])
-  @@index([status])
-  @@map("order")
-}
-
-model OrderItem {
-  id        String         @id @default(cuid())
-  orderId   String
-  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product        @relation(fields: [productId], references: [id])
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-
-  // Snapshot of product at time of order
-  productName String
-  variantName String
-  unitPrice   Decimal @db.Decimal(10, 2)
-  quantity    Int
-  totalPrice  Decimal @db.Decimal(10, 2)
-
-  // Size & fit (snapshot)
-  selectedSize   Size
-  selectedLength Length
-  fitCategory    FitCategoryType
-
-  // Custom measurements
-  customBust   String?
-  customWaist  String?
-  customHips   String?
-  customHeight String?
-  customNotes  String?
-
-  note String? // Item-specific notes
-
-  createdAt DateTime @default(now())
-
-  @@index([orderId])
-  @@index([productId])
-  @@map("order_item")
-}
-
-model OrderEvent {
-  id        String      @id @default(cuid())
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status    OrderStatus
-  note      String?
-  createdBy String? // Admin user ID who made the change
-  createdAt DateTime    @default(now())
-
-  @@index([orderId])
-  @@map("order_event")
-}
-
-// =============================================================================
-// PAYMENTS (Paystack)
-// =============================================================================
-
-model Payment {
-  id      String @id @default(cuid())
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  amount   Decimal       @db.Decimal(10, 2)
-  currency String        @default("GHS")
-  status   PaymentStatus @default(PENDING)
-
-  provider     String  @default("paystack") // Payment provider
-  providerRef  String? // External transaction reference
-  providerData Json? // Raw response from provider
-
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@index([orderId])
-  @@index([providerRef])
-  @@map("payment")
-}
-
-// =============================================================================
-// DISCOUNTS & PROMOTIONS
-// =============================================================================
-
-model Coupon {
-  id             String     @id @default(cuid())
-  code           String     @unique
-  description    String?
-  type           CouponType
-  value          Decimal    @db.Decimal(10, 2) // Percentage or fixed amount
-  minOrderAmount Decimal?   @db.Decimal(10, 2)
-  maxUses        Int?
-  usedCount      Int        @default(0)
-  isActive       Boolean    @default(true)
-  startsAt       DateTime?
-  expiresAt      DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
-  @@map("coupon")
-}
-
-// =============================================================================
-// CUSTOMER ADDRESSES
-// =============================================================================
-
-model Address {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  label      String? // e.g., "Home", "Office"
-  name       String
-  phone      String
-  address    String
-  city       String
-  region     String?
-  country    String  @default("Ghana")
-  postalCode String?
-  isDefault  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@map("address")
-}
-
-// =============================================================================
-// ADMIN SETTINGS
-// =============================================================================
-
-model Discount {
-  id          String       @id @default(cuid())
-  code        String? // Optional code for admin reference/tracking
-  description String // e.g., "Summer Sale 2026"
-  type        DiscountType
-  value       Decimal      @db.Decimal(10, 2) // % or Fixed Amount
-  startDate   DateTime
-  endDate     DateTime?
-  isActive    Boolean      @default(true)
-
-  products Product[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("discount")
-}
-
-model Currency {
-  code          String         @id // "USD", "GHS", "EUR"
-  symbol        String // "$", "₵"
-  rate          Decimal        @db.Decimal(10, 4) // Exchange rate vs Base
-  isBase        Boolean        @default(false)
-  isActive      Boolean        @default(true)
-  productPrices ProductPrice[]
-  updatedAt     DateTime       @updatedAt
-
-  @@map("currency")
-}
-
-model ProductPrice {
-  id            String   @id @default(cuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  currencyCode  String
-  currency      Currency @relation(fields: [currencyCode], references: [code])
-  price         Decimal  @db.Decimal(10, 2)
-  discountPrice Decimal? @db.Decimal(10, 2) // Optional override
-
-  @@unique([productId, currencyCode])
-  @@map("product_price")
-}
-
-model BodyMeasurement {
-  id        String  @id @default(cuid())
-  size      String // "XS", "S", "M"
-  bust      String?
-  waist     String?
-  hips      String?
-  thigh     String?
-  back      String?
-  underBust String?
-  order     Int     @default(0)
-
-  @@map("body_measurement")
-}
-
-model LengthStandard {
-  id      String  @id @default(cuid())
-  part    String // "Short Sleeve", "Dress (Maxi)" 
-  petite  String?
-  regular String?
-  tall    String?
-  order   Int     @default(0)
-
-  @@map("length_standard")
-}
-
-model LooseFitMap {
-  id           String @id @default(cuid())
-  looseSize    String // "S", "M", "L"
-  fitsStandard String // "Standard XS - S"
-  order        Int    @default(0)
-
-  @@map("loose_fit_map")
 }

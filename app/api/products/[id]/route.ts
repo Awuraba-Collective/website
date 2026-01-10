@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/database";
 import { NextResponse } from "next/server";
+import { generateSlug } from "@/lib/utils";
 
 export async function GET(
     req: Request,
@@ -81,6 +82,8 @@ export async function PATCH(
             newDrop,
         } = payload;
 
+        const slug = generateSlug(name);
+
         const result = await prisma.$transaction(
             async (tx) => {
                 // 1. Update Core Product and handle relations in one nested operation
@@ -88,8 +91,8 @@ export async function PATCH(
                     where: { id },
                     data: {
                         name,
+                        slug,
                         description,
-                        price: pricing.priceGHS,
                         costPrice: pricing.costPrice,
                         discountId: pricing.discountId || null,
                         isNewDrop: !!newDrop?.enabled,
@@ -123,7 +126,7 @@ export async function PATCH(
                         productId: id,
                         src: img.url,
                         alt: img.alt,
-                        type: "IMAGE",
+                        type: img.type || "IMAGE",
                         position: index,
                         modelHeight: img.modelHeight,
                         modelWearingSize: img.wearingSize,
@@ -138,7 +141,6 @@ export async function PATCH(
                         productId: id,
                         currencyCode: p.currencyCode,
                         price: p.price,
-                        discountPrice: p.discountPrice || null,
                     }))
                 });
 

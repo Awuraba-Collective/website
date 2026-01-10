@@ -1,5 +1,3 @@
-'use client';
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,44 +9,70 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectSeparator,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
-import { Save, Plus, Trash2, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, Loader2, ChevronRight, Ruler, X } from "lucide-react";
 import { toast } from "sonner";
+import clsx from "clsx";
 
 // --- TYPES ---
-interface SizeData {
-    size: string;
-    bust: string;
-    waist: string;
-    hips: string;
-    thigh: string;
-    back: string;
-    underBust: string;
+interface FitSize {
+    id?: string;
+    name: string;
+    standardMapping?: string;
+    measurements: Record<string, string>; // Dynamic: { "Bust": "34-36" }
+    order: number;
+}
+
+interface FitCategory {
+    id: string;
+    name: string;
+    slug: string;
+    isStandard: boolean;
+    description?: string;
+    measurementLabels: string[]; // e.g. ["Bust", "Waist"]
+    sizes: FitSize[];
 }
 
 interface LengthData {
-    part: string; // e.g., "Short Sleeve", "Dress (Maxi)"
+    part: string;
     petite: string;
     regular: string;
     tall: string;
 }
 
-interface LooseFitData {
-    looseSize: string; // S, M, L
-    fitsStandard: string; // "XS - S"
-}
-
 export function SizingStandardsManager() {
-    const [sizes, setSizes] = useState<SizeData[]>([]);
+    const [fitCategories, setFitCategories] = useState<FitCategory[]>([]);
+    const [globalMeasurementTypes, setGlobalMeasurementTypes] = useState<{ id: string, name: string }[]>([]);
     const [lengths, setLengths] = useState<LengthData[]>([]);
-    const [looseFits, setLooseFits] = useState<LooseFitData[]>([]);
+    const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
 
     useEffect(() => {
         fetchStandards();
+        fetchGlobalTypes();
     }, []);
+
+    const fetchGlobalTypes = async () => {
+        try {
+            const res = await fetch('/api/measurement-types');
+            const data = await res.json();
+            if (res.ok) setGlobalMeasurementTypes(data);
+        } catch (e) { console.error(e); }
+    };
 
     const fetchStandards = async () => {
         try {
@@ -56,9 +80,17 @@ export function SizingStandardsManager() {
             const res = await fetch('/api/sizing-standards');
             const data = await res.json();
             if (res.ok) {
-                setSizes(data.sizes || []);
+                // Ensure measurements is at least an empty object for each size
+                const categories = (data.fitCategories || []).map((cat: any) => ({
+                    ...cat,
+                    measurementLabels: cat.measurementLabels || [],
+                    sizes: (cat.sizes || []).map((s: any) => ({
+                        ...s,
+                        measurements: s.measurements || {}
+                    }))
+                }));
+                setFitCategories(categories);
                 setLengths(data.lengths || []);
-                setLooseFits(data.looseFits || []);
             } else {
                 toast.error("Failed to load sizing standards");
             }
@@ -75,7 +107,7 @@ export function SizingStandardsManager() {
             const res = await fetch('/api/sizing-standards', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sizes, lengths, looseFits }),
+                body: JSON.stringify({ fitCategories, lengths }),
             });
 
             if (res.ok) {
@@ -91,25 +123,86 @@ export function SizingStandardsManager() {
         }
     };
 
-    // --- SHARED HANDLERS ---
-    const handleSizeChange = (index: number, field: keyof SizeData, value: string) => {
-        const newSizes = [...sizes];
-        newSizes[index] = { ...newSizes[index], [field]: value };
-        setSizes(newSizes);
+    // --- FIT SCALE HANDLERS ---
+    const updateActiveCategory = (updates: Partial<FitCategory>) => {
+        const newCats = [...fitCategories];
+        newCats[activeCategoryIndex] = { ...newCats[activeCategoryIndex], ...updates };
+        setFitCategories(newCats);
         setIsDirty(true);
     };
 
-    const handleAddSize = () => {
-        setSizes([...sizes, { size: 'NEW', bust: '', waist: '', hips: '', thigh: '', back: '', underBust: '' }]);
+    const addMeasurementColumn = (label?: string) => {
+        const activeCategory = fitCategories[activeCategoryIndex];
+        const currentLabels = activeCategory.measurementLabels;
+
+        let finalLabel = label;
+
+        if (!finalLabel) {
+            const extra = prompt("Enter custom measurement name:");
+            if (!extra) return;
+            finalLabel = extra;
+        }
+
+        if (currentLabels.includes(finalLabel)) {
+            toast.error("Column already exists");
+            return;
+        }
+
+        const newCats = [...fitCategories];
+        newCats[activeCategoryIndex].measurementLabels = [...currentLabels, finalLabel];
+        setFitCategories(newCats);
         setIsDirty(true);
     };
 
-    const handleRemoveSize = (index: number) => {
-        const newSizes = sizes.filter((_, i) => i !== index);
-        setSizes(newSizes);
+    const removeMeasurementColumn = (label: string) => {
+        if (!confirm(`Are you sure you want to remove the "${label}" column? This will hide the values, but they will remain in the database until you save.`)) return;
+
+        const newCats = [...fitCategories];
+        const cat = newCats[activeCategoryIndex];
+        cat.measurementLabels = cat.measurementLabels.filter(l => l !== label);
+        setFitCategories(newCats);
         setIsDirty(true);
     };
 
+    const updateSize = (sizeIndex: number, updates: Partial<FitSize>) => {
+        const newCats = [...fitCategories];
+        const category = newCats[activeCategoryIndex];
+        const newSizes = [...category.sizes];
+        newSizes[sizeIndex] = { ...newSizes[sizeIndex], ...updates };
+        category.sizes = newSizes;
+        setFitCategories(newCats);
+        setIsDirty(true);
+    };
+
+    const updateMeasurement = (sizeIndex: number, label: string, value: string) => {
+        const newCats = [...fitCategories];
+        const category = newCats[activeCategoryIndex];
+        const newSizes = [...category.sizes];
+        const size = { ...newSizes[sizeIndex] };
+        size.measurements = { ...size.measurements, [label]: value };
+        newSizes[sizeIndex] = size;
+        category.sizes = newSizes;
+        setFitCategories(newCats);
+        setIsDirty(true);
+    };
+
+    const addSize = () => {
+        const newCats = [...fitCategories];
+        const category = newCats[activeCategoryIndex];
+        category.sizes = [...category.sizes, { name: 'New', order: category.sizes.length, measurements: {} }];
+        setFitCategories(newCats);
+        setIsDirty(true);
+    };
+
+    const removeSize = (index: number) => {
+        const newCats = [...fitCategories];
+        const category = newCats[activeCategoryIndex];
+        category.sizes = category.sizes.filter((_, i) => i !== index);
+        setFitCategories(newCats);
+        setIsDirty(true);
+    };
+
+    // --- LENGTH HANDLERS ---
     const handleLengthChange = (index: number, field: keyof LengthData, value: string) => {
         const newLengths = [...lengths];
         newLengths[index] = { ...newLengths[index], [field]: value };
@@ -117,51 +210,28 @@ export function SizingStandardsManager() {
         setIsDirty(true);
     };
 
-    const handleAddLength = () => {
-        setLengths([...lengths, { part: 'New Item', petite: '', regular: '', tall: '' }]);
-        setIsDirty(true);
-    };
-
-    const handleRemoveLength = (index: number) => {
-        const newLengths = lengths.filter((_, i) => i !== index);
-        setLengths(newLengths);
-        setIsDirty(true);
-    };
-
-    const handleLooseFitChange = (index: number, field: keyof LooseFitData, value: string) => {
-        const newLoose = [...looseFits];
-        newLoose[index] = { ...newLoose[index], [field]: value };
-        setLooseFits(newLoose);
-        setIsDirty(true);
-    };
-
-    const handleAddLooseFit = () => {
-        setLooseFits([...looseFits, { looseSize: 'XL', fitsStandard: '' }]);
-        setIsDirty(true);
-    };
-
-    const handleRemoveLooseFit = (index: number) => {
-        const newLoose = looseFits.filter((_, i) => i !== index);
-        setLooseFits(newLoose);
-        setIsDirty(true);
-    };
-
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Loading Sizing Standards...</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Loading Sizing Interface...</p>
             </div>
         );
     }
 
+    const activeCategory = fitCategories[activeCategoryIndex];
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 pb-20">
             <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h2 className="text-xl font-bold font-serif uppercase tracking-tight">Sizing Standards</h2>
+                    <p className="text-xs text-neutral-500">Configure fit scales and dynamic measurement charts.</p>
+                </div>
                 <Button
                     onClick={handleSave}
                     disabled={!isDirty || isSaving}
-                    className="rounded-full ml-auto text-[10px] font-black uppercase tracking-widest h-10 px-8 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black disabled:opacity-50 transition-all font-sans"
+                    className="rounded-full text-[10px] font-black uppercase tracking-widest h-10 px-8 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black disabled:opacity-50 transition-all font-sans"
                 >
                     {isSaving ? (
                         <>
@@ -177,75 +247,183 @@ export function SizingStandardsManager() {
                 </Button>
             </div>
 
-            <Tabs defaultValue="body" className="w-full">
-                <TabsList className="bg-neutral-100 dark:bg-neutral-800/50 p-1 rounded-lg mb-6 h-auto w-fit">
-                    <TabsTrigger value="body" className="text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800 data-[state=active]:shadow-sm">Body Measurements</TabsTrigger>
-                    <TabsTrigger value="length" className="text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800 data-[state=active]:shadow-sm">Length Guide</TabsTrigger>
-                    <TabsTrigger value="loose" className="text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800 data-[state=active]:shadow-sm">Loose Fit Guide</TabsTrigger>
+            <Tabs defaultValue="scales" className="w-full">
+                <TabsList className="bg-neutral-100 dark:bg-neutral-800/50 p-1 rounded-lg mb-8 h-auto w-fit">
+                    <TabsTrigger value="scales" className="text-[10px] uppercase font-black tracking-widest px-6 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800 data-[state=active]:shadow-sm">Fit Scales</TabsTrigger>
+                    <TabsTrigger value="length" className="text-[10px] uppercase font-black tracking-widest px-6 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800 data-[state=active]:shadow-sm">Length Guide</TabsTrigger>
                 </TabsList>
 
-                {/* --- BODY MEASUREMENTS TAB --- */}
-                <TabsContent value="body" className="space-y-4">
-                    <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-black overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 w-[60px]">Size</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">Bust</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">Waist</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">Hips</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">Thigh</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">Back</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[80px]">U-Bust</TableHead>
-                                    <TableHead className="w-[40px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sizes.map((item, index) => (
-                                    <TableRow key={index} className="border-neutral-100 dark:border-neutral-800">
-                                        <TableCell>
-                                            <Input
-                                                value={item.size}
-                                                onChange={(e) => handleSizeChange(index, 'size', e.target.value)}
-                                                className="font-black h-9 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 focus:border-neutral-200 transition-all p-2 w-full"
-                                            />
-                                        </TableCell>
-                                        {['bust', 'waist', 'hips', 'thigh', 'back', 'underBust'].map((field) => (
-                                            <TableCell key={field}>
+                {/* --- FIT SCALES TAB --- */}
+                <TabsContent value="scales" className="space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        {/* Sidebar: Categories */}
+                        <div className="lg:col-span-1 space-y-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 px-2">Active Fits</p>
+                            {fitCategories.map((cat, idx) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveCategoryIndex(idx)}
+                                    className={clsx(
+                                        "w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left",
+                                        activeCategoryIndex === idx
+                                            ? "bg-black text-white border-black shadow-lg dark:bg-white dark:text-black dark:border-white"
+                                            : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white"
+                                    )}
+                                >
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-widest">{cat.name}</p>
+                                        <p className={clsx("text-[10px] opacity-60", activeCategoryIndex === idx ? "text-white dark:text-black" : "text-neutral-500")}>
+                                            {cat.sizes.length} Sizes Defined
+                                        </p>
+                                    </div>
+                                    <ChevronRight className={clsx("w-4 h-4", activeCategoryIndex === idx ? "opacity-100" : "opacity-0")} />
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Main Content: Sizes for Active Category */}
+                        <div className="lg:col-span-3 space-y-6">
+                            {activeCategory && (
+                                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 mb-8 space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-4">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Category Name</Label>
                                                 <Input
-                                                    value={item[field as keyof SizeData] || ''}
-                                                    onChange={(e) => handleSizeChange(index, field as keyof SizeData, e.target.value)}
-                                                    className="font-bold h-9 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 focus:border-neutral-200 transition-all p-2 w-full"
+                                                    value={activeCategory.name}
+                                                    onChange={(e) => updateActiveCategory({ name: e.target.value })}
+                                                    className="font-black h-12 text-sm bg-white dark:bg-black"
                                                 />
-                                            </TableCell>
-                                        ))}
-                                        <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleRemoveSize(index)}
-                                                className="h-8 w-8 text-neutral-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                            </div>
+                                            <div className="flex items-center space-x-4 h-full pt-6">
+                                                <Switch
+                                                    id="isStandard"
+                                                    checked={activeCategory.isStandard}
+                                                    onCheckedChange={(checked) => updateActiveCategory({ isStandard: checked })}
+                                                />
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor="isStandard" className="text-xs font-black uppercase tracking-widest">Standard Fit Scale</Label>
+                                                    <p className="text-[10px] text-neutral-500">Uses direct body measurements primarily.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden bg-white dark:bg-black">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
+                                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 w-[80px]">Size</TableHead>
+                                                    {!activeCategory.isStandard && (
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[150px]">Mapping</TableHead>
+                                                    )}
+                                                    {activeCategory.measurementLabels.map((label) => (
+                                                        <TableHead key={label} className="text-[10px] font-black uppercase tracking-widest text-neutral-400 min-w-[100px] border-r border-neutral-100 dark:border-neutral-800 last:border-r-0">
+                                                            <div className="flex items-center justify-between group">
+                                                                <span>{label}</span>
+                                                                <button
+                                                                    onClick={() => removeMeasurementColumn(label)}
+                                                                    className="text-neutral-300 hover:text-rose-500 transition-colors"
+                                                                    title="Remove Column"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        </TableHead>
+                                                    ))}
+                                                    <TableHead className="w-[50px]">
+                                                        <Select onValueChange={(val) => {
+                                                            if (val === "CUSTOM") {
+                                                                addMeasurementColumn();
+                                                            } else {
+                                                                addMeasurementColumn(val);
+                                                            }
+                                                        }}>
+                                                            <SelectTrigger className="h-8 w-8 p-0 border-none bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 justify-center">
+                                                                <Plus className="w-3.5 h-3.5" />
+                                                            </SelectTrigger>
+                                                            <SelectContent position="popper">
+                                                                <SelectGroup>
+                                                                    <SelectLabel className="text-[10px] uppercase font-black tracking-widest px-2 py-1.5 opacity-50">Global Types</SelectLabel>
+                                                                    {globalMeasurementTypes.filter(t => !activeCategory.measurementLabels.includes(t.name)).length > 0 ? (
+                                                                        globalMeasurementTypes
+                                                                            .filter(t => !activeCategory.measurementLabels.includes(t.name))
+                                                                            .map((type) => (
+                                                                                <SelectItem key={type.id} value={type.name} className="text-xs font-bold uppercase tracking-widest">{type.name}</SelectItem>
+                                                                            ))
+                                                                    ) : (
+                                                                        <div className="px-2 py-4 text-center">
+                                                                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">No more global types</p>
+                                                                        </div>
+                                                                    )}
+                                                                    <SelectSeparator />
+                                                                    <SelectItem value="CUSTOM" className="text-xs font-black uppercase tracking-widest text-neutral-500 italic">Add Custom...</SelectItem>
+                                                                </SelectGroup>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {activeCategory.sizes.map((size, sIdx) => (
+                                                    <TableRow key={sIdx} className="border-neutral-100 dark:border-neutral-800">
+                                                        <TableCell>
+                                                            <Input
+                                                                value={size.name}
+                                                                onChange={(e) => updateSize(sIdx, { name: e.target.value })}
+                                                                className="font-black h-10 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 p-2"
+                                                            />
+                                                        </TableCell>
+                                                        {!activeCategory.isStandard && (
+                                                            <TableCell>
+                                                                <Input
+                                                                    value={size.standardMapping || ''}
+                                                                    onChange={(e) => updateSize(sIdx, { standardMapping: e.target.value })}
+                                                                    placeholder="e.g. Standard M"
+                                                                    className="font-bold h-10 text-xs bg-white dark:bg-black italic"
+                                                                />
+                                                            </TableCell>
+                                                        )}
+                                                        {activeCategory.measurementLabels.map((label) => (
+                                                            <TableCell key={label}>
+                                                                <Input
+                                                                    value={size.measurements[label] || ''}
+                                                                    onChange={(e) => updateMeasurement(sIdx, label, e.target.value)}
+                                                                    className="h-10 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 p-2"
+                                                                />
+                                                            </TableCell>
+                                                        ))}
+                                                        <TableCell>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removeSize(sIdx)}
+                                                                className="h-8 w-8 text-neutral-300 hover:text-rose-500"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        onClick={addSize}
+                                        className="w-full mt-4 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white h-14 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-black dark:hover:border-white transition-all rounded-2xl"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" /> Add Size to {activeCategory.name}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={handleAddSize}
-                        className="w-full border-dashed border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white h-12 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-black dark:hover:text-white transition-all font-sans"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add New Body Size
-                    </Button>
                 </TabsContent>
 
                 {/* --- LENGTH GUIDE TAB --- */}
                 <TabsContent value="length" className="space-y-4">
-                    <div className="border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden bg-white dark:bg-black">
+                    <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden bg-white dark:bg-black">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800">
@@ -263,7 +441,7 @@ export function SizingStandardsManager() {
                                             <Input
                                                 value={item.part}
                                                 onChange={(e) => handleLengthChange(index, 'part', e.target.value)}
-                                                className="font-black text-xs uppercase bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 focus:border-neutral-200 transition-all h-9"
+                                                className="font-black text-xs uppercase bg-transparent border-transparent hover:border-neutral-200 focus:bg-white transition-all h-9"
                                             />
                                         </TableCell>
                                         {['petite', 'regular', 'tall'].map((field) => (
@@ -271,7 +449,7 @@ export function SizingStandardsManager() {
                                                 <Input
                                                     value={item[field as keyof LengthData] || ''}
                                                     onChange={(e) => handleLengthChange(index, field as keyof LengthData, e.target.value)}
-                                                    className="font-bold h-9 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 focus:border-neutral-200 transition-all"
+                                                    className="font-bold h-9 text-xs bg-transparent border-transparent hover:border-neutral-200 focus:bg-white transition-all"
                                                 />
                                             </TableCell>
                                         ))}
@@ -279,8 +457,8 @@ export function SizingStandardsManager() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleRemoveLength(index)}
-                                                className="h-8 w-8 text-neutral-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                                                onClick={() => setLengths(lengths.filter((_, i) => i !== index))}
+                                                className="h-8 w-8 text-neutral-300 hover:text-rose-500"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </Button>
@@ -292,54 +470,11 @@ export function SizingStandardsManager() {
                     </div>
                     <Button
                         variant="outline"
-                        onClick={handleAddLength}
-                        className="w-full border-dashed border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white h-12 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-black dark:hover:text-white transition-all font-sans"
+                        onClick={() => setLengths([...lengths, { part: 'New Item', petite: '', regular: '', tall: '' }])}
+                        className="w-full border-dashed border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white h-14 text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-black dark:hover:border-white transition-all rounded-2xl"
                     >
                         <Plus className="w-4 h-4 mr-2" /> Add New Length Item
                     </Button>
-                </TabsContent>
-
-                {/* --- LOOSE FIT TAB --- */}
-                <TabsContent value="loose" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {looseFits.map((item, index) => (
-                            <div key={index} className="relative group border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 space-y-3 bg-white dark:bg-neutral-900/50 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleRemoveLooseFit(index)}
-                                    className="absolute top-2 right-2 h-6 w-6 text-neutral-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-
-                                <Input
-                                    value={item.looseSize}
-                                    onChange={(e) => handleLooseFitChange(index, 'looseSize', e.target.value)}
-                                    className="text-4xl font-black h-14 bg-transparent border-transparent hover:border-neutral-200 focus:bg-white dark:focus:bg-neutral-900 focus:border-neutral-200 p-0"
-                                />
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Corresponds To:</label>
-                                    <Input
-                                        value={item.fitsStandard}
-                                        onChange={(e) => handleLooseFitChange(index, 'fitsStandard', e.target.value)}
-                                        className="font-bold h-10 bg-white dark:bg-black"
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                        <Button
-                            variant="outline"
-                            onClick={handleAddLooseFit}
-                            className="h-auto min-h-[160px] flex-col gap-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white rounded-xl text-neutral-400 hover:text-black dark:hover:text-white transition-all group font-sans"
-                        >
-                            <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Plus className="w-6 h-6" />
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-widest">Add New Loose Fit</span>
-                        </Button>
-                    </div>
                 </TabsContent>
             </Tabs>
         </div>

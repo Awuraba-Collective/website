@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { Metadata } from 'next';
+import { prisma } from "@/lib/database";
 
 export const metadata: Metadata = {
     title: "Size Guidelines",
@@ -11,7 +12,22 @@ export const metadata: Metadata = {
     }
 };
 
-export default function SizingPage() {
+export default async function SizingPage() {
+    // Fetch all sizing data
+    const [fitCategories, lengthStandards] = await Promise.all([
+        prisma.fitCategory.findMany({
+            include: {
+                sizes: {
+                    orderBy: { order: 'asc' }
+                }
+            },
+            orderBy: { createdAt: 'asc' }
+        }),
+        prisma.lengthStandard.findMany({
+            orderBy: { order: 'asc' }
+        })
+    ]);
+
     return (
         <div className="bg-white dark:bg-black w-full min-h-screen">
             <div className="bg-neutral-50 dark:bg-neutral-900 py-20 md:py-28 px-4 text-center">
@@ -49,139 +65,152 @@ export default function SizingPage() {
                     </div>
                 </section>
 
-                {/* Table 1: Body Measurements */}
-                <section className="overflow-x-auto">
-                    <div className="mb-6">
-                        <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">Body Measurements (Inches)</h2>
-                        <p className="text-sm text-neutral-500">Standard body measurements for each size.</p>
-                    </div>
+                {/* Body Measurement Tables / Cards */}
+                {fitCategories.map((category) => {
+                    const isCardLayout = category.measurementLabels.length === 0;
 
-                    <table className="w-full text-center border-collapse text-sm sm:text-base">
-                        <thead className="bg-black text-white dark:bg-white dark:text-black uppercase text-xs font-bold tracking-wider">
-                            <tr>
-                                <th className="p-3 border border-neutral-700">Size</th>
-                                <th className="p-3 border border-neutral-700">XS</th>
-                                <th className="p-3 border border-neutral-700">S</th>
-                                <th className="p-3 border border-neutral-700">M</th>
-                                <th className="p-3 border border-neutral-700">L</th>
-                                <th className="p-3 border border-neutral-700">XL</th>
-                                <th className="p-3 border border-neutral-700">XXL</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
-                            {[
-                                { label: "Bust", xs: "30-33", s: "33-36", m: "36-39", l: "39-42", xl: "42-46", xxl: "46-50" },
-                                { label: "Waist", xs: "23-26", s: "26-29", m: "29-32", l: "32-36", xl: "36-40", xxl: "40-45" },
-                                { label: "Hip", xs: "34-37", s: "37-40", m: "40-43", l: "43-46", xl: "46-50", xxl: "50-54" },
-                                { label: "Thigh", xs: "20-22", s: "22-24", m: "24-26", l: "26-28", xl: "28-31", xxl: "31-34" },
-                                { label: "Back", xs: "14.5-15.5", s: "15-16", m: "15.5-16.5", l: "16-17", xl: "16.5-17.5", xxl: "17-18" },
-                                { label: "Under Bust", xs: "13-14", s: "13.5-14.5", m: "14-15", l: "14.5-15.5", xl: "15-16", xxl: "16-17" },
-                            ].map((row, i) => (
-                                <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold text-black dark:text-white uppercase">{row.label}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xs}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.s}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.m}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.l}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xl}</td>
-                                    <td className="p-3 border border-neutral-200 dark:border-neutral-700">{row.xxl}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </section>
+                    if (isCardLayout) {
+                        return (
+                            <section key={category.id} className="space-y-6">
+                                <div className="">
+                                    <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">{category.name} Measurements</h2>
+                                    {category.description && (
+                                        <p className="text-sm text-neutral-500 mt-1">{category.description}</p>
+                                    )}
+                                </div>
+                                <div className={`grid grid-cols-1 sm:grid-cols-${Math.min(category.sizes.length, 3)} gap-4`}>
+                                    {category.sizes.map((size) => (
+                                        <div key={size.id} className="p-6 bg-neutral-50 dark:bg-neutral-900 rounded-xl text-center border border-neutral-100 dark:border-neutral-800">
+                                            <span className="block font-bold mb-2 tracking-widest uppercase">{size.name}</span>
+                                            {size.standardMapping && (
+                                                <span className="block text-sm text-neutral-600 dark:text-neutral-400">
+                                                    Fits {size.standardMapping.toLowerCase().includes("standard") ? size.standardMapping : `Standard ${size.standardMapping}`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        );
+                    }
 
-                <section className="">
-                    <h2 className="font-serif text-2xl text-black dark:text-white mb-4 text-center md:text-left">Loose (Bola) Outfits Guide</h2>
-                    <div className="grid grid-cols-3 gap-6 text-center bg-neutral-50 dark:bg-neutral-900 p-8 rounded-xl">
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">S</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XS - S</span>
-                        </div>
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">M</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard M - L</span>
-                        </div>
-                        <div className="space-y-2">
-                            <span className="block text-2xl font-bold">L</span>
-                            <span className="block text-sm text-neutral-600 dark:text-neutral-400">Fits Standard XL - XXL</span>
-                        </div>
-                    </div>
-                </section>
+                    return (
+                        <section key={category.id} className="overflow-x-auto space-y-6">
+                            <div className="">
+                                <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">{category.name} Measurements (Inches)</h2>
+                                {category.description && (
+                                    <p className="text-sm text-neutral-500 mt-1">{category.description}</p>
+                                )}
+                            </div>
+
+                            <table className="w-full text-center border-collapse text-sm sm:text-base">
+                                <thead className="bg-black text-white dark:bg-white dark:text-black uppercase text-[10px] font-bold tracking-widest">
+                                    <tr>
+                                        <th className="p-4 border border-neutral-800 dark:border-neutral-200">Size</th>
+                                        {category.sizes.map(size => (
+                                            <th key={size.id} className="p-4 border border-neutral-800 dark:border-neutral-200">{size.name}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
+                                    {category.measurementLabels.map((label, i) => (
+                                        <tr key={label} className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}>
+                                            <td className="p-4 border border-neutral-200 dark:border-neutral-800 font-bold text-black dark:text-white uppercase text-[11px] tracking-wider text-left">{label}</td>
+                                            {category.sizes.map(size => {
+                                                const measurements = size.measurements as Record<string, string>;
+                                                return (
+                                                    <td key={size.id} className="p-4 border border-neutral-200 dark:border-neutral-800">
+                                                        {measurements[label] || "-"}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </section>
+                    );
+                })}
 
                 {/* Height & Proportions */}
-                <section className="space-y-8">
+                <section className="space-y-12">
                     <div className="max-w-full">
                         <h2 className="font-serif text-2xl text-black dark:text-white mb-4 text-center md:text-left">Height & Length Guide</h2>
-                        <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                            <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
-                                <span className="block font-bold mb-1">PETITE</span>
-                                <span className="text-sm">Under 5'3"</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                            <div className="p-6 bg-neutral-50 dark:bg-neutral-900 rounded-xl text-center border border-neutral-100 dark:border-neutral-800">
+                                <span className="block font-bold mb-2 tracking-widest uppercase ">PETITE</span>
+                                <span className="block text-sm text-neutral-600 dark:text-neutral-400">Under 5'3"</span>
                             </div>
-                            <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
-                                <span className="block font-bold mb-1">REGULAR</span>
-                                <span className="text-sm">5'3" to 5'7"</span>
+                            <div className="p-6 bg-neutral-50 dark:bg-neutral-900 rounded-xl text-center border border-neutral-100 dark:border-neutral-800">
+                                <span className="block font-bold mb-2 tracking-widest uppercase">REGULAR</span>
+                                <span className="block text-sm text-neutral-600 dark:text-neutral-400">5'3" to 5'7"</span>
                             </div>
-                            <div className="p-4 bg-neutral-100 dark:bg-neutral-900 rounded-md text-center">
-                                <span className="block font-bold mb-1">TALL</span>
-                                <span className="text-sm">5'7" and above</span>
+                            <div className="p-6 bg-neutral-50 dark:bg-neutral-900 rounded-xl text-center border border-neutral-100 dark:border-neutral-800">
+                                <span className="block font-bold mb-2 tracking-widest uppercase">TALL</span>
+                                <span className="block text-sm text-neutral-600 dark:text-neutral-400">5'7" and above</span>
                             </div>
                         </div>
-                        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-                            Your height selection affects <strong>dress length and sleeve length</strong>.
-                            Sleeves are adjusted to maintain proper proportions (Short sleeves are minimally adjusted, while 3/4 and long sleeves are extended for Taller fits).
+                        <p className="text-neutral-600 dark:text-neutral-400 mb-6 leading-relaxed">
+                            Our height options (Petite, Regular, Tall) ensure your pieces fall exactly where they should. From dress lengths to sleeve proportions, we adjust each cut to complement your frame perfectly.
                         </p>
                     </div>
 
-                    {/* Table 2: Lengths */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-center border-collapse text-sm sm:text-base">
-                            <thead className="bg-black text-white dark:bg-white dark:text-black uppercase text-xs font-bold tracking-wider">
-                                <tr>
-                                    <th className="p-3 border border-neutral-700">Length Guide (Inches)</th>
-                                    <th className="p-3 border border-neutral-700">Petite</th>
-                                    <th className="p-3 border border-neutral-700">Regular</th>
-                                    <th className="p-3 border border-neutral-700">Tall</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
-                                {[
-                                    { label: "Short Sleeve", petite: "6", regular: "7", tall: "8.5" },
-                                    { label: "Long Sleeve", petite: "21", regular: "23", tall: "25" },
-                                    { label: "Short Length (Dress)", petite: "35-37", regular: "38-40", tall: "41-42" },
-                                    { label: "3/4 Length (Dress)", petite: "38-40", regular: "40-43", tall: "44-46" },
-                                    { label: "Full / Long Length", petite: "52-54", regular: "55-57", tall: "60-62" },
-                                ].map((row, i) => (
-                                    <tr key={i} className="bg-white dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
-                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800 font-bold text-left pl-6">{row.label}</td>
-                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.petite}</td>
-                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.regular}</td>
-                                        <td className="p-3 border border-neutral-200 dark:border-neutral-800">{row.tall}</td>
+                    {/* Lengths Table */}
+                    {lengthStandards.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-center border-collapse text-sm sm:text-base">
+                                <thead className="bg-black text-white dark:bg-white dark:text-black uppercase text-[10px] font-bold tracking-widest">
+                                    <tr>
+                                        <th className="p-4 border border-neutral-800 dark:border-neutral-200 text-left">Length Guide (Inches)</th>
+                                        <th className="p-4 border border-neutral-800 dark:border-neutral-200">Petite</th>
+                                        <th className="p-4 border border-neutral-800 dark:border-neutral-200">Regular</th>
+                                        <th className="p-4 border border-neutral-800 dark:border-neutral-200">Tall</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="text-neutral-700 dark:text-neutral-300 font-medium">
+                                    {lengthStandards.map((std, i) => (
+                                        <tr key={std.id} className="bg-white dark:bg-black border-b border-neutral-100 dark:border-neutral-900">
+                                            <td className="p-4 border-l border-neutral-100 dark:border-neutral-900 font-bold text-left pl-6 uppercase text-[11px] tracking-wider text-black dark:text-white">{std.part}</td>
+                                            <td className="p-4 border-x border-neutral-100 dark:border-neutral-900">{std.petite || "-"}</td>
+                                            <td className="p-4 border-x border-neutral-100 dark:border-neutral-900">{std.regular || "-"}</td>
+                                            <td className="p-4 border-r border-neutral-100 dark:border-neutral-900">{std.tall || "-"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </section>
 
-
-
                 <section className="space-y-6 ">
-                    <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left">Important Notes</h2>
-                    <ul className="space-y-4 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-outside ml-4">
-                        <li>
-                            <strong>Full Length Preference:</strong> Full length is designed to skim the floor when worn with heels.
-                            If you prefer a different length (e.g., ankle length) or wear flats, please <strong>specify this in your order notes</strong>.
+                    <h2 className="font-serif text-2xl text-black dark:text-white text-center md:text-left border-b border-neutral-100 dark:border-neutral-900 pb-2">Important Notes</h2>
+                    <ul className="space-y-6 text-sm text-neutral-600 dark:text-neutral-400 list-disc list-outside ml-4">
+                        <li className="pl-2">
+                            <strong className="text-black dark:text-white">Full Length Preference:</strong>{" "}
+                            Full-length pieces are designed to skim the floor when worn with heels. If you prefer a shorter length (such as ankle length) or typically wear flats,{" "}
+                            <span className="font-semibold text-black dark:text-white">
+                                please include your preferred length in the order notes
+                            </span>.
                         </li>
-                        <li>
-                            <strong>Custom Measurements:</strong> You are welcome to share your specific measurements/sizes for a potentially better fit.
-                            However, please note that <strong>we do not take responsibility</strong> if the final outfit does not fit as expected based on self-provided measurements.
+
+                        <li className="pl-2">
+                            <strong className="text-black dark:text-white">Custom Measurements:</strong>{" "}
+                            You’re welcome to share your specific measurements for a more personalized fit alongside your size selection. Simply include them in the order notes on the product details page.{" "}
+                            <span className="font-semibold text-black dark:text-white">
+                                Custom pieces are made according to the measurements provided
+                            </span>, so fit outcomes depend on the accuracy of the details shared.
                         </li>
-                        <li>
-                            <strong>Extended Sizes:</strong> While our standard chart ends at XXL, we are happy to accommodate larger sizes via customization.
-                            Please contact us directly to place an order.
+
+                        <li className="pl-2">
+                            <strong className="text-black dark:text-white">Extended Sizes:</strong>{" "}
+                            While our standard size chart goes up to XXL, we’re happy to create pieces in larger sizes through customization.{" "}
+                            <span className="font-semibold text-black dark:text-white">
+                                Please contact us directly
+                            </span>{" "}
+                            to place an order.
                         </li>
                     </ul>
+
                 </section>
 
                 <div className="text-center pt-12 border-t border-dashed border-black/20 dark:border-white/20">
@@ -192,7 +221,7 @@ export default function SizingPage() {
                     <Link
                         href="https://wa.me/233549726818"
                         target="_blank"
-                        className="inline-flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black px-6 py-3 rounded-full font-medium hover:opacity-80 transition-opacity"
+                        className="inline-flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black px-10 py-4 rounded-full font-medium hover:opacity-80 transition-opacity uppercase tracking-widest text-xs"
                     >
                         <MessageCircle className="h-4 w-4" />
                         Chat with us on WhatsApp

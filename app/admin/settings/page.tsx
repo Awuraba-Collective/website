@@ -56,22 +56,30 @@ export default function SettingsPage() {
                             apiEndpoint="/api/categories"
                         />
                         <SettingsListManager
-                            title="Fit Categories"
-                            description="Define fitting types available for products."
-                            placeholder="e.g. Slim Fit"
-                            apiEndpoint="/api/fit-categories"
-                        />
-                    </div>
-
-                    <Separator />
-
-                    <div className="max-w-2xl">
-                        <SettingsListManager
                             title="Collections"
                             description="Manage active collections for product grouping."
                             placeholder="e.g. Summer 2025"
                             apiEndpoint="/api/collections"
                         />
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                        <SettingsListManager
+                            title="Fit Categories"
+                            description="Define fitting types available for products."
+                            placeholder="e.g. Slim Fit"
+                            apiEndpoint="/api/fit-categories"
+                        />
+
+                        <SettingsListManager
+                            title="Body Measurement Types"
+                            description="Define common measurement headers for size guides."
+                            placeholder="e.g. Shoulder"
+                            apiEndpoint="/api/measurement-types"
+                        />
+
                     </div>
                 </TabsContent>
 

@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleCart, removeFromCart, updateQuantity } from '@/store/slices/cartSlice';
 import { useEffect } from 'react';
 import posthog from 'posthog-js';
+import { formatPrice } from '@/lib/utils/currency';
 
 export function CartDrawer() {
     const dispatch = useAppDispatch();
@@ -17,8 +18,6 @@ export function CartDrawer() {
         const price = currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price;
         return sum + price * item.quantity;
     }, 0);
-
-    const currencySymbol = currency === 'GHS' ? '₵' : '$';
 
     // Prevent background scroll when open
     useEffect(() => {
@@ -70,7 +69,11 @@ export function CartDrawer() {
                         items.map((item) => (
                             <div key={item.id} className="flex gap-4 p-3 bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 rounded-sm shadow-sm transition-all hover:shadow-md">
                                 <div className="relative w-20 aspect-[3/4] bg-neutral-100 rounded-xs overflow-hidden flex-shrink-0">
-                                    <Image src={item.image} alt={item.name} fill className="object-cover" />
+                                    {item.image ? (
+                                        <Image src={item.image} alt={item.name} fill className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-[10px] text-neutral-400 font-bold uppercase">No Image</div>
+                                    )}
                                 </div>
                                 <div className="flex-1 flex flex-col justify-between">
                                     <div>
@@ -101,7 +104,7 @@ export function CartDrawer() {
                                             {item.selectedSize} / {item.selectedLength} / {item.selectedVariant}
                                         </p>
                                         <p className="text-sm font-medium mt-1">
-                                            {currencySymbol} {(currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price).toFixed(2)}
+                                            {formatPrice(currency === 'USD' ? (item.priceUSD ?? (item.price / 15)) : item.price, currency)}
                                         </p>
                                     </div>
 
@@ -160,7 +163,7 @@ export function CartDrawer() {
                     <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4 bg-white dark:bg-neutral-900">
                         <div className="flex justify-between items-center text-lg font-serif">
                             <span>Subtotal</span>
-                            <span>{currencySymbol} {total.toFixed(2)}</span>
+                            <span>{formatPrice(total, currency)}</span>
                         </div>
                         <div className="space-y-3">
                             <Link

@@ -1,48 +1,73 @@
 import { prisma } from "@/lib/database";
 import { NextResponse } from "next/server";
 
-// GET: Fetch all sizing standards
+// GET: Fetch all sizing standards (FitCategories with nested sizes + LengthStandards)
 export async function GET() {
     try {
-        const [bodyMeasurements, lengthStandards, looseFitMaps] = await Promise.all([
-            prisma.bodyMeasurement.findMany({ orderBy: { order: 'asc' } }),
+        const [fitCategories, lengthStandards] = await Promise.all([
+            prisma.fitCategory.findMany({
+                include: {
+                    sizes: {
+                        orderBy: { order: 'asc' }
+                    }
+                },
+                orderBy: { name: 'asc' }
+            }),
             prisma.lengthStandard.findMany({ orderBy: { order: 'asc' } }),
-            prisma.looseFitMap.findMany({ orderBy: { order: 'asc' } }),
         ]);
 
         return NextResponse.json({
-            sizes: bodyMeasurements,
+            fitCategories,
             lengths: lengthStandards,
-            looseFits: looseFitMaps
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to fetch sizing standards:", error);
-        return NextResponse.json({ error: "Failed to fetch sizing standards" }, { status: 500 });
+        return NextResponse.json({
+            error: "Failed to fetch sizing standards",
+            details: error.message,
+            prismaModels: Object.keys(prisma).filter(k => !k.startsWith('$')),
+            fitCategoryKeys: Object.keys((prisma as any).fitCategory || {})
+        }, { status: 500 });
     }
 }
 
-// POST: Bulk update sizing standards in a transaction
+// POST: Bulk update sizing standards
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { sizes, lengths, looseFits } = body;
+        const { fitCategories, lengths } = body;
 
         await prisma.$transaction(async (tx) => {
-            // Update BodyMeasurements
-            if (sizes) {
-                await tx.bodyMeasurement.deleteMany({});
-                await tx.bodyMeasurement.createMany({
-                    data: sizes.map((s: any, index: number) => ({
-                        size: s.size,
-                        bust: s.bust,
-                        waist: s.waist,
-                        hips: s.hips,
-                        thigh: s.thigh,
-                        back: s.back,
-                        underBust: s.underBust,
-                        order: index
-                    }))
-                });
+            // Update FitCategories and FitSizes
+            if (fitCategories) {
+                for (const cat of fitCategories) {
+                    // Update the category itself
+                    await tx.fitCategory.update({
+                        where: { id: cat.id },
+                        data: {
+                            isStandard: cat.isStandard,
+                            description: cat.description,
+                            measurementLabels: cat.measurementLabels || []
+                        }
+                    });
+
+                    // Update sizes for this category
+                    if (cat.sizes) {
+                        await tx.fitSize.deleteMany({
+                            where: { fitCategoryId: cat.id }
+                        });
+
+                        await tx.fitSize.createMany({
+                            data: cat.sizes.map((s: any, index: number) => ({
+                                name: s.name,
+                                fitCategoryId: cat.id,
+                                standardMapping: s.standardMapping,
+                                order: index,
+                                measurements: s.measurements || {}
+                            }))
+                        });
+                    }
+                }
             }
 
             // Update LengthStandards
@@ -54,18 +79,6 @@ export async function POST(req: Request) {
                         petite: l.petite,
                         regular: l.regular,
                         tall: l.tall,
-                        order: index
-                    }))
-                });
-            }
-
-            // Update LooseFitMaps
-            if (looseFits) {
-                await tx.looseFitMap.deleteMany({});
-                await tx.looseFitMap.createMany({
-                    data: looseFits.map((lf: any, index: number) => ({
-                        looseSize: lf.looseSize,
-                        fitsStandard: lf.fitsStandard,
                         order: index
                     }))
                 });

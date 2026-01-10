@@ -12,6 +12,7 @@ const productImageSchema = z.object({
     id: z.string(),
     file: z.instanceof(File).nullable(),
     previewUrl: z.string().nullable(),
+    type: z.enum(['IMAGE', 'VIDEO']).optional(),
     alt: z.string().optional(),
     modelHeight: z.string().optional(),
     wearingSize: z.string().optional(),
@@ -124,6 +125,7 @@ export interface ProductApiPayload {
     images: Array<{
         url: string;              // Storage bucket URL
         alt: string;              // Generated or provided
+        type: 'IMAGE' | 'VIDEO';  // Media type
         modelHeight?: string;
         wearingSize?: string;
         wearingVariant?: string;  // Links to variant name
