@@ -22,7 +22,13 @@ export async function GET(req: Request) {
             select: {
                 id: true,
                 name: true,
-                images: {
+                media: {
+                    where: {
+                        type: 'IMAGE'
+                    },
+                    orderBy: {
+                        position: 'asc'
+                    },
                     take: 1,
                     select: {
                         src: true
@@ -35,7 +41,7 @@ export async function GET(req: Request) {
         const formatted = products.map(p => ({
             id: p.id,
             name: p.name,
-            image: p.images[0]?.src || ''
+            image: p.media[0]?.src || ''
         }));
 
         return NextResponse.json(formatted);
