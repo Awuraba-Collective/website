@@ -23,7 +23,9 @@ import { useState, useEffect } from "react";
 import { fetchProducts } from "@/store/slices/shopSlice";
 import { CartItem } from "@/types/shop";
 import posthog from "posthog-js";
-import { formatPrice } from "@/lib/utils/currency";
+import { formatPrice, getProductPrice } from "@/lib/utils/currency";
+
+import { EmptyCart } from "@/components/EmptyCart";
 
 export default function CartPage() {
   const dispatch = useAppDispatch();
@@ -37,27 +39,20 @@ export default function CartPage() {
     }
   }, [dispatch, products.length]);
 
+  // Helper function to get price for current currency using product prices
+  const getItemDisplayPrice = (item: CartItem) => {
+    const { price, discountPrice } = getProductPrice(item, currency);
+    return discountPrice ?? price;
+  };
+
   const total = items.reduce((sum, item) => {
-    const itemPrice =
-      currency === "USD" ? item.priceUSD ?? item.price / 15 : item.price;
-    return sum + itemPrice * item.quantity;
+    return sum + getItemDisplayPrice(item) * item.quantity;
   }, 0);
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4">
-        <div className="text-center space-y-6">
-          <h1 className="font-serif text-4xl lg:text-5xl">Your Bag is Empty</h1>
-          <p className="text-neutral-500 max-w-md mx-auto">
-            Looks like you haven't added any pieces to your collection yet.
-          </p>
-          <Link
-            href="/shop"
-            className="inline-block bg-black text-white dark:bg-white dark:text-black px-12 py-4 uppercase tracking-[0.2em] text-xs font-bold transition-transform active:scale-95"
-          >
-            Explore Shop
-          </Link>
-        </div>
+      <div className="min-h-screen pt-20">
+        <EmptyCart />
       </div>
     );
   }
@@ -126,12 +121,7 @@ export default function CartPage() {
                           {item.name}
                         </h3>
                         <p className="text-sm font-bold tracking-wider">
-                          {formatPrice(
-                            currency === "USD"
-                              ? item.priceUSD ?? item.price / 15
-                              : item.price,
-                            currency
-                          )}
+                          {formatPrice(getItemDisplayPrice(item), currency)}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -243,12 +233,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <p className="text-sm font-bold">
-                        {formatPrice(
-                          (currency === "USD"
-                            ? item.priceUSD ?? item.price / 15
-                            : item.price) * item.quantity,
-                          currency
-                        )}
+                        {formatPrice(getItemDisplayPrice(item) * item.quantity, currency)}
                       </p>
                     </div>
                   </div>

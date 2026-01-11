@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { usePaystackPayment } from "react-paystack";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { clearCart } from "@/store/slices/cartSlice";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   ArrowLeft,
   CheckCircle,
@@ -16,9 +18,34 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import posthog from "posthog-js";
+import {
+  getProductPrice,
+  CURRENCY_SYMBOLS,
+} from "@/lib/utils/currency";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { EmptyCart } from "@/components/EmptyCart";
 
 // Paystack public key from environment
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
+
+interface Currency {
+  code: string;
+  symbol: string;
+  rate: number;
+  isBase: boolean;
+  isActive: boolean;
+}
 
 interface OrderResult {
   success: boolean;
@@ -41,13 +68,58 @@ interface PaystackConfig {
   };
 }
 
+const checkoutSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  whatsapp: z.string().min(1, "WhatsApp number is required").regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)"),
+  email: z.string().email("Invalid email address").or(z.literal("")),
+  phone: z.string().regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)").or(z.literal("")),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  hasDeliveryDetails: z.boolean(),
+  useWhatsAppAsPhone: z.boolean(),
+});
+
+type CheckoutFormData = z.infer<typeof checkoutSchema>;
+
 export function CheckoutForm() {
   const dispatch = useAppDispatch();
-  const { items } = useAppSelector((state) => state.cart);
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const { items, currency: selectedCurrency, currencyRate: exchangeRate } = useAppSelector((state) => ({
+    items: state.cart.items,
+    currency: state.shop.currency,
+    currencyRate: state.shop.currencyRate,
+  }));
+
+  const form = useForm<CheckoutFormData>({
+    resolver: zodResolver(checkoutSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      whatsapp: "+",
+      address: "",
+      city: "",
+      hasDeliveryDetails: false,
+      useWhatsAppAsPhone: false,
+    },
+  });
+
+  const {
+    watch,
+    setValue,
+    formState: { errors },
+  } = form;
+
+  const whatsapp = watch("whatsapp");
+  const useWhatsAppAsPhone = watch("useWhatsAppAsPhone");
+
+  // Sync WhatsApp to phone when checkbox is checked
+  useEffect(() => {
+    if (useWhatsAppAsPhone) {
+      setValue("phone", whatsapp);
+    }
+  }, [whatsapp, useWhatsAppAsPhone, setValue]);
 
   const [step, setStep] = useState<"details" | "success">("details");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,75 +129,56 @@ export function CheckoutForm() {
     null
   );
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "+233",
-    whatsapp: "",
-    address: "",
-    city: "",
-    hasDeliveryDetails: false,
-  });
+  // Success message and tracking data after payment
+  const [submittedData, setSubmittedData] = useState<CheckoutFormData | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // Helper function to get item price in current selected currency
+  const getItemDisplayPrice = (item: typeof items[0]) => {
+    const { price, discountPrice } = getProductPrice(item, selectedCurrency);
+    return discountPrice ?? price;
   };
 
-  const validateGhanianPhone = (number: string) => {
-    const cleanNumber = number.replace(/\s/g, "");
-    const ghanaRegex = /^\+233\d{9}$/;
-    return ghanaRegex.test(cleanNumber);
-  };
+  // Calculate total in selected currency for display
+  const total = items.reduce(
+    (sum, item) => sum + getItemDisplayPrice(item) * item.quantity,
+    0
+  );
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  // Calculate GHS total for Paystack
+  const ghsTotal = items.reduce((sum, item) => {
+    // Get the price defined for the selected currency
+    const currentPrice = getItemDisplayPrice(item);
+
+    // If foreign currency, convert to GHS using exchange rate from Redux
+    if (selectedCurrency !== 'GHS') {
+      return sum + (currentPrice * exchangeRate * item.quantity);
+    }
+
+    // If GHS, use the price directly
+    return sum + currentPrice * item.quantity;
+  }, 0);
+
+  // No longer fetching currencies here as they are managed in the store via CurrencySwitcher
 
   // Initialize payment via API
-  const initializePayment = async () => {
+  const initializePayment = async (data: CheckoutFormData) => {
     setError(null);
     setIsSubmitting(true);
 
-    // Validation
-    if (!formData.email || !validateEmail(formData.email)) {
-      setError("Please enter a valid email address for payment receipt.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    const hasPhone =
-      formData.phone.trim() !== "+233" && formData.phone.trim() !== "";
-    const hasWhatsapp =
-      formData.whatsapp.trim() !== "+" && formData.whatsapp.trim() !== "";
-
-    if (!hasPhone && !hasWhatsapp) {
-      setError("Please provide either a Calling Number or a WhatsApp Number.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (hasPhone && !validateGhanianPhone(formData.phone)) {
-      setError(
-        "Please enter a valid Ghanaian phone number (e.g., +233 123456789)"
-      );
-      setIsSubmitting(false);
-      return;
-    }
+    // Store for success message and tracking
+    setSubmittedData(data);
 
     try {
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email,
-          phone: hasPhone ? formData.phone : formData.whatsapp,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          address: formData.address || undefined,
-          city: formData.city || undefined,
+          email: data.email || "helloawuraba@gmail.com",
+          phone: data.useWhatsAppAsPhone ? data.whatsapp : (data.phone || data.whatsapp),
+          firstName: data.firstName,
+          lastName: data.lastName,
+          address: data.address || undefined,
+          city: data.city || undefined,
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -164,8 +217,8 @@ export function CheckoutForm() {
       // Set up Paystack config for popup
       setPaymentConfig({
         reference: result.reference,
-        email: formData.email,
-        amount: Math.round(total * 100), // Convert to pesewas
+        email: data.email || "helloawuraba@gmail.com",
+        amount: Math.round(ghsTotal * 100), // Convert GHS to pesewas
         publicKey: PAYSTACK_PUBLIC_KEY,
         currency: "GHS",
         metadata: {
@@ -173,12 +226,12 @@ export function CheckoutForm() {
             {
               display_name: "Customer Name",
               variable_name: "customer_name",
-              value: `${formData.firstName} ${formData.lastName}`,
+              value: `${data.firstName} ${data.lastName}`,
             },
             {
               display_name: "Phone",
               variable_name: "phone",
-              value: hasPhone ? formData.phone : formData.whatsapp,
+              value: data.useWhatsAppAsPhone ? data.whatsapp : (data.phone || data.whatsapp),
             },
           ],
         },
@@ -199,14 +252,16 @@ export function CheckoutForm() {
       item_count: items.length,
     });
 
-    // Identify user
-    posthog.identify(formData.email, {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      email: formData.email,
-      phone: formData.phone !== "+233" ? formData.phone : null,
-      whatsapp: formData.whatsapp || null,
-    });
+    // Identify user if data exists
+    if (submittedData) {
+      posthog.identify(submittedData.email || submittedData.whatsapp, {
+        first_name: submittedData.firstName,
+        last_name: submittedData.lastName,
+        email: submittedData.email || null,
+        phone: submittedData.phone || null,
+        whatsapp: submittedData.whatsapp,
+      });
+    }
 
     setStep("success");
     dispatch(clearCart());
@@ -239,27 +294,17 @@ export function CheckoutForm() {
   );
 
   // Effect to trigger Paystack popup when config is ready
-  const handlePayNow = () => {
-    if (paymentConfig) {
-      initPaystack({
-        onSuccess: onPaymentSuccess,
-        onClose: onPaymentClose,
-      });
-    } else {
-      initializePayment();
+  useEffect(() => {
+    if (paymentConfig && isSubmitting) {
+      const timer = setTimeout(() => {
+        initPaystack({
+          onSuccess: onPaymentSuccess,
+          onClose: onPaymentClose,
+        });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  };
-
-  // When paymentConfig changes and isSubmitting is true, open popup
-  if (paymentConfig && isSubmitting) {
-    // Use setTimeout to defer the popup opening
-    setTimeout(() => {
-      initPaystack({
-        onSuccess: onPaymentSuccess,
-        onClose: onPaymentClose,
-      });
-    }, 100);
-  }
+  }, [paymentConfig, isSubmitting, initPaystack]);
 
   if (step === "success") {
     return (
@@ -275,10 +320,10 @@ export function CheckoutForm() {
             </p>
           )}
           <p className="text-neutral-600 dark:text-neutral-400">
-            Thank you for your order, {formData.firstName}! We&apos;ve received
+            Thank you for your order, {submittedData?.firstName}! We&apos;ve received
             your payment and will contact you at{" "}
             <span className="text-black dark:text-white font-bold">
-              {formData.phone !== "+233" ? formData.phone : formData.whatsapp}
+              {submittedData?.whatsapp}
             </span>{" "}
             to confirm delivery details.
           </p>
@@ -295,13 +340,8 @@ export function CheckoutForm() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-        <div className="text-center">
-          <h1 className="text-2xl font-serif mb-4">Your cart is empty</h1>
-          <Link href="/shop" className="underline">
-            Return to Shop
-          </Link>
-        </div>
+      <div className="min-h-screen pt-20">
+        <EmptyCart />
       </div>
     );
   }
@@ -324,165 +364,237 @@ export function CheckoutForm() {
           <div className="space-y-8">
             <div className="bg-white dark:bg-black p-6 sm:p-8 shadow-sm rounded-sm">
               <h2 className="font-serif text-2xl mb-6">Contact & Payment</h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handlePayNow();
-                }}
-                className="space-y-4"
-              >
-                {error && (
-                  <div className="bg-red-50 text-red-600 p-3 text-sm rounded-sm border border-red-100 mb-4">
-                    {error}
-                  </div>
-                )}
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(initializePayment)}
+                  className="space-y-4"
+                >
+                  {error && (
+                    <div className="bg-red-50 text-red-600 p-3 text-sm rounded-sm border border-red-100 mb-4">
+                      {error}
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">First Name</label>
-                    <input
-                      type="text"
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
                       name="firstName"
-                      required
-                      className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            First Name <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="First Name"
+                              className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Last Name</label>
-                    <input
-                      type="text"
+                    <FormField
+                      control={form.control}
                       name="lastName"
-                      required
-                      className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            Last Name <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Last Name"
+                              className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    placeholder="your@email.com"
-                    className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                  />
-                  <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
-                    Required for payment receipt
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Calling Number (Ghanaian)
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                  />
-                  <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
-                    Must be a valid Ghanaian number
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">WhatsApp Number</label>
-                  <input
-                    type="tel"
+                  <FormField
+                    control={form.control}
                     name="whatsapp"
-                    className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                    value={formData.whatsapp}
-                    onChange={handleInputChange}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          WhatsApp Number <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            placeholder="+233 123456789"
+                            className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-[10px] text-neutral-400 uppercase tracking-widest">
+                          Include country code (e.g., +233 for Ghana)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div className="pt-4">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        hasDeliveryDetails: !prev.hasDeliveryDetails,
-                      }))
-                    }
-                    className="text-xs uppercase tracking-widest font-bold text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-2"
-                  >
-                    {formData.hasDeliveryDetails
-                      ? "- Hide Delivery Details"
-                      : "+ Add Delivery Details (Optional)"}
-                  </button>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Email Address</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="your@email.com (optional)"
+                            className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-[10px] text-neutral-400 uppercase tracking-widest">
+                          Optional - For payment receipt
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                  <AnimatePresence>
-                    {formData.hasDeliveryDetails && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-4 mt-6 overflow-hidden"
-                      >
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">
-                            Address / Specific Locality
-                          </label>
-                          <input
-                            type="text"
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Calling Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            placeholder="+1 234567890"
+                            disabled={useWhatsAppAsPhone}
+                            className="bg-transparent border-neutral-200 dark:border-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="useWhatsAppAsPhone"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0 pt-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                          Use WhatsApp number as calling number
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="pt-4">
+                    <FormField
+                      control={form.control}
+                      name="hasDeliveryDetails"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-xs uppercase tracking-widest font-bold text-neutral-500 hover:text-black dark:hover:text-white cursor-pointer">
+                            {field.value
+                              ? "- Hide Delivery Details"
+                              : "+ Add Delivery Details (Optional)"}
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+
+                    <AnimatePresence>
+                      {watch("hasDeliveryDetails") && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-4 mt-6 overflow-hidden"
+                        >
+                          <FormField
+                            control={form.control}
                             name="address"
-                            placeholder="e.g. East Legon, near Shoprite"
-                            className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                            value={formData.address}
-                            onChange={handleInputChange}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">
+                                  Address / Specific Locality
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="e.g. East Legon, near Shoprite"
+                                    className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">City</label>
-                          <input
-                            type="text"
+                          <FormField
+                            control={form.control}
                             name="city"
-                            placeholder="Accra"
-                            className="w-full p-3 border border-neutral-200 dark:border-neutral-800 bg-transparent rounded-sm"
-                            value={formData.city}
-                            onChange={handleInputChange}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">City</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Accra"
+                                    className="bg-transparent border-neutral-200 dark:border-neutral-800"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
-                <div className="pt-6">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-black text-white dark:bg-white dark:text-black py-4 uppercase tracking-widest font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4" />
-                        Pay ₵{total.toFixed(2)} Now
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-center text-neutral-400 mt-3 uppercase tracking-widest">
-                    Secure payment powered by Paystack
-                  </p>
-                </div>
-              </form>
+                  <div className="pt-6">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-14 bg-black text-white dark:bg-white dark:text-black uppercase tracking-widest font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 rounded-sm"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4" />
+                          Pay {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency}
+                          {total.toFixed(2)} Now
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-[10px] text-center text-neutral-400 mt-3 uppercase tracking-widest">
+                      Secure payment powered by Paystack
+                    </p>
+                  </div>
+                </form>
+              </Form>
             </div>
           </div>
 
@@ -490,7 +602,7 @@ export function CheckoutForm() {
           <div className="lg:sticky lg:top-24 h-fit space-y-6">
             <div className="bg-white dark:bg-black p-6 sm:p-8 shadow-sm rounded-sm">
               <h3 className="font-serif text-xl mb-6">Order Summary</h3>
-              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto py-2 pr-4 custom-scrollbar">
                 {items.map((item) => (
                   <div
                     key={item.id}
@@ -521,7 +633,7 @@ export function CheckoutForm() {
                       )}
                     </div>
                     <div className="text-sm font-bold">
-                      ₵ {(item.price * item.quantity).toFixed(2)}
+                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {(getItemDisplayPrice(item) * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -530,7 +642,7 @@ export function CheckoutForm() {
               <div className="border-t border-dashed border-neutral-200 dark:border-neutral-700 pt-4 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500">Subtotal</span>
-                  <span className="font-bold">₵ {total.toFixed(2)}</span>
+                  <span className="font-bold">{CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <div className="flex flex-col">
@@ -542,9 +654,11 @@ export function CheckoutForm() {
                 </div>
                 <div className="flex justify-between text-xl font-serif border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-2">
                   <span>Total Payable</span>
-                  <span className="font-sans font-bold text-2xl tracking-tighter">
-                    ₵ {total.toFixed(2)}
-                  </span>
+                  <div className="text-right">
+                    <div className="font-sans font-bold text-2xl tracking-tighter">
+                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {total.toFixed(2)}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 pt-4 opacity-70">
                   <Info className="w-3 h-3 text-neutral-400 flex-shrink-0" />

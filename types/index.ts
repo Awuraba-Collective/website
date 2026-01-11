@@ -63,6 +63,8 @@ export interface CartItem {
   productId: string;
   name: string;
   price: number;
+  prices: any[]; // Full pricing list from the product
+  discount?: any; // Discount information from the product
   image: string;
   selectedSize: Size;
   selectedLength: Length;

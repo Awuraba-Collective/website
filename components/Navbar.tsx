@@ -80,7 +80,7 @@ export function Navbar() {
 
                 {/* Right side icons (Mobile menu toggle) */}
                 <div className="flex items-center gap-4">
-                    {pathname !== "/" && (
+                    {pathname !== "/" && pathname !== "/checkout" && (
                         <>
                             <div className="hidden sm:block">
                                 <CurrencySwitcher />

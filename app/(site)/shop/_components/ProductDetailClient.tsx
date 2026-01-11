@@ -81,6 +81,10 @@ export function ProductDetailClient({
 
     const { price: ghsPrice } = getProductPrice(product, "GHS");
     const { price: usdPrice } = getProductPrice(product, "USD");
+    const { price: currentCurrencyPrice, discountPrice: currentDiscountPrice } = getProductPrice(product, currency);
+
+    // Use discount price if available, otherwise use regular price
+    const finalCurrencyPrice = currentDiscountPrice ?? currentCurrencyPrice;
 
     dispatch(
       addToCart({
@@ -89,6 +93,10 @@ export function ProductDetailClient({
         name: product.name,
         price: ghsPrice,
         priceUSD: usdPrice,
+        currency: currency, // Store the currency code
+        currencyPrice: finalCurrencyPrice, // Store the price in selected currency
+        prices: product.prices, // Store the full pricing list
+        discount: product.discount, // Store discount information
         image:
           activeMedia.find((m) => m.type === "IMAGE")?.src ||
           activeMedia[0]?.src ||
@@ -196,7 +204,7 @@ export function ProductDetailClient({
     const variantMedia = product.media.filter(
       (m) =>
         m.modelWearingVariant?.toLowerCase() ===
-          selectedVariantName.toLowerCase() ||
+        selectedVariantName.toLowerCase() ||
         m.alt.toLowerCase().includes(selectedVariantName.toLowerCase())
     );
     // Fallback to all media if no matches
@@ -275,10 +283,10 @@ export function ProductDetailClient({
                             {product?.fitCategory?.sizes.some(
                               (s) => s.standardMapping
                             ) && (
-                              <th className="p-3 border border-neutral-700">
-                                Recommended Fit
-                              </th>
-                            )}
+                                <th className="p-3 border border-neutral-700">
+                                  Recommended Fit
+                                </th>
+                              )}
                             {product?.fitCategory?.measurementLabels?.map(
                               (label: string) => (
                                 <th
@@ -307,10 +315,10 @@ export function ProductDetailClient({
                               {product?.fitCategory?.sizes.some(
                                 (s) => s.standardMapping
                               ) && (
-                                <td className="p-3 border border-neutral-200 dark:border-neutral-700">
-                                  {row.standardMapping || "-"}
-                                </td>
-                              )}
+                                  <td className="p-3 border border-neutral-200 dark:border-neutral-700">
+                                    {row.standardMapping || "-"}
+                                  </td>
+                                )}
                               {product?.fitCategory?.measurementLabels?.map(
                                 (label: string) => (
                                   <td
@@ -436,14 +444,13 @@ export function ProductDetailClient({
                   src={activeMedia[activeImage]?.src || ""}
                   alt={activeMedia[activeImage]?.alt || ""}
                   fill
-                  className={`object-cover transition-transform duration-200 ${
-                    isHovering ? "scale-[1.5]" : "scale-100"
-                  }`}
+                  className={`object-cover transition-transform duration-200 ${isHovering ? "scale-[1.5]" : "scale-100"
+                    }`}
                   style={
                     isHovering
                       ? {
-                          transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
-                        }
+                        transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
+                      }
                       : undefined
                   }
                   priority
@@ -478,11 +485,10 @@ export function ProductDetailClient({
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${
-                      activeImage === idx
-                        ? "border-black dark:border-white opacity-100"
-                        : "border-transparent opacity-60 hover:opacity-100"
-                    }`}
+                    className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${activeImage === idx
+                      ? "border-black dark:border-white opacity-100"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
                   >
                     {media.type === "VIDEO" ? (
                       <div className="relative w-full h-full">
@@ -554,7 +560,7 @@ export function ProductDetailClient({
                         const daysLeft = Math.ceil(
                           (new Date(product.discount.endDate).getTime() -
                             new Date().getTime()) /
-                            (1000 * 60 * 60 * 24)
+                          (1000 * 60 * 60 * 24)
                         );
                         return daysLeft > 0
                           ? `${daysLeft} days remaining at this price`
@@ -597,13 +603,12 @@ export function ProductDetailClient({
                         key={variant.name}
                         disabled={!variant.isAvailable}
                         onClick={() => setSelectedVariant(variant)}
-                        className={`relative w-14 h-14 rounded-lg border-2 transition-all overflow-hidden ${
-                          selectedVariant.name === variant.name
-                            ? "border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2"
-                            : variant.isAvailable
+                        className={`relative w-14 h-14 rounded-lg border-2 transition-all overflow-hidden ${selectedVariant.name === variant.name
+                          ? "border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2"
+                          : variant.isAvailable
                             ? "border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600"
                             : "border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50"
-                        }`}
+                          }`}
                         title={variant.name}
                       >
                         {variantPreview ? (
@@ -633,8 +638,8 @@ export function ProductDetailClient({
 
               {/* Size */}
               <div>
-                <div className="flex justify-between items-end">
-                  <span className="block text-sm font-bold uppercase tracking-wider mb-3">
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="block text-sm font-bold uppercase tracking-wider">
                     Size ({product?.fitCategory?.name})
                   </span>
                   <button
@@ -659,11 +664,10 @@ export function ProductDetailClient({
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`py-2 text-sm border transition-all uppercase ${
-                        selectedSize === size
-                          ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                          : "border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400"
-                      }`}
+                      className={`py-2 text-sm border transition-all uppercase ${selectedSize === size
+                        ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                        : "border-neutral-300 text-neutral-600 hover:border-neutral-400 dark:border-neutral-700 dark:text-neutral-400"
+                        }`}
                     >
                       {size}
                     </button>
@@ -673,7 +677,7 @@ export function ProductDetailClient({
 
               {/* Length */}
               <div>
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex items-baseline gap-2 mb-3">
                   <span className="block text-sm font-bold uppercase tracking-wider">
                     Length
                   </span>
@@ -701,11 +705,10 @@ export function ProductDetailClient({
                       className="flex items-center gap-2 cursor-pointer group"
                     >
                       <div
-                        className={`w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center ${
-                          selectedLength === len
-                            ? "border-black dark:border-white"
-                            : ""
-                        }`}
+                        className={`w-4 h-4 rounded-full border border-neutral-300 flex items-center justify-center ${selectedLength === len
+                          ? "border-black dark:border-white"
+                          : ""
+                          }`}
                       >
                         {selectedLength === len && (
                           <div className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white" />
@@ -719,11 +722,10 @@ export function ProductDetailClient({
                         onChange={() => setSelectedLength(len)}
                       />
                       <span
-                        className={`text-sm ${
-                          selectedLength === len
-                            ? "font-medium"
-                            : "text-neutral-500 group-hover:text-black dark:group-hover:text-white"
-                        }`}
+                        className={`text-sm ${selectedLength === len
+                          ? "font-medium"
+                          : "text-neutral-500 group-hover:text-black dark:group-hover:text-white"
+                          }`}
                       >
                         {len}
                       </span>
@@ -749,11 +751,10 @@ export function ProductDetailClient({
             <div className="pt-8 mt-8 border-t border-neutral-200 dark:border-neutral-800">
               <button
                 onClick={handleAddToCart}
-                className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${
-                  isAdded
-                    ? "bg-green-600 text-white"
-                    : "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
-                }`}
+                className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${isAdded
+                  ? "bg-green-600 text-white"
+                  : "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
+                  }`}
               >
                 {isAdded ? (
                   <>
@@ -858,11 +859,10 @@ export function ProductDetailClient({
         </div>
         <button
           onClick={handleAddToCart}
-          className={`flex-grow h-12 uppercase tracking-widest text-xs font-bold transition-all px-6 ${
-            isAdded
-              ? "bg-green-600 text-white"
-              : "bg-black text-white dark:bg-white dark:text-black"
-          }`}
+          className={`flex-grow h-12 uppercase tracking-widest text-xs font-bold transition-all px-6 ${isAdded
+            ? "bg-green-600 text-white"
+            : "bg-black text-white dark:bg-white dark:text-black"
+            }`}
         >
           {isAdded ? "Added" : "Add to Bag"}
         </button>

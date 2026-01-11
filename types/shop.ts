@@ -52,8 +52,12 @@ export interface CartItem {
   id: string; // unique cart item id (product.id + selected options)
   productId: string;
   name: string;
-  price: number;
-  priceUSD?: number;
+  price: number; // GHS price (base currency)
+  priceUSD?: number; // Legacy USD price
+  currency: string; // Currency code when added to cart
+  currencyPrice: number; // Price in the selected currency when added
+  prices: any[]; // Full pricing list from the product
+  discount?: any; // Discount information from the product
   image: string;
   selectedSize: string;
   selectedLength: Length;

@@ -7,6 +7,7 @@ interface ShopState {
     filteredProducts: SerializableProduct[];
     activeFilter: string;
     currency: string;
+    currencyRate: number;
     loading: boolean;
     error: string | null;
 }
@@ -16,6 +17,7 @@ const initialState: ShopState = {
     filteredProducts: [],
     activeFilter: 'All',
     currency: 'GHS',
+    currencyRate: 1,
     loading: false,
     error: null,
 };
@@ -46,8 +48,9 @@ const shopSlice = createSlice({
                 );
             }
         },
-        setCurrency: (state, action: PayloadAction<string>) => {
-            state.currency = action.payload;
+        setCurrency: (state, action: PayloadAction<{ code: string; rate: number }>) => {
+            state.currency = action.payload.code;
+            state.currencyRate = action.payload.rate;
         },
     },
     extraReducers: (builder) => {

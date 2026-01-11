@@ -8,6 +8,7 @@ import { CURRENCY_SYMBOLS } from '@/lib/utils/currency';
 interface Currency {
     code: string;
     symbol: string;
+    rate: number;
     isActive: boolean;
 }
 
@@ -44,7 +45,7 @@ export function CurrencySwitcher() {
             {currencies.map((curr) => (
                 <button
                     key={curr.code}
-                    onClick={() => dispatch(setCurrency(curr.code))}
+                    onClick={() => dispatch(setCurrency({ code: curr.code, rate: Number(curr.rate) }))}
                     className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${currency === curr.code
                         ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
                         : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'

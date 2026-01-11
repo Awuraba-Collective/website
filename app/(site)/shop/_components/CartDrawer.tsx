@@ -9,19 +9,24 @@ import {
   removeFromCart,
   updateQuantity,
 } from "@/store/slices/cartSlice";
+import { EmptyCart } from "@/components/EmptyCart";
 import { useEffect } from "react";
 import posthog from "posthog-js";
-import { formatPrice } from "@/lib/utils/currency";
+import { formatPrice, getProductPrice } from "@/lib/utils/currency";
 
 export function CartDrawer() {
   const dispatch = useAppDispatch();
   const { currency } = useAppSelector((state) => state.shop);
   const { items, isOpen } = useAppSelector((state) => state.cart);
 
+  // Helper function to get price for current currency using product prices
+  const getItemDisplayPrice = (item: typeof items[0]) => {
+    const { price, discountPrice } = getProductPrice(item, currency);
+    return discountPrice ?? price;
+  };
+
   const total = items.reduce((sum, item) => {
-    const price =
-      currency === "USD" ? item.priceUSD ?? item.price / 15 : item.price;
-    return sum + price * item.quantity;
+    return sum + getItemDisplayPrice(item) * item.quantity;
   }, 0);
 
   // Prevent background scroll when open
@@ -63,15 +68,7 @@ export function CartDrawer() {
         {/* Items */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-neutral-50/50 dark:bg-neutral-900/50">
           {items.length === 0 ? (
-            <div className="text-center py-20 text-neutral-500">
-              <p>Your bag is empty.</p>
-              <button
-                onClick={() => dispatch(toggleCart())}
-                className="mt-4 text-black dark:text-white underline font-medium"
-              >
-                Continue Shopping
-              </button>
-            </div>
+            <EmptyCart isDrawer onClose={() => dispatch(toggleCart())} />
           ) : (
             items.map((item) => (
               <div
@@ -122,12 +119,7 @@ export function CartDrawer() {
                       {item.selectedVariant.name}
                     </p>
                     <p className="text-sm font-medium mt-1">
-                      {formatPrice(
-                        currency === "USD"
-                          ? item.priceUSD ?? item.price / 15
-                          : item.price,
-                        currency
-                      )}
+                      {formatPrice(getItemDisplayPrice(item), currency)}
                     </p>
                   </div>
 
