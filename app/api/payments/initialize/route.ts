@@ -9,6 +9,7 @@ import {
   Length,
   ProductVariant,
 } from "@/app/generated/prisma";
+import { getProductPrice } from "@/lib/utils/currency";
 
 interface InitializePaymentRequest {
   email: string;
@@ -35,12 +36,14 @@ interface InitializePaymentRequest {
     };
     note?: string;
   }>;
+  currency: string;
+  exchangeRate: number;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: InitializePaymentRequest = await request.json();
-    const { email, phone, firstName, lastName, address, city, items } = body;
+    const { email, phone, firstName, lastName, address, city, items, currency, exchangeRate } = body;
 
     // Validate request
     if (!email || !items?.length) {
@@ -50,11 +53,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate totals
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    // Verify prices and calculate totals on server
+    const productIds = items.map((item) => item.productId);
+    const dbProducts = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: {
+        prices: true,
+        discount: true,
+      },
+    });
+
+    let subtotalInCurrency = 0;
+    const validatedItems = items.map((item) => {
+      const dbProduct = dbProducts.find((p) => p.id === item.productId);
+      if (!dbProduct) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+
+      // Calculate price in the selected currency
+      const { price: basePrice, discountPrice } = getProductPrice(dbProduct, currency);
+      const currentPrice = discountPrice ?? basePrice;
+
+      subtotalInCurrency += currentPrice * item.quantity;
+
+      return {
+        ...item,
+        price: currentPrice, // Price in selected currency
+      };
+    });
+
+    // Convert total to GHS for Paystack if necessary
+    const subtotal = currency === "GHS"
+      ? subtotalInCurrency
+      : Math.round(subtotalInCurrency * (exchangeRate || 1) * 100) / 100;
+
     const shippingCost = 0;
     const discount = 0;
     const total = subtotal + shippingCost - discount;
@@ -91,7 +123,7 @@ export async function POST(request: NextRequest) {
         shippingCountry: "Ghana",
         shippingPhone: phone,
         items: {
-          create: items.map((item) => ({
+          create: validatedItems.map((item) => ({
             product: { connect: { id: item.productId } },
             variant: { connect: { id: item.variant.id } },
             productName: item.name,

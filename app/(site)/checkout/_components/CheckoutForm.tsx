@@ -191,6 +191,8 @@ export function CheckoutForm() {
             customMeasurements: item.customMeasurements,
             note: item.note,
           })),
+          currency: selectedCurrency,
+          exchangeRate: exchangeRate,
         }),
       });
 

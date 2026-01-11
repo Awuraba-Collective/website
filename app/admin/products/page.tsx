@@ -19,6 +19,7 @@ import {
   Video,
 } from "lucide-react";
 import Link from "next/link";
+import { getProductPrice } from "@/lib/utils/currency";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -504,19 +505,7 @@ export default function ProductsPage() {
         <DialogContent className="!w-[95vw] max-w-5xl h-[92vh] rounded-[2rem] md:rounded-[3rem] border-neutral-100 dark:border-neutral-800 p-0 overflow-hidden bg-white dark:bg-black shadow-2xl">
           {previewProduct &&
             (() => {
-              const discount = activeDiscounts.find(
-                (d) => d.id === previewProduct.discountId
-              );
-              const calculateDiscountedPrice = (original: number) => {
-                if (!discount) return null;
-                if (discount.type === "PERCENTAGE") {
-                  return Math.round(original * (1 - discount.value / 100));
-                }
-                return Math.max(0, original - discount.value);
-              };
-              const discountedGHS = calculateDiscountedPrice(
-                previewProduct.price
-              );
+              const { price: ghsPrice, discountPrice: discountedGHS } = getProductPrice(previewProduct, "GHS");
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-12 h-full overflow-y-auto md:overflow-hidden">
