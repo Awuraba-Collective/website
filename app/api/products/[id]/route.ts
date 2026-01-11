@@ -109,21 +109,65 @@ export async function PATCH(
                     }
                 });
 
-                // 2. Reconcile Variants (Delete and Recreate for simplicity)
-                await tx.productVariant.deleteMany({ where: { productId: id } });
-                await tx.productVariant.createMany({
-                    data: variants.map((v: any) => ({
-                        productId: id,
-                        name: v.name,
-                        isAvailable: v.available,
-                    }))
-                });
+                // 2. Reconcile Variants
+                const existingVariants = await tx.productVariant.findMany({ where: { productId: id } });
+                const incomingVariantIds = variants.map((v: any) => v.id).filter(Boolean);
+
+                // Identify variants to delete
+                const variantsToDelete = existingVariants.filter(ev => !incomingVariantIds.includes(ev.id));
+
+                for (const variant of variantsToDelete) {
+                    // Check if variant is in use
+                    const inUse = await tx.cartItem.findFirst({ where: { variantId: variant.id } }) ||
+                        await tx.orderItem.findFirst({ where: { variantId: variant.id } });
+
+                    if (inUse) {
+                        // Soft-delete if in use
+                        await tx.productVariant.update({
+                            where: { id: variant.id },
+                            data: { isAvailable: false }
+                        });
+                    } else {
+                        // Hard delete if safe
+                        await tx.productVariant.delete({ where: { id: variant.id } });
+                    }
+                }
+
+                // Update or Create incoming variants
+                for (const v of variants) {
+                    if (v.id) {
+                        await tx.productVariant.update({
+                            where: { id: v.id },
+                            data: {
+                                name: v.name,
+                                isAvailable: v.available,
+                            }
+                        });
+                    } else {
+                        await tx.productVariant.create({
+                            data: {
+                                productId: id,
+                                name: v.name,
+                                isAvailable: v.available,
+                            }
+                        });
+                    }
+                }
 
                 // 3. Reconcile Media (Images)
-                await tx.productMedia.deleteMany({ where: { productId: id } });
-                await tx.productMedia.createMany({
-                    data: images.map((img: any, index: number) => ({
+                // Media is safer to delete/recreate but reconciliation is cleaner
+                const existingMedia = await tx.productMedia.findMany({ where: { productId: id } });
+                const incomingMediaIds = images.map((img: any) => img.id).filter(Boolean);
+
+                await tx.productMedia.deleteMany({
+                    where: {
                         productId: id,
+                        id: { notIn: incomingMediaIds }
+                    }
+                });
+
+                for (const [index, img] of images.entries()) {
+                    const mediaData = {
                         src: img.url,
                         alt: img.alt,
                         type: img.type || "IMAGE",
@@ -131,8 +175,22 @@ export async function PATCH(
                         modelHeight: img.modelHeight,
                         modelWearingSize: img.wearingSize,
                         modelWearingVariant: img.wearingVariant,
-                    }))
-                });
+                    };
+
+                    if (img.id) {
+                        await tx.productMedia.update({
+                            where: { id: img.id },
+                            data: mediaData
+                        });
+                    } else {
+                        await tx.productMedia.create({
+                            data: {
+                                ...mediaData,
+                                productId: id,
+                            }
+                        });
+                    }
+                }
 
                 // 4. Reconcile Prices
                 await tx.productPrice.deleteMany({ where: { productId: id } });

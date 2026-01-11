@@ -290,6 +290,7 @@ export const useProductForm = () => {
                 },
 
                 variants: values.variants.map(v => ({
+                    id: v.id.startsWith('new-') ? undefined : v.id,
                     name: v.name,
                     available: v.available
                 })),
@@ -312,6 +313,7 @@ export const useProductForm = () => {
 
                     // 2. If it's an existing image (persisted URL)
                     return {
+                        id: img.id.startsWith('new-') ? undefined : img.id,
                         url: img.previewUrl || '',
                         alt: img.alt || `${values.name} - ${index + 1}`,
                         modelHeight: img.modelHeight || undefined,

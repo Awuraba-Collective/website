@@ -117,12 +117,14 @@ export interface ProductApiPayload {
 
     // Variants
     variants: Array<{
+        id?: string;
         name: string;
         available: boolean;
     }>;
 
     // Media (uploaded to storage first, URLs provided)
     images: Array<{
+        id?: string;
         url: string;              // Storage bucket URL
         alt: string;              // Generated or provided
         type: 'IMAGE' | 'VIDEO';  // Media type
