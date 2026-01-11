@@ -59,10 +59,10 @@ export default async function ShopPage({
   const categories = await prisma.category.findMany({
     where: { products: { some: { isActive: true } } },
     select: { name: true },
-    orderBy: { name: 'asc' }
+    orderBy: { name: "asc" },
   });
 
-  const categoryNames = categories.map(c => c.name);
+  const categoryNames = categories.map((c) => c.name);
   const allFilters = ["All", "New Drop", ...categoryNames];
 
   // Base where clause
@@ -73,8 +73,8 @@ export default async function ShopPage({
   // Apply search query
   if (searchQuery) {
     where.OR = [
-      { name: { contains: searchQuery, mode: 'insensitive' } },
-      { description: { contains: searchQuery, mode: 'insensitive' } },
+      { name: { contains: searchQuery, mode: "insensitive" } },
+      { description: { contains: searchQuery, mode: "insensitive" } },
     ];
   }
 
@@ -113,29 +113,40 @@ export default async function ShopPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const filteredProducts: SerializableProduct[] = products.map(({ costPrice, ...product }) => ({
-    ...product,
-    discount: product.discount ? {
-      ...product.discount,
-      value: Number(product.discount.value),
-    } : null,
-    prices: product.prices?.map(p => ({
-      ...p,
-      price: Number(p.price),
-    })) || [],
-    fitCategory: product.fitCategory ? {
-      ...product.fitCategory,
-      sizes: product.fitCategory.sizes.map(s => ({
-        ...s,
-        measurements: s.measurements as any
-      }))
-    } : null,
-    relatedProducts: product.relatedProducts?.map(rp => ({
-      ...rp,
-      prices: rp.prices?.map(p => ({ ...p, price: Number(p.price) })) || [],
-      discount: rp.discount ? { ...rp.discount, value: Number(rp.discount.value) } : null,
-    })) || [],
-  })) as any; // Cast as any if still complex, but structure is now correct for the type
+  const filteredProducts: SerializableProduct[] = products.map(
+    ({ costPrice, ...product }) => ({
+      ...product,
+      discount: product.discount
+        ? {
+            ...product.discount,
+            value: Number(product.discount.value),
+          }
+        : null,
+      prices:
+        product.prices?.map((p) => ({
+          ...p,
+          price: Number(p.price),
+        })) || [],
+      fitCategory: product.fitCategory
+        ? {
+            ...product.fitCategory,
+            sizes: product.fitCategory.sizes.map((s) => ({
+              ...s,
+              measurements: s.measurements as any,
+            })),
+          }
+        : null,
+      relatedProducts:
+        product.relatedProducts?.map((rp) => ({
+          ...rp,
+          prices:
+            rp.prices?.map((p) => ({ ...p, price: Number(p.price) })) || [],
+          discount: rp.discount
+            ? { ...rp.discount, value: Number(rp.discount.value) }
+            : null,
+        })) || [],
+    })
+  ) as any; // Cast as any if still complex, but structure is now correct for the type
 
   return (
     <Suspense

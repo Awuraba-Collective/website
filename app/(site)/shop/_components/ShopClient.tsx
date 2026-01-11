@@ -23,7 +23,9 @@ export default function ShopClient({
 }: ShopClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || ""
+  );
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   const createQueryString = useCallback(
@@ -39,11 +41,15 @@ export default function ShopClient({
     [searchParams]
   );
 
-  // Sync search query to URL
   useEffect(() => {
-    const query = createQueryString("search", debouncedSearch);
-    router.push(`/shop?${query}`, { scroll: false });
-  }, [debouncedSearch, createQueryString, router]);
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedSearch) {
+      params.set("search", debouncedSearch);
+    } else {
+      params.delete("search");
+    }
+    router.push(`/shop?${params.toString()}`, { scroll: false });
+  }, [debouncedSearch]);
 
   const handleFilterClick = (filter: string) => {
     if (filter !== activeFilter) {
@@ -99,9 +105,10 @@ export default function ShopClient({
                   key={filter}
                   onClick={() => handleFilterClick(filter)}
                   className={`text-[9px] sm:text-[10px] tracking-[0.3em] uppercase transition-all whitespace-nowrap pb-4 -mb-4 border-b-2 relative
-                    ${activeFilter === filter
-                      ? "text-black dark:text-white font-bold"
-                      : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
+                    ${
+                      activeFilter === filter
+                        ? "text-black dark:text-white font-bold"
+                        : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
                     }
                   `}
                 >
@@ -110,7 +117,11 @@ export default function ShopClient({
                     <motion.div
                       layoutId="activeFilter"
                       className="absolute bottom-0 left-0 right-0 h-[2px] bg-black dark:bg-white"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                      }}
                     />
                   )}
                 </button>

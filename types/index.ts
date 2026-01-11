@@ -28,19 +28,22 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     fitCategory: {
       include: {
         sizes: true;
-      }
-    },
+      };
+    };
     relatedProducts: {
       include: {
-        media: true,
-        prices: true,
-        discount: true
-      }
-    }
+        media: true;
+        prices: true;
+        discount: true;
+      };
+    };
   };
 }>;
 
-export type SerializableProduct = Omit<Serialize<ProductWithRelations>, 'costPrice'>;
+export type SerializableProduct = Omit<
+  Serialize<ProductWithRelations>,
+  "costPrice"
+>;
 
 // Cart item type (client-side, for Redux store)
 export type Size = string;
@@ -70,6 +73,10 @@ export interface CartItem {
   quantity: number;
 }
 
-export type SerializableMeasurementType = Serialize<Prisma.MeasurementTypeGetPayload<{}>>;
-export type SerializableLengthStandard = Serialize<Prisma.LengthStandardGetPayload<{}>>;
+export type SerializableMeasurementType = Serialize<
+  Prisma.MeasurementTypeGetPayload<{}>
+>;
+export type SerializableLengthStandard = Serialize<
+  Prisma.LengthStandardGetPayload<{}>
+>;
 export type SerializableFitSize = Serialize<Prisma.FitSizeGetPayload<{}>>;

@@ -1,17 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/database";
-import {
-  generateOrderNumber,
-  mapSizeToEnum,
-  mapLengthToEnum,
-  mapFitToEnum,
-} from "@/lib/order";
-import {
-  OrderStatus,
-  PaymentStatus,
-  Prisma,
-} from "@/app/generated/prisma";
+import { generateOrderNumber } from "@/lib/order";
+import { OrderStatus, PaymentStatus, Prisma } from "@/app/generated/prisma";
 import type { CartItem } from "@/types/shop";
 
 interface CustomerInfo {
@@ -96,15 +87,15 @@ export async function createOrder(
         items: {
           create: items.map((item) => ({
             productId: item.productId,
-            variantId: item.productId, // Will need proper variantId mapping when products are in DB
+            variantId: item.selectedVariant.id,
             productName: item.name,
-            variantName: item.selectedVariant,
+            variantName: item.selectedVariant.name,
             unitPrice: new Prisma.Decimal(item.price),
             quantity: item.quantity,
             totalPrice: new Prisma.Decimal(item.price * item.quantity),
-            selectedSize: mapSizeToEnum(item.selectedSize),
-            selectedLength: mapLengthToEnum(item.selectedLength),
-            fitCategory: mapFitToEnum(item.fitCategory),
+            selectedSize: item.selectedSize,
+            selectedLength: item.selectedLength,
+            fitCategory: item.fitCategory,
             customBust: item.customMeasurements?.bust,
             customWaist: item.customMeasurements?.waist,
             customHips: item.customMeasurements?.hips,
