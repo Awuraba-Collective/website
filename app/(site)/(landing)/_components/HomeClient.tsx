@@ -86,7 +86,7 @@ export default function HomeClient() {
                         transition={{ duration: 0.8 }}
                         className="font-serif text-3xl font-medium italic text-neutral-800 dark:text-neutral-200"
                     >
-                        "Dignity and grace should be accessible, not exclusive."
+                        "Elegance and style for everyone."
                     </motion.h2>
                     <div className="h-px w-24 bg-black/10 dark:bg-white/10 mx-auto" />
                     <motion.p
@@ -96,8 +96,7 @@ export default function HomeClient() {
                         transition={{ duration: 0.8, delay: 0.2 }}
                         className="text-neutral-600 dark:text-neutral-400 leading-relaxed"
                     >
-                        AWURABA is a curated clothing line bringing unique, high-quality pieces to women across Ghana.
-                        We are building a future where African fashion is versatile, empowering, and clearly priced.
+                        AWURABA curates distinctive, high-quality African fashion, making timeless pieces accessible to all. We are shaping a future where African fashion is versatile, empowering, and fairly priced.
                     </motion.p>
                 </div>
             </section>
