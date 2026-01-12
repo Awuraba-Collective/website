@@ -72,10 +72,10 @@ const checkoutSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   whatsapp: z.string().min(1, "WhatsApp number is required").regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)"),
-  email: z.string().email("Invalid email address").or(z.literal("")),
   phone: z.string().regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)").or(z.literal("")),
   address: z.string().optional(),
   city: z.string().optional(),
+  region: z.string().optional(),
   hasDeliveryDetails: z.boolean(),
   useWhatsAppAsPhone: z.boolean(),
 });
@@ -95,11 +95,11 @@ export function CheckoutForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
       phone: "",
       whatsapp: "+",
       address: "",
       city: "",
+      region: "",
       hasDeliveryDetails: false,
       useWhatsAppAsPhone: false,
     },
@@ -168,17 +168,21 @@ export function CheckoutForm() {
     // Store for success message and tracking
     setSubmittedData(data);
 
+    // Derived email for Paystack and tracking
+    const whatsappClean = data.whatsapp.replace(/[\s\-\+\(\)]/g, "");
+    const derivedEmail = `${whatsappClean}@awuraba.com`;
+
     try {
       const response = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: data.email || "helloawuraba@gmail.com",
           phone: data.useWhatsAppAsPhone ? data.whatsapp : (data.phone || data.whatsapp),
           firstName: data.firstName,
           lastName: data.lastName,
           address: data.address || undefined,
           city: data.city || undefined,
+          region: data.region || undefined,
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -188,7 +192,6 @@ export function CheckoutForm() {
             selectedSize: item.selectedSize,
             selectedLength: item.selectedLength,
             fitCategory: item.fitCategory,
-            customMeasurements: item.customMeasurements,
             note: item.note,
           })),
           currency: selectedCurrency,
@@ -219,7 +222,7 @@ export function CheckoutForm() {
       // Set up Paystack config for popup
       setPaymentConfig({
         reference: result.reference,
-        email: data.email || "helloawuraba@gmail.com",
+        email: derivedEmail,
         amount: Math.round(ghsTotal * 100), // Convert GHS to pesewas
         publicKey: PAYSTACK_PUBLIC_KEY,
         currency: "GHS",
@@ -256,10 +259,9 @@ export function CheckoutForm() {
 
     // Identify user if data exists
     if (submittedData) {
-      posthog.identify(submittedData.email || submittedData.whatsapp, {
+      posthog.identify(submittedData.whatsapp, {
         first_name: submittedData.firstName,
         last_name: submittedData.lastName,
-        email: submittedData.email || null,
         phone: submittedData.phone || null,
         whatsapp: submittedData.whatsapp,
       });
@@ -442,27 +444,6 @@ export function CheckoutForm() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">Email Address</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="your@email.com (optional)"
-                            className="bg-transparent border-neutral-200 dark:border-neutral-800"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription className="text-[10px] text-neutral-400 uppercase tracking-widest">
-                          Optional - For payment receipt
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   <FormField
                     control={form.control}

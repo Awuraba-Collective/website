@@ -12,6 +12,7 @@ interface CustomerInfo {
   whatsapp?: string;
   address?: string;
   city?: string;
+  region?: string;
 }
 
 interface CreateOrderInput {
@@ -59,15 +60,42 @@ export async function createOrder(
       attempts++;
     }
 
+    // Customer Intelligence: Find or create customer by WhatsApp number
+    const whatsappClean = (customer.whatsapp || customer.phone || "").replace(/[\s\-\+\(\)]/g, "");
+
+    const dbCustomer = await prisma.customer.upsert({
+      where: { whatsappNumber: whatsappClean },
+      update: {
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        phone: customer.phone || undefined,
+        lastAddress: customer.address || undefined,
+        lastCity: customer.city || undefined,
+        // @ts-ignore - region might not be in the interface yet but added to schema
+        lastRegion: customer.region || undefined,
+        orderCount: { increment: 1 },
+        totalSpent: { increment: new Prisma.Decimal(total) },
+      },
+      create: {
+        whatsappNumber: whatsappClean,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        phone: customer.phone || undefined,
+        lastAddress: customer.address || undefined,
+        lastCity: customer.city || undefined,
+        // @ts-ignore
+        lastRegion: customer.region || undefined,
+        orderCount: 1,
+        totalSpent: new Prisma.Decimal(total),
+      },
+    });
+
     // Create order with items, payment, and initial event
     const order = await prisma.order.create({
       data: {
         orderNumber,
         status: OrderStatus.PENDING,
-
-        // Guest checkout info
-        guestEmail: undefined,
-        guestPhone: customer.phone || customer.whatsapp,
+        customerId: dbCustomer.id,
 
         // Pricing
         subtotal: new Prisma.Decimal(subtotal),
@@ -80,6 +108,8 @@ export async function createOrder(
         shippingName: `${customer.firstName} ${customer.lastName}`,
         shippingAddress: customer.address || "To be confirmed",
         shippingCity: customer.city || "To be confirmed",
+        // @ts-ignore
+        shippingRegion: customer.region || "To be confirmed",
         shippingCountry: "Ghana",
         shippingPhone: customer.phone || customer.whatsapp || "",
 
@@ -96,11 +126,6 @@ export async function createOrder(
             selectedSize: item.selectedSize,
             selectedLength: item.selectedLength,
             fitCategory: item.fitCategory,
-            customBust: item.customMeasurements?.bust,
-            customWaist: item.customMeasurements?.waist,
-            customHips: item.customMeasurements?.hips,
-            customHeight: item.customMeasurements?.height,
-            customNotes: item.customMeasurements?.additionalNotes,
             note: item.note,
           })),
         },
@@ -167,4 +192,30 @@ export async function getOrderById(id: string) {
     },
   });
   return order;
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  note?: string
+) {
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status,
+        timeline: {
+          create: {
+            status,
+            note: note || `Order status updated to ${status}`,
+          },
+        },
+      },
+    });
+
+    return { success: true, order };
+  } catch (error) {
+    console.error("Failed to update order status:", error);
+    return { success: false, error: "Failed to update order status" };
+  }
 }

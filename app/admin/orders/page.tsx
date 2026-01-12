@@ -1,15 +1,40 @@
 import { prisma } from "@/lib/database";
-import { OrdersTable } from "@/app/admin/_components/OrdersTable";
+import { OrdersTable } from "./_components/OrdersTable";
 
 export default async function OrdersPage() {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: {
+      items: {
+        include: {
+          product: true
+        }
+      },
+      payments: true,
+      timeline: {
+        orderBy: { createdAt: "desc" },
+      },
       _count: {
         select: { items: true },
       },
     },
   });
 
-  return <OrdersTable orders={orders} />;
+  // Serialize Decimal objects to strings before passing to Client Component
+  const serializedOrders = orders.map(order => ({
+    ...order,
+    subtotal: order.subtotal.toString(),
+    total: order.total.toString(),
+    shippingCost: order.shippingCost.toString(),
+    discount: order.discount.toString(),
+    items: order.items.map(item => ({
+      ...item,
+      product: {
+        ...item.product,
+        costPrice: item.product.costPrice?.toString() || "0"
+      }
+    }))
+  }));
+
+  return <OrdersTable orders={serializedOrders as any} />;
 }

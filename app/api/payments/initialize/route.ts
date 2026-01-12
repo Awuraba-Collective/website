@@ -12,12 +12,12 @@ import {
 import { getProductPrice } from "@/lib/utils/currency";
 
 interface InitializePaymentRequest {
-  email: string;
   phone: string;
   firstName: string;
   lastName: string;
   address?: string;
   city?: string;
+  region?: string;
   items: Array<{
     productId: string;
     name: string;
@@ -27,13 +27,6 @@ interface InitializePaymentRequest {
     selectedSize: string;
     selectedLength: string;
     fitCategory: string;
-    customMeasurements?: {
-      bust?: string;
-      waist?: string;
-      hips?: string;
-      height?: string;
-      additionalNotes?: string;
-    };
     note?: string;
   }>;
   currency: string;
@@ -43,12 +36,16 @@ interface InitializePaymentRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: InitializePaymentRequest = await request.json();
-    const { email, phone, firstName, lastName, address, city, items, currency, exchangeRate } = body;
+    const { phone, firstName, lastName, address, city, region, items, currency, exchangeRate } = body;
+
+    // Derived email for Paystack (required)
+    const whatsappClean = phone.replace(/[\s\-\+\(\)]/g, "");
+    const email = `${whatsappClean}@awuraba.com`;
 
     // Validate request
-    if (!email || !items?.length) {
+    if (!phone || !items?.length) {
       return NextResponse.json(
-        { error: "Email and items are required" },
+        { error: "Phone and items are required" },
         { status: 400 }
       );
     }
@@ -105,13 +102,37 @@ export async function POST(request: NextRequest) {
 
     const paymentReference = generatePaymentReference();
 
+    const dbCustomer = await prisma.customer.upsert({
+      where: { whatsappNumber: whatsappClean },
+      update: {
+        firstName,
+        lastName,
+        phone,
+        lastAddress: address || undefined,
+        lastCity: city || undefined,
+        lastRegion: region || undefined,
+        orderCount: { increment: 1 },
+        totalSpent: { increment: new Prisma.Decimal(total) },
+      },
+      create: {
+        whatsappNumber: whatsappClean,
+        firstName,
+        lastName,
+        phone,
+        lastAddress: address || undefined,
+        lastCity: city || undefined,
+        lastRegion: region || undefined,
+        orderCount: 1,
+        totalSpent: new Prisma.Decimal(total),
+      },
+    });
+
     // Create order with PENDING status
     const order = await prisma.order.create({
       data: {
         orderNumber,
         status: OrderStatus.PENDING,
-        guestEmail: email,
-        guestPhone: phone,
+        customerId: dbCustomer.id,
         subtotal: new Prisma.Decimal(subtotal),
         shippingCost: new Prisma.Decimal(shippingCost),
         discount: new Prisma.Decimal(discount),
@@ -120,6 +141,7 @@ export async function POST(request: NextRequest) {
         shippingName: `${firstName} ${lastName}`,
         shippingAddress: address || "To be confirmed",
         shippingCity: city || "To be confirmed",
+        shippingRegion: region || "To be confirmed",
         shippingCountry: "Ghana",
         shippingPhone: phone,
         items: {
@@ -134,11 +156,6 @@ export async function POST(request: NextRequest) {
             selectedSize: item.selectedSize,
             selectedLength: (item.selectedLength as Length) || Length.REGULAR,
             fitCategory: item.fitCategory,
-            customBust: item.customMeasurements?.bust,
-            customWaist: item.customMeasurements?.waist,
-            customHips: item.customMeasurements?.hips,
-            customHeight: item.customMeasurements?.height,
-            customNotes: item.customMeasurements?.additionalNotes,
             note: item.note,
           })),
         },
@@ -186,6 +203,7 @@ export async function POST(request: NextRequest) {
       orderNumber: order.orderNumber,
     });
   } catch (error) {
+    console.error("Failed to initialize payment:", error);
     return NextResponse.json(
       { error: "Failed to initialize payment" },
       { status: 500 }

@@ -240,12 +240,32 @@ model CartItem {
   @@map("cart_item")
 }
 
+model Customer {
+  id             String   @id @default(cuid())
+  firstName      String
+  lastName       String
+  whatsappNumber String   @unique
+  phone          String?
+  email          String?
+  lastAddress    String?
+  lastCity       String?
+  lastRegion     String?
+  lastCountry    String?  @default("Ghana")
+  lastPostal     String?
+  gpsAddress     String?
+  orderCount     Int      @default(0)
+  totalSpent     Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orders         Order[]
+
+  @@map("customer")
+}
+
 model Order {
   id              String       @id @default(cuid())
   orderNumber     String       @unique
   userId          String?
-  guestEmail      String?
-  guestPhone      String?
   status          OrderStatus  @default(PENDING)
   subtotal        Decimal      @db.Decimal(10, 2)
   shippingCost    Decimal      @default(0) @db.Decimal(10, 2)
@@ -258,6 +278,7 @@ model Order {
   shippingRegion  String?
   shippingCountry String       @default("Ghana")
   shippingPostal  String?
+  shippingGPS     String?
   shippingPhone   String
   billingName     String?
   billingAddress  String?
@@ -270,6 +291,8 @@ model Order {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   user            User?        @relation(fields: [userId], references: [id])
+  customerId      String?
+  customer        Customer?    @relation(fields: [customerId], references: [id])
   timeline        OrderEvent[]
   items           OrderItem[]
   payments        Payment[]
@@ -291,11 +314,6 @@ model OrderItem {
   quantity       Int
   totalPrice     Decimal        @db.Decimal(10, 2)
   selectedLength Length
-  customBust     String?
-  customWaist    String?
-  customHips     String?
-  customHeight   String?
-  customNotes    String?
   note           String?
   createdAt      DateTime       @default(now())
   selectedSize   String
@@ -457,6 +475,7 @@ enum OrderStatus {
   PENDING
   CONFIRMED
   PROCESSING
+  READY_FOR_DELIVERY
   SHIPPED
   DELIVERED
   CANCELLED
