@@ -84,22 +84,6 @@ export default async function ProductDetailPage({
 
   const prod = product as ProductWithRelations;
 
-  // Convert Decimals to numbers for serializability
-  //   const serializableProduct = {
-  //     ...prod,
-  //     prices: prod.prices.map((p: any) => ({
-  //       ...p,
-  //       price: p.price.toNumber(),
-  //     })),
-  //     relatedProducts: prod.relatedProducts?.map((rp: any) => ({
-  //       ...rp,
-  //       prices: rp.prices.map((p: any) => ({
-  //         ...p,
-  //         price: p.price.toNumber(),
-  //       })),
-  //     })),
-  //   } as SerializableProduct;
-
   const serializableProduct = serializePrisma(prod);
 
   const jsonLd = {
