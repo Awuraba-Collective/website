@@ -8,8 +8,10 @@ export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  console.log("🚀 ~ proxy ~ session:", session);
 
   const pathname = request.nextUrl.pathname;
+  console.log("🚀 ~ proxy ~ pathname:", pathname);
 
   const role = session?.user.role;
   const isAdminRole = role === "admin";
@@ -31,10 +33,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin/:path*",
-    "/admin",
-    "/admin/login",
-    "/admin/:path*",
-    // "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
+    // "/admin/:path*",
+    // "/admin",
+    // "/admin/login",
+    // "/admin/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
   ], // Specify the routes the middleware applies to
 };
