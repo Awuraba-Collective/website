@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/database";
+import { requireAdmin } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/order";
 import { OrderStatus, PaymentStatus, Prisma } from "@/app/generated/prisma";
 import type { CartItem } from "@/types/shop";
@@ -28,7 +29,7 @@ interface CreateOrderResult {
 }
 
 export async function createOrder(
-  input: CreateOrderInput
+  input: CreateOrderInput,
 ): Promise<CreateOrderResult> {
   try {
     const { customer, items } = input;
@@ -40,7 +41,7 @@ export async function createOrder(
     // Calculate totals
     const subtotal = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0
+      0,
     );
     const shippingCost = 0; // Pay on delivery
     const discount = 0;
@@ -61,7 +62,10 @@ export async function createOrder(
     }
 
     // Customer Intelligence: Find or create customer by WhatsApp number
-    const whatsappClean = (customer.whatsapp || customer.phone || "").replace(/[\s\-\+\(\)]/g, "");
+    const whatsappClean = (customer.whatsapp || customer.phone || "").replace(
+      /[\s\-\+\(\)]/g,
+      "",
+    );
 
     const dbCustomer = await prisma.customer.upsert({
       where: { whatsappNumber: whatsappClean },
@@ -168,7 +172,10 @@ export async function createOrder(
   }
 }
 
+// Admin only
 export async function getOrders() {
+  await requireAdmin();
+
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -194,11 +201,14 @@ export async function getOrderById(id: string) {
   return order;
 }
 
+// Admin only
 export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus,
-  note?: string
+  note?: string,
 ) {
+  await requireAdmin();
+
   try {
     const order = await prisma.order.update({
       where: { id: orderId },
