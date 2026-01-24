@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleCart } from "@/store/slices/cartSlice";
 import posthog from "posthog-js";
@@ -14,8 +14,8 @@ import { CurrencySwitcher } from "@/app/(site)/shop/_components/CurrencySwitcher
 
 const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Shop", href: "/shop" },
     { name: "About", href: "/about" },
+    { name: "Shop", href: "/shop" },
     { name: "Sizing", href: "/sizing" },
     { name: "Partners", href: "/partners" },
     { name: "FAQ", href: "/faq" },
@@ -32,7 +32,7 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b border-black/5 bg-white/80 backdrop-blur-md dark:bg-black/80 dark:border-white/10">
             <div className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <Link href="/" className="flex items-center gap-2">
-                    <div className="relative h-28 w-32 md:h-40 md:w-56 transition-all duration-300 md:-ml-16">
+                    <div className="relative h-28 w-32 lg:h-40 lg:w-56 transition-all duration-300 lg:-ml-16">
                         <Image
                             src="/logos/black.svg"
                             alt="AWURABA Logo"
@@ -51,7 +51,7 @@ export function Navbar() {
                 </Link>
 
                 {/* Desktop Nav */}
-                <div className="hidden md:flex md:items-center md:gap-8">
+                <div className="hidden lg:flex lg:items-center lg:gap-8">
                     {navLinks.map((link) => {
                         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
                         return (
@@ -112,7 +112,7 @@ export function Navbar() {
 
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="md:hidden p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                        className="lg:hidden p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                     </button>
@@ -122,7 +122,7 @@ export function Navbar() {
             {/* Mobile Nav */}
             <div
                 className={clsx(
-                    "md:hidden absolute top-16 left-0 w-full bg-white dark:bg-black border-b border-black/5 dark:border-white/10 transition-all duration-300 ease-in-out overflow-hidden",
+                    "lg:hidden absolute top-16 left-0 w-full bg-white dark:bg-black border-b border-black/5 dark:border-white/10 transition-all duration-300 ease-in-out overflow-hidden",
                     isOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"
                 )}
             >

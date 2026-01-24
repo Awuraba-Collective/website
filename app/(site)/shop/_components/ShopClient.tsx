@@ -99,7 +99,7 @@ export default function ShopClient({
 
           {/* Filters - Centered on desktop, Horizontal Scroll on Mobile */}
           <div className="relative group">
-            <div className="flex overflow-x-auto scrollbar-hide gap-10 pb-4 border-b border-neutral-100 dark:border-neutral-900 -mx-6 px-6 md:mx-0 md:px-0 md:justify-center">
+            <div className="flex overflow-x-auto scrollbar-hide gap-10 pb-4 border-b border-neutral-100 dark:border-neutral-900 -mx-6 px-6 md:mx-0 md:px-0 text-center justify-center">
               {filters.map((filter) => (
                 <button
                   key={filter}
@@ -179,7 +179,7 @@ export default function ShopClient({
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 justify-center">
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
