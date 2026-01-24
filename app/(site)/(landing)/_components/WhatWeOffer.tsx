@@ -6,7 +6,7 @@ import Image from "next/image";
 const offers = [
     {
         title: "Curated Collections",
-        description: "5 unique styles released every month.",
+        description: "More than 5 unique styles released every month.",
         image: "/images/shop-curated.png",
     },
     {

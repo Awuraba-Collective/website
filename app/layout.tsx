@@ -8,6 +8,7 @@ import StoreProvider from "@/store/StoreProvider";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { RouteLoader } from "@/components/RouteLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -96,12 +97,12 @@ export default function RootLayout({
     logo: "https://awuraba.co/logos/icon.png",
     sameAs: [
       "https://www.instagram.com/shopawuraba",
-      "https://www.facebook.com/shopawuraba",
+      "https://www.facebook.com/awurabacollective",
       // "https://www.pinterest.com/shopawuraba",
       "https://www.tiktok.com/shopawuraba",
     ],
     description:
-      "Curated elegant African ready-to-wear pieces handcrafted in Ghana.",
+      "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Accra",
@@ -120,6 +121,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white`}
       >
+        <RouteLoader />
         <StoreProvider>
           {children}
           <Toaster position="top-right" richColors />

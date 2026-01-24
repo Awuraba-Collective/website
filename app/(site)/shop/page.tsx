@@ -1,5 +1,4 @@
 import type { Metadata, ResolvingMetadata } from "next";
-import { Suspense } from "react";
 import type { PageProps, SerializableProduct } from "@/types";
 import { prisma } from "@/lib/database";
 import ShopClient from "./_components/ShopClient";
@@ -118,9 +117,9 @@ export default async function ShopPage({
       ...product,
       discount: product.discount
         ? {
-            ...product.discount,
-            value: Number(product.discount.value),
-          }
+          ...product.discount,
+          value: Number(product.discount.value),
+        }
         : null,
       prices:
         product.prices?.map((p) => ({
@@ -129,12 +128,12 @@ export default async function ShopPage({
         })) || [],
       fitCategory: product.fitCategory
         ? {
-            ...product.fitCategory,
-            sizes: product.fitCategory.sizes.map((s) => ({
-              ...s,
-              measurements: s.measurements as any,
-            })),
-          }
+          ...product.fitCategory,
+          sizes: product.fitCategory.sizes.map((s) => ({
+            ...s,
+            measurements: s.measurements as any,
+          })),
+        }
         : null,
       relatedProducts:
         product.relatedProducts?.map((rp) => ({
@@ -149,14 +148,10 @@ export default async function ShopPage({
   ) as any; // Cast as any if still complex, but structure is now correct for the type
 
   return (
-    <Suspense
-      fallback={<div className="min-h-screen bg-white dark:bg-black" />}
-    >
-      <ShopClient
-        products={filteredProducts}
-        activeFilter={activeFilter}
-        filters={allFilters}
-      />
-    </Suspense>
+    <ShopClient
+      products={filteredProducts}
+      activeFilter={activeFilter}
+      filters={allFilters}
+    />
   );
 }

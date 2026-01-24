@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { ProductDetailClient } from "../_components/ProductDetailClient";
 import { prisma } from "@/lib/database";
-import { ProductWithRelations, SerializableProduct } from "@/types";
+import { ProductWithRelations } from "@/types";
 import { serializePrisma } from "@/lib/serializers/serializePrisma";
 
 export async function generateMetadata({
