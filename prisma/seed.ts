@@ -226,16 +226,16 @@ async function main() {
       name: "Standard Fit",
       slug: "standard",
       isStandard: true,
-      description: "Regular fit true to size. Includes full body measurements.",
-      measurementLabels: ["Bust", "Waist", "Hips", "Thigh", "Back", "Under Bust"],
+      description: "True-to-size pieces designed to follow your body's natural silhouette.",
+      measurementLabels: ["UK Size", "Bust", "Waist", "Hips", "Thigh", "Back", "Under Bust"],
       sizes: {
         create: [
-          { name: "XS", order: 1, measurements: { "Bust": "30-33", "Waist": "23-26", "Hips": "34-37", "Thigh": "20-22", "Back": "14.5-15.5", "Under Bust": "13-14" } },
-          { name: "S", order: 2, measurements: { "Bust": "33-36", "Waist": "26-29", "Hips": "37-40", "Thigh": "22-24", "Back": "15-16", "Under Bust": "13.5-14.5" } },
-          { name: "M", order: 3, measurements: { "Bust": "36-39", "Waist": "29-32", "Hips": "40-43", "Thigh": "24-26", "Back": "15.5-16.5", "Under Bust": "14-15" } },
-          { name: "L", order: 4, measurements: { "Bust": "39-42", "Waist": "32-36", "Hips": "43-46", "Thigh": "26-28", "Back": "16-17", "Under Bust": "14.5-15.5" } },
-          { name: "XL", order: 5, measurements: { "Bust": "42-46", "Waist": "36-40", "Hips": "46-50", "Thigh": "28-31", "Back": "16.5-17.5", "Under Bust": "15-16" } },
-          { name: "XXL", order: 6, measurements: { "Bust": "46-50", "Waist": "40-45", "Hips": "50-54", "Thigh": "31-34", "Back": "17-18", "Under Bust": "16-17" } },
+          { name: "XS", order: 1, measurements: { "UK Size": "6 - 8", "Bust": "30 - 32", "Waist": "23 - 25", "Hips": "34 - 36", "Thigh": "20 - 22", "Back": "14.5 - 15", "Under Bust": "13 - 13.5" } },
+          { name: "S", order: 2, measurements: { "UK Size": "10", "Bust": "33 - 35", "Waist": "26 - 28", "Hips": "37 - 39", "Thigh": "23 - 25", "Back": "15.5 - 16", "Under Bust": "14 - 14.5" } },
+          { name: "M", order: 3, measurements: { "UK Size": "12", "Bust": "36 - 38", "Waist": "29 - 31", "Hips": "40 - 42", "Thigh": "25 - 27", "Back": "16.5 - 17", "Under Bust": "15 - 15.5" } },
+          { name: "L", order: 4, measurements: { "UK Size": "14", "Bust": "39 - 41", "Waist": "32 - 35", "Hips": "43 - 45", "Thigh": "27 - 29", "Back": "17.5 - 18", "Under Bust": "16 - 16.5" } },
+          { name: "XL", order: 5, measurements: { "UK Size": "16", "Bust": "42 - 45", "Waist": "36 - 39", "Hips": "46 - 49", "Thigh": "30 - 32", "Back": "18.5 - 19", "Under Bust": "17 - 17.5" } },
+          { name: "XXL", order: 6, measurements: { "UK Size": "18 - 20", "Bust": "46 - 50", "Waist": "40 - 45", "Hips": "50 - 54", "Thigh": "33 - 35", "Back": "19.5 - 20.5", "Under Bust": "18 - 19" } },
         ]
       }
     }
@@ -248,7 +248,7 @@ async function main() {
       name: "Loose Fit",
       slug: "loose",
       isStandard: false,
-      description: "Relaxed, comfortable fit. Mapped to standard measurement ranges.",
+      description: "Styles meant to be worn voluminously (like 'Bola' or Boubou styles). These are cut generously for a relaxed look.",
       measurementLabels: [], // Loose fits usually just show mapping
       sizes: {
         create: [
@@ -287,7 +287,7 @@ async function main() {
     { part: "Short Sleeve", petite: "6", regular: "7", tall: "8.5", order: 0 },
     { part: "Long Sleeve", petite: "21", regular: "23", tall: "25", order: 1 },
     { part: "Short Length (Dress)", petite: "35-37", regular: "38-40", tall: "41-42", order: 2 },
-    { part: "3/4 Length (Dress)", petite: "38-40", regular: "40-43", tall: "44-46", order: 3 },
+    { part: "3/4 Length (Dress)", petite: "38-40", regular: "41-43", tall: "44-46", order: 3 },
     { part: "Full / Long Length", petite: "52-54", regular: "55-57", tall: "60-62", order: 4 },
   ];
 

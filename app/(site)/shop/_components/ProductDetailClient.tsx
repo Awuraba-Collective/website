@@ -1,44 +1,119 @@
-"use client";
+import { SizingDiagram } from "@/app/(site)/sizing/_components/SizingDiagram";
 
-import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addToCart } from "@/store/slices/cartSlice";
-import { toast } from "sonner";
-import {
-  Check,
-  ChevronRight,
-  Info,
-  Play,
-  Ruler,
-  Share2,
-  X,
-} from "lucide-react";
-import Link from "next/link";
-import posthog from "posthog-js";
-import { getProductPrice, formatPrice } from "@/lib/utils/currency";
-import type {
-  SerializableMeasurementType,
-  SerializableLengthStandard,
-  SerializableFitSize,
-  SerializableProduct,
-} from "@/types";
-import { Length } from "@/app/generated/prisma/client";
+// ... (existing imports)
 
-interface ProductDetailClientProps {
-  // product: Omit<SerializableProduct, "relatedProducts" | "fitCategory"> & {
-  //   relatedProducts?: any[];
-  //   fitCategory: {
-  //     name: string;
-  //     isStandard: boolean;
-  //     sizes: SerializableFitSize[];
-  //     measurementLabels?: string[];
-  //   };
-  // };
-  product: SerializableProduct;
-  measurementTypes: SerializableMeasurementType[];
-  lengthStandards: SerializableLengthStandard[];
+function SizingGuideModalContent({ product }: { product: SerializableProduct }) {
+  const [unit, setUnit] = useState<"inches" | "cm">("inches");
+  const [view, setView] = useState<"front" | "back">("front");
+  const [hoveredMeasurement, setHoveredMeasurement] = useState<string | null>(null);
+
+  const convertValue = (val: string) => {
+    if (!val || typeof val !== "string") return val;
+    const parts = val.split("-").map(p => p.trim());
+    const converted = parts.map(p => {
+      const num = parseFloat(p);
+      if (isNaN(num)) return p;
+      return unit === "cm" ? (num * 2.54).toFixed(1) : p;
+    });
+    return converted.join(" - ");
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row gap-8">
+      {/* Visual Guide */}
+      <div className="w-full md:w-1/3 flex-shrink-0 space-y-4">
+        <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4 relative">
+          <div className="absolute top-2 right-2 z-10 flex items-center bg-white dark:bg-black rounded-md shadow-sm border border-neutral-200 dark:border-neutral-700 p-0.5">
+            <button
+              onClick={() => setUnit("inches")}
+              className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${unit === "inches"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "text-neutral-500"
+                }`}
+            >
+              IN
+            </button>
+            <button
+              onClick={() => setUnit("cm")}
+              className={`px-2 py-1 text-[10px] font-bold rounded transition-colors ${unit === "cm"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "text-neutral-500"
+                }`}
+            >
+              CM
+            </button>
+          </div>
+          <SizingDiagram view={view} />
+        </div>
+
+        {/* View Switcher */}
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => setView("front")}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === "front"
+              ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:bg-neutral-200"
+              }`}
+          >
+            Front
+          </button>
+          <button
+            onClick={() => setView("back")}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === "back"
+              ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:bg-neutral-200"
+              }`}
+          >
+            Back
+          </button>
+        </div>
+
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded text-xs leading-relaxed">
+          <strong>Between sizes?</strong><br />
+          We recommend sizing up for comfort, or sizing down for a snug fit.
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="flex-grow overflow-x-auto">
+        <h3 className="font-bold uppercase tracking-wider mb-4 border-b pb-2">Body Measurements</h3>
+        <table className="w-full text-center border-collapse text-xs whitespace-nowrap">
+          <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
+            <tr>
+              <th className="p-3 border border-neutral-700 text-left">Size</th>
+              {product?.fitCategory?.measurementLabels?.map((label: string) => (
+                <th key={label} className="p-3 border border-neutral-700">{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {product?.fitCategory?.sizes.map((row: any, i: number) => (
+              <tr
+                key={i}
+                className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}
+              >
+                <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase text-left">
+                  {row.name}
+                  {row.standardMapping && <span className="block text-[9px] font-normal text-neutral-500">{row.standardMapping}</span>}
+                </td>
+                {product?.fitCategory?.measurementLabels?.map((label: string) => (
+                  <td
+                    key={label}
+                    className="p-3 border border-neutral-200 dark:border-neutral-700"
+                  >
+                    {label === "UK Size"
+                      ? (row.measurements?.[label] || "-")
+                      : convertValue(row.measurements?.[label])
+                    }
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 export function ProductDetailClient({
@@ -271,71 +346,16 @@ export function ProductDetailClient({
                   </button>
                 </div>
 
-                <div className="p-6 overflow-x-auto">
+                <div className="p-6 overflow-y-auto max-h-[80vh]">
                   {activeGuide === "size" ? (
-                    <div className="space-y-6">
-                      <table className="w-full text-center border-collapse text-xs">
-                        <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
-                          <tr>
-                            <th className="p-3 border border-neutral-700">
-                              Size
-                            </th>
-                            {product?.fitCategory?.sizes.some(
-                              (s) => s.standardMapping
-                            ) && (
-                                <th className="p-3 border border-neutral-700">
-                                  Recommended Fit
-                                </th>
-                              )}
-                            {product?.fitCategory?.measurementLabels?.map(
-                              (label: string) => (
-                                <th
-                                  key={label}
-                                  className="p-3 border border-neutral-700"
-                                >
-                                  {label}
-                                </th>
-                              )
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {product?.fitCategory?.sizes.map((row: any, i) => (
-                            <tr
-                              key={i}
-                              className={
-                                i % 2 === 0
-                                  ? "bg-white dark:bg-black"
-                                  : "bg-neutral-50 dark:bg-neutral-900"
-                              }
-                            >
-                              <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase">
-                                {row.name}
-                              </td>
-                              {product?.fitCategory?.sizes.some(
-                                (s) => s.standardMapping
-                              ) && (
-                                  <td className="p-3 border border-neutral-200 dark:border-neutral-700">
-                                    {row.standardMapping || "-"}
-                                  </td>
-                                )}
-                              {product?.fitCategory?.measurementLabels?.map(
-                                (label: string) => (
-                                  <td
-                                    key={label}
-                                    className="p-3 border border-neutral-200 dark:border-neutral-700"
-                                  >
-                                    {row.measurements?.[label] || "-"}
-                                  </td>
-                                )
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <SizingGuideModalContent product={product} />
                   ) : (
+                    // ... existing length guide content, but we might want to standardize it too.
+                    // For now, keeping length guide simple or just adding the toggle if I can extract it too.
+                    // Let's stick to modifying the size part significantly first.
                     <div className="space-y-6">
+                      {/* ... (keep existing Length guide logic or improve it?) */}
+                      {/* Let's improve it to match the new style if possible, but the user mainly asked for sizing. */}
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-sm text-center">
                           <span className="block font-bold text-[10px]">

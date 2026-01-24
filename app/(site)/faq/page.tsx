@@ -14,7 +14,7 @@ export default function FAQPage() {
     const faqs = [
         {
             question: "What items do you sell?",
-            answer: "We specialize in elegant African ready-to-wear pieces for women, including dresses, tops, and sets.",
+            answer: "We specialize in elegant African ready-to-wear pieces, including dresses, tops, and sets.",
         },
         {
             question: "When are new collections released?",
@@ -45,9 +45,17 @@ export default function FAQPage() {
             answer: "Yes, we offer nationwide delivery across Ghana, as well as international delivery. We will reach out to arrange delivery and confirm fees (payable on delivery) once production is complete.",
         },
         {
+            question: "How do I choose the right length?",
+            answer: "Our length chart is a guide for the various height categories, but you can leverage it for your preferred style. For example, if you fall into the Petite category (under 5'3) but prefer your dress to be longer or even drag slightly, you might choose a Regular or Tall length instead. It comes down to how you want the piece to fit your frame.",
+        },
+        {
+            question: "How do I use the order notes?",
+            answer: "The order notes section is perfect for sharing specific preferences or custom measurements. For instance, you could add: 'I prefer a snug fit,' 'I'd like the dress length to be 58 inches,' or 'Make the sleeves slightly looser.' Providing this context helps us tailor the piece closer to your vision.",
+        },
+        {
             question: "Can I return an item?",
             answer: "As each piece is made to order, all sales are final. We carry out careful quality checks before delivery, but if you notice any issues upon receiving your order, please contact us via WhatsApp immediately so we can assist.",
-        },
+        }
     ];
 
 
