@@ -105,10 +105,9 @@ export default function ShopClient({
                   key={filter}
                   onClick={() => handleFilterClick(filter)}
                   className={`text-[9px] sm:text-[10px] tracking-[0.3em] uppercase transition-all whitespace-nowrap pb-4 -mb-4 border-b-2 relative
-                    ${
-                      activeFilter === filter
-                        ? "text-black dark:text-white font-bold"
-                        : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
+                    ${activeFilter === filter
+                      ? "text-black dark:text-white font-bold"
+                      : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
                     }
                   `}
                 >
@@ -151,9 +150,55 @@ export default function ShopClient({
         </div>
 
         {products.length === 0 && (
-          <div className="text-center py-20 text-neutral-500">
-            <p>No products found in this category.</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center justify-center py-20 px-6"
+          >
+            <div className="max-w-md text-center space-y-6">
+              {/* Icon */}
+              <div className="flex justify-center">
+                <div className="w-24 h-24 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
+                  <Search className="w-10 h-10 text-neutral-400" />
+                </div>
+              </div>
+
+              {/* Message */}
+              <div className="space-y-2">
+                <h3 className="font-serif text-2xl text-black dark:text-white">
+                  {searchQuery ? "No Results Found" : "No Products Available"}
+                </h3>
+                <p className="text-neutral-500 text-sm leading-relaxed">
+                  {searchQuery
+                    ? `We couldn't find any products matching "${searchQuery}". Try adjusting your search or browse our collections.`
+                    : activeFilter !== "All"
+                      ? `There are no products in the ${activeFilter} category at the moment. Check back soon or explore other collections.`
+                      : "We're currently updating our collection. Please check back soon for new arrivals."}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black rounded-full text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                {activeFilter !== "All" && (
+                  <button
+                    onClick={() => handleFilterClick("All")}
+                    className="px-6 py-3 border border-black dark:border-white text-black dark:text-white rounded-full text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+                  >
+                    View All Products
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
     </motion.div>

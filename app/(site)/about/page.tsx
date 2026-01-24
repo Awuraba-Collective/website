@@ -115,10 +115,10 @@ export default function AboutPage() {
                 <div className="text-center pt-16">
                     <Link
                         href="/partners"
-                        className="group flex flex-col md:inline-flex items-center gap-3 text-lg font-serif italic hover:opacity-70 transition-opacity"
+                        className="group flex flex-col md:inline-flex items-center gap-3 text-lg font-serif hover:opacity-70 transition-opacity"
                     >
                         <span>Interested in our future platform?</span>
-                        <span className="group-hover:translate-x-1 transition-transform duration-300">
+                        <span className="group-hover:translate-x-1 transition-transform duration-300 italic">
                             Become a partner <ArrowRight className="inline h-4 w-4" />
                         </span>
                     </Link>
