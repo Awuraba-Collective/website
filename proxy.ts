@@ -8,10 +8,8 @@ export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  console.log("🚀 ~ proxy ~ session:", session);
 
   const pathname = request.nextUrl.pathname;
-  console.log("🚀 ~ proxy ~ pathname:", pathname);
 
   const role = session?.user.role;
   const isAdminRole = role === "admin";

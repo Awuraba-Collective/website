@@ -37,3 +37,54 @@ export const getServerAuthSession = async () => {
 
   return session;
 };
+
+/**
+ * Ensure current session is an authenticated admin.
+ * Use in server actions - throws error on failure.
+ */
+export async function requireAdmin(): Promise<{
+  userId: string;
+  role: string;
+}> {
+  const session = await getServerAuthSession();
+
+  if (!session?.user) {
+    throw new Error("Unauthorized: Not authenticated");
+  }
+
+  if (session.user.role !== "admin") {
+    throw new Error("Forbidden: Admin access required");
+  }
+
+  return {
+    userId: session.user.id,
+    role: session.user.role,
+  };
+}
+
+/**
+ * Ensure current session is an authenticated admin.
+ * Use in API routes - returns error response on failure.
+ */
+export async function requireAdminApi(): Promise<
+  | { success: true; userId: string; role: string }
+  | { success: false; response: Response }
+> {
+  const session = await getServerAuthSession();
+
+  if (!session?.user) {
+    return {
+      success: false,
+      response: Response.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+
+  if (session.user.role !== "admin") {
+    return {
+      success: false,
+      response: Response.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+
+  return { success: true, userId: session.user.id, role: session.user.role };
+}
