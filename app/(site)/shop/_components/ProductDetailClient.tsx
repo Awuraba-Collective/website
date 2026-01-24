@@ -1,11 +1,49 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronRight,
+  Share2,
+  Check,
+  Ruler,
+  X,
+  Info,
+  Play,
+} from "lucide-react";
+import { toast } from "sonner";
+import posthog from "posthog-js";
+
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addToCart } from "@/store/slices/cartSlice";
+import { formatPrice, getProductPrice } from "@/lib/utils/currency";
+import type {
+  SerializableProduct,
+  Length,
+  SerializableMeasurementType,
+  SerializableLengthStandard,
+} from "@/types";
 import { SizingDiagram } from "@/app/(site)/sizing/_components/SizingDiagram";
 
-// ... (existing imports)
+interface ProductDetailClientProps {
+  product: SerializableProduct;
+  measurementTypes: SerializableMeasurementType[];
+  lengthStandards: SerializableLengthStandard[];
+  standardFitCategory?: any;
+}
 
-function SizingGuideModalContent({ product }: { product: SerializableProduct }) {
+// Convert string union to enum-like object for iteration
+const Length = {
+  PETITE: "PETITE" as const,
+  REGULAR: "REGULAR" as const,
+  TALL: "TALL" as const,
+};
+
+function SizingGuideModalContent({ product, standardFitCategory }: { product: SerializableProduct; standardFitCategory?: any }) {
   const [unit, setUnit] = useState<"inches" | "cm">("inches");
   const [view, setView] = useState<"front" | "back">("front");
-  const [hoveredMeasurement, setHoveredMeasurement] = useState<string | null>(null);
 
   const convertValue = (val: string) => {
     if (!val || typeof val !== "string") return val;
@@ -17,6 +55,9 @@ function SizingGuideModalContent({ product }: { product: SerializableProduct }) 
     });
     return converted.join(" - ");
   };
+
+  const isLooseFit = product?.fitCategory?.slug === "loose" || !product?.fitCategory?.isStandard;
+  const hasStandardMeasurements = standardFitCategory && isLooseFit;
 
   return (
     <div className="flex flex-col md:flex-row gap-8">
@@ -68,49 +109,92 @@ function SizingGuideModalContent({ product }: { product: SerializableProduct }) 
           </button>
         </div>
 
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded text-xs leading-relaxed">
+        <div className="p-4 bg-neutral-100 dark:bg-neutral-800 text-black dark:text-white rounded text-xs leading-relaxed border border-neutral-200 dark:border-neutral-700">
           <strong>Between sizes?</strong><br />
           We recommend sizing up for comfort, or sizing down for a snug fit.
         </div>
       </div>
 
       {/* Table */}
-      <div className="flex-grow overflow-x-auto">
-        <h3 className="font-bold uppercase tracking-wider mb-4 border-b pb-2">Body Measurements</h3>
-        <table className="w-full text-center border-collapse text-xs whitespace-nowrap">
-          <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
-            <tr>
-              <th className="p-3 border border-neutral-700 text-left">Size</th>
-              {product?.fitCategory?.measurementLabels?.map((label: string) => (
-                <th key={label} className="p-3 border border-neutral-700">{label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {product?.fitCategory?.sizes.map((row: any, i: number) => (
-              <tr
-                key={i}
-                className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}
-              >
-                <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase text-left">
-                  {row.name}
-                  {row.standardMapping && <span className="block text-[9px] font-normal text-neutral-500">{row.standardMapping}</span>}
-                </td>
-                {product?.fitCategory?.measurementLabels?.map((label: string) => (
-                  <td
-                    key={label}
-                    className="p-3 border border-neutral-200 dark:border-neutral-700"
+      <div className="flex-grow overflow-x-auto space-y-6">
+        {/* Show Standard Fit measurements first for Loose Fit products */}
+        {hasStandardMeasurements && (
+          <div>
+            <h3 className="font-bold uppercase tracking-wider mb-4 border-b pb-2">Standard Fit Measurements</h3>
+            <table className="w-full text-center border-collapse text-xs whitespace-nowrap">
+              <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
+                <tr>
+                  <th className="p-3 border border-neutral-700 text-left">Size</th>
+                  {standardFitCategory?.measurementLabels?.map((label: string) => (
+                    <th key={label} className="p-3 border border-neutral-700">{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {standardFitCategory?.sizes.map((row: any, i: number) => (
+                  <tr
+                    key={i}
+                    className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}
                   >
-                    {label === "UK Size"
-                      ? (row.measurements?.[label] || "-")
-                      : convertValue(row.measurements?.[label])
-                    }
-                  </td>
+                    <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase text-left">
+                      {row.name}
+                    </td>
+                    {standardFitCategory?.measurementLabels?.map((label: string) => (
+                      <td
+                        key={label}
+                        className="p-3 border border-neutral-200 dark:border-neutral-700"
+                      >
+                        {label === "UK Size"
+                          ? (row.measurements?.[label] || "-")
+                          : convertValue(row.measurements?.[label])
+                        }
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Loose Fit Mapping */}
+        <div>
+          <h3 className="font-bold uppercase tracking-wider mb-4 border-b pb-2">{isLooseFit ? "Loose Fit Size Mapping" : "Body Measurements"}</h3>
+          <table className="w-full text-center border-collapse text-xs whitespace-nowrap">
+            <thead className="bg-black text-white dark:bg-white dark:text-black uppercase font-bold tracking-wider">
+              <tr>
+                <th className="p-3 border border-neutral-700 text-left">Size</th>
+                {product?.fitCategory?.measurementLabels?.map((label: string) => (
+                  <th key={label} className="p-3 border border-neutral-700">{label}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {product?.fitCategory?.sizes.map((row: any, i: number) => (
+                <tr
+                  key={i}
+                  className={i % 2 === 0 ? "bg-white dark:bg-black" : "bg-neutral-50 dark:bg-neutral-900"}
+                >
+                  <td className="p-3 border border-neutral-200 dark:border-neutral-700 font-bold uppercase text-left">
+                    {row.name}
+                    {row.standardMapping && <span className="block text-[9px] font-normal text-neutral-500">{row.standardMapping}</span>}
+                  </td>
+                  {product?.fitCategory?.measurementLabels?.map((label: string) => (
+                    <td
+                      key={label}
+                      className="p-3 border border-neutral-200 dark:border-neutral-700"
+                    >
+                      {label === "UK Size"
+                        ? (row.measurements?.[label] || "-")
+                        : convertValue(row.measurements?.[label])
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -118,8 +202,8 @@ function SizingGuideModalContent({ product }: { product: SerializableProduct }) 
 
 export function ProductDetailClient({
   product,
-  measurementTypes,
   lengthStandards,
+  standardFitCategory,
 }: ProductDetailClientProps) {
   const dispatch = useAppDispatch();
 
@@ -348,7 +432,7 @@ export function ProductDetailClient({
 
                 <div className="p-6 overflow-y-auto max-h-[80vh]">
                   {activeGuide === "size" ? (
-                    <SizingGuideModalContent product={product} />
+                    <SizingGuideModalContent product={product} standardFitCategory={standardFitCategory} />
                   ) : (
                     // ... existing length guide content, but we might want to standardize it too.
                     // For now, keeping length guide simple or just adding the toggle if I can extract it too.

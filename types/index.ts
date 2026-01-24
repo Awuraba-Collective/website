@@ -47,7 +47,7 @@ export type SerializableProduct = Omit<
 
 // Cart item type (client-side, for Redux store)
 export type Size = string;
-export type Length = "Petite" | "Regular" | "Tall";
+export type Length = "PETITE" | "REGULAR" | "TALL";
 export type FitCategory = string;
 
 export interface CustomMeasurements {

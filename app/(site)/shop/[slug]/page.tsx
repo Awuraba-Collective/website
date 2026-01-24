@@ -48,7 +48,7 @@ export default async function ProductDetailPage({
 }) {
   const { slug } = await params;
 
-  const [product, measurementTypes, lengthStandards] = await Promise.all([
+  const [product, measurementTypes, lengthStandards, standardFitCategory] = await Promise.all([
     prisma.product.findUnique({
       where: { slug },
       include: {
@@ -75,6 +75,13 @@ export default async function ProductDetailPage({
     }),
     prisma.measurementType.findMany({ orderBy: { order: "asc" } }),
     prisma.lengthStandard.findMany({ orderBy: { order: "asc" } }),
+    // Fetch standard fit category for loose fit products
+    prisma.fitCategory.findFirst({
+      where: { slug: "standard" },
+      include: {
+        sizes: { orderBy: { order: "asc" } },
+      },
+    }),
   ]);
   console.log("🚀 ~ ProductDetailPage ~ product:", product);
 
@@ -115,6 +122,7 @@ export default async function ProductDetailPage({
         product={serializableProduct}
         measurementTypes={measurementTypes as any}
         lengthStandards={lengthStandards as any}
+        standardFitCategory={standardFitCategory as any}
       />
     </div>
   );
