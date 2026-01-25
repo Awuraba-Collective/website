@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
+import { paymentRatelimit, checkRateLimit } from "@/lib/ratelimit";
 import { verifyPayment } from "@/lib/paystack";
 import { OrderStatus, PaymentStatus, Prisma } from "@/app/generated/prisma";
 
 export async function GET(request: NextRequest) {
+  // Rate limiting: 5 requests per minute per IP
+  const ip =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "anonymous";
+  const { success: rateLimitOk } = await checkRateLimit(paymentRatelimit, ip);
+
+  if (!rateLimitOk) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again in a minute." },
+      { status: 429 },
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const reference = searchParams.get("reference");
@@ -11,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!reference) {
       return NextResponse.json(
         { error: "Payment reference is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -21,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (!verification.status) {
       return NextResponse.json(
         { error: "Payment verification failed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,7 +51,7 @@ export async function GET(request: NextRequest) {
     if (!payment) {
       return NextResponse.json(
         { error: "Payment record not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -109,7 +124,7 @@ export async function GET(request: NextRequest) {
     console.error("Payment verification error:", error);
     return NextResponse.json(
       { error: "Failed to verify payment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

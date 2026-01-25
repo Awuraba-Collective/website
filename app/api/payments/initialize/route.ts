@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
+import { paymentRatelimit, checkRateLimit } from "@/lib/ratelimit";
 import { initializePayment, generatePaymentReference } from "@/lib/paystack";
 import { generateOrderNumber } from "@/lib/order";
 import {
@@ -34,9 +35,33 @@ interface InitializePaymentRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting: 5 requests per minute per IP
+  const ip =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "anonymous";
+  const { success: rateLimitOk } = await checkRateLimit(paymentRatelimit, ip);
+
+  if (!rateLimitOk) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again in a minute." },
+      { status: 429 },
+    );
+  }
+
   try {
     const body: InitializePaymentRequest = await request.json();
-    const { phone, firstName, lastName, address, city, region, items, currency, exchangeRate } = body;
+    const {
+      phone,
+      firstName,
+      lastName,
+      address,
+      city,
+      region,
+      items,
+      currency,
+      exchangeRate,
+    } = body;
 
     // Derived email for Paystack (required)
     const whatsappClean = phone.replace(/[\s\-\+\(\)]/g, "");
@@ -46,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (!phone || !items?.length) {
       return NextResponse.json(
         { error: "Phone and items are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,7 +93,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Calculate price in the selected currency
-      const { price: basePrice, discountPrice } = getProductPrice(dbProduct, currency);
+      const { price: basePrice, discountPrice } = getProductPrice(
+        dbProduct,
+        currency,
+      );
       const currentPrice = discountPrice ?? basePrice;
 
       subtotalInCurrency += currentPrice * item.quantity;
@@ -80,9 +108,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Convert total to GHS for Paystack if necessary
-    const subtotal = currency === "GHS"
-      ? subtotalInCurrency
-      : Math.round(subtotalInCurrency * (exchangeRate || 1) * 100) / 100;
+    const subtotal =
+      currency === "GHS"
+        ? subtotalInCurrency
+        : Math.round(subtotalInCurrency * (exchangeRate || 1) * 100) / 100;
 
     const shippingCost = 0;
     const discount = 0;
@@ -206,7 +235,7 @@ export async function POST(request: NextRequest) {
     console.error("Failed to initialize payment:", error);
     return NextResponse.json(
       { error: "Failed to initialize payment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
