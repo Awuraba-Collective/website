@@ -28,6 +28,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
+  trustedOrigins: ["https://awuraba.co", "https://www.awuraba.co"],
 });
 
 export const getServerAuthSession = async () => {
