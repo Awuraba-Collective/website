@@ -48,15 +48,27 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Correctly perform hard delete
-    const product = await prisma.product.delete({
-      where: { id },
+    const orderItemCount = await prisma.orderItem.count({
+      where: { productId: id },
     });
 
-    return NextResponse.json({
-      message: "Product deleted permanently",
-      id: product.id,
-    });
+    if (orderItemCount > 0) {
+      const product = await prisma.product.update({
+        where: { id },
+        data: {
+          isActive: false,
+        },
+      });
+
+      return NextResponse.json({
+        message: "Product deleted permanently",
+        id: product.id,
+      });
+    } else {
+      return await prisma.product.delete({
+        where: { id },
+      });
+    }
   } catch (error) {
     console.error("Failed to delete product:", error);
     return NextResponse.json(
