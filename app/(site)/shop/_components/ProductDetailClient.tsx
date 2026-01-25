@@ -573,19 +573,15 @@ export function ProductDetailClient({
                   <Info className="w-3 h-3" /> Model Guide
                 </p>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Model is{" "}
+                  Model is wearing the{" "}
                   <span className="font-medium text-black dark:text-white">
                     {activeMedia[activeImage].modelHeight}
                   </span>{" "}
-                  wearing size{" "}
+                  length in size{" "}
                   <span className="font-medium text-black dark:text-white">
                     {activeMedia[activeImage].modelWearingSize}
                   </span>{" "}
-                  in{" "}
-                  <span className="font-medium text-black dark:text-white font-serif">
-                    {activeMedia[activeImage].modelWearingVariant}
-                  </span>
-                  .
+                  ({activeMedia[activeImage].modelWearingVariant}).
                 </p>
               </div>
             )}
