@@ -521,7 +521,7 @@ export function ProductDetailClient({
           {/* Image Gallery */}
           <div className="space-y-4">
             <div
-              className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800"
+              className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 select-none"
               onMouseMove={
                 activeMedia[activeImage]?.type === "IMAGE"
                   ? handleMouseMove
@@ -542,6 +542,7 @@ export function ProductDetailClient({
                   loop
                   playsInline
                   className="w-full h-full object-cover"
+                  onContextMenu={(e) => e.preventDefault()}
                 />
               ) : (
                 <Image
@@ -558,8 +559,13 @@ export function ProductDetailClient({
                       : undefined
                   }
                   priority
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
                 />
               )}
+
+              {/* Dark Gradient Overlay */}
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/30 to-transparent pointer-events-none z-[1]" />
             </div>
             {activeMedia[activeImage]?.modelHeight && (
               <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
@@ -592,13 +598,14 @@ export function ProductDetailClient({
                     className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${activeImage === idx
                       ? "border-black dark:border-white opacity-100"
                       : "border-transparent opacity-60 hover:opacity-100"
-                      }`}
+                      } select-none`}
                   >
                     {media.type === "VIDEO" ? (
                       <div className="relative w-full h-full">
                         <video
                           src={media.src}
                           className="w-full h-full object-cover"
+                          onContextMenu={(e) => e.preventDefault()}
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                           <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center backdrop-blur-sm">
@@ -612,6 +619,8 @@ export function ProductDetailClient({
                         alt={media.alt}
                         fill
                         className="object-cover"
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
                       />
                     )}
                   </button>

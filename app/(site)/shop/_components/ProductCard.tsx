@@ -70,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm">
+      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none">
         {/* Main Poster Image */}
         {poster && poster.src && (
           <Image
@@ -82,6 +82,8 @@ export function ProductCard({ product }: ProductCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             placeholder="blur"
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
           />
         )}
 
@@ -95,6 +97,7 @@ export function ProductCard({ product }: ProductCardProps) {
             playsInline
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-0"
               }`}
+            onContextMenu={(e) => e.preventDefault()}
           />
         )}
 
@@ -106,8 +109,13 @@ export function ProductCard({ product }: ProductCardProps) {
             fill
             className="absolute inset-0 object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
           />
         )}
+
+        {/* Dark Gradient Overlay */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-[1]" />
 
         {/* New Drop Badge */}
         {product.isNewDrop && (
