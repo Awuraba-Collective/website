@@ -118,9 +118,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white`}
       >
-        <RouteLoader />
         <StoreProvider>
-          {children}
+          <RouteLoader>{children}</RouteLoader>
           <Toaster position="top-right" richColors />
         </StoreProvider>
         <Analytics />
