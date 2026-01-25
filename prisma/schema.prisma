@@ -116,7 +116,7 @@ model FitSize {
   standardMapping String?
   order           Int         @default(0)
   measurements    Json        @default("{}")
-  fitCategory     FitCategory @relation(fields: [fitCategoryId], references: [id], onDelete: Cascade)
+  fitCategory     FitCategory @relation(fields: [fitCategoryId], references: [id], onDelete: Restrict)
 
   @@index([fitCategoryId])
   @@map("fit_size")
@@ -153,10 +153,10 @@ model Product {
   newDropExpiresAt DateTime?
   cartItems        CartItem[]
   orderItems       OrderItem[]
-  category         Category         @relation(fields: [categoryId], references: [id])
-  collection       Collection?      @relation(fields: [collectionId], references: [id])
-  discount         Discount?        @relation(fields: [discountId], references: [id])
-  fitCategory      FitCategory?     @relation(fields: [fitCategoryId], references: [id])
+  category         Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  collection       Collection?      @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  discount         Discount?        @relation(fields: [discountId], references: [id], onDelete: SetNull)
+  fitCategory      FitCategory?     @relation(fields: [fitCategoryId], references: [id], onDelete: SetNull)
   media            ProductMedia[]
   prices           ProductPrice[]
   variants         ProductVariant[]
@@ -168,6 +168,7 @@ model Product {
   @@index([collectionId])
   @@index([fitCategoryId])
   @@index([discountId])
+  @@index([isActive])
   @@map("product")
 }
 
@@ -192,10 +193,11 @@ model ProductVariant {
   name        String
   sku         String?     @unique
   isAvailable Boolean     @default(true)
+  isActive    Boolean     @default(true)
   productId   String
   cartItems   CartItem[]
   orderItems  OrderItem[]
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([productId])
   @@map("product_variant")
@@ -207,7 +209,7 @@ model Cart {
   sessionId String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   items     CartItem[]
 
   @@index([sessionId])
@@ -232,8 +234,8 @@ model CartItem {
   selectedSize   String
   fitCategory    String
   cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product        Product        @relation(fields: [productId], references: [id])
-  variant        ProductVariant @relation(fields: [variantId], references: [id])
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
   @@index([cartId])
   @@index([productId])
@@ -290,9 +292,9 @@ model Order {
   adminNotes      String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  user            User?        @relation(fields: [userId], references: [id])
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   customerId      String?
-  customer        Customer?    @relation(fields: [customerId], references: [id])
+  customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   timeline        OrderEvent[]
   items           OrderItem[]
   payments        Payment[]
@@ -319,8 +321,8 @@ model OrderItem {
   selectedSize   String
   fitCategory    String
   order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product        Product        @relation(fields: [productId], references: [id])
-  variant        ProductVariant @relation(fields: [variantId], references: [id])
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
@@ -352,7 +354,7 @@ model Payment {
   paidAt       DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([providerRef])
@@ -430,7 +432,7 @@ model ProductPrice {
   productId    String
   currencyCode String
   price        Decimal  @db.Decimal(10, 2)
-  currency     Currency @relation(fields: [currencyCode], references: [code])
+  currency     Currency @relation(fields: [currencyCode], references: [code], onDelete: Restrict)
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, currencyCode])

@@ -27,6 +27,7 @@ export const products: Product[] = [
         id: "1",
         productId: "1",
         sku: null,
+        isActive: false,
       },
       {
         name: "Midnight Black",
@@ -34,6 +35,7 @@ export const products: Product[] = [
         id: "2",
         productId: "1",
         sku: null,
+        isActive: false,
       },
       {
         name: "Royal Blue",
@@ -41,6 +43,7 @@ export const products: Product[] = [
         id: "3",
         productId: "1",
         sku: null,
+        isActive: false,
       },
     ],
     fitCategory: "Standard",
@@ -77,6 +80,7 @@ export const products: Product[] = [
         id: "1",
         productId: "2",
         sku: null,
+        isActive: false,
       },
       {
         name: "Rose Gold",
@@ -84,6 +88,7 @@ export const products: Product[] = [
         id: "2",
         productId: "2",
         sku: null,
+        isActive: false,
       },
     ],
     fitCategory: "Loose",
@@ -111,13 +116,21 @@ export const products: Product[] = [
       },
     ],
     variants: [
-      { name: "White", isAvailable: true, id: "1", productId: "3", sku: null },
+      {
+        name: "White",
+        isAvailable: true,
+        id: "1",
+        productId: "3",
+        sku: null,
+        isActive: false,
+      },
       {
         name: "Burnt Orange",
         isAvailable: true,
         id: "2",
         productId: "3",
         sku: null,
+        isActive: false,
       },
     ],
     fitCategory: "Standard",
@@ -146,6 +159,7 @@ export const products: Product[] = [
         id: "1",
         productId: "4",
         sku: null,
+        isActive: false,
       },
       {
         name: "Mustard",
@@ -153,6 +167,7 @@ export const products: Product[] = [
         id: "2",
         productId: "4",
         sku: null,
+        isActive: false,
       },
     ],
     fitCategory: "Standard",
