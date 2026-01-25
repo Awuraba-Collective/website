@@ -75,7 +75,7 @@ export default function ProductsPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: "10",
+        limit: "100",
         search: searchTerm,
       });
       if (selectedCategory !== "all")
@@ -131,7 +131,7 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error("Update failed");
 
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isActive: !currentStatus } : p))
+        prev.map((p) => (p.id === id ? { ...p, isActive: !currentStatus } : p)),
       );
 
       toast.success(`Product ${!currentStatus ? "activated" : "deactivated"}`);
@@ -330,10 +330,11 @@ export default function ProductsPage() {
                           className="scale-75 data-[state=checked]:bg-emerald-500"
                         />
                         <span
-                          className={`text-[8px] font-black uppercase tracking-widest ${product.isActive
-                            ? "text-emerald-500 shadow-emerald-500/20"
-                            : "text-neutral-300"
-                            }`}
+                          className={`text-[8px] font-black uppercase tracking-widest ${
+                            product.isActive
+                              ? "text-emerald-500 shadow-emerald-500/20"
+                              : "text-neutral-300"
+                          }`}
                         >
                           {product.isActive ? "Active" : "Hidden"}
                         </span>
@@ -343,9 +344,12 @@ export default function ProductsPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-16 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex items-center justify-center overflow-hidden shrink-0">
                           {product.media?.[0]?.src ? (
-                            product.media[0].type === 'VIDEO' ? (
+                            product.media[0].type === "VIDEO" ? (
                               <video
-                                src={product.media[0].src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                                src={product.media[0].src.replace(
+                                  /\.(mov|webm|ogg)$/i,
+                                  ".mp4",
+                                )}
                                 className="w-full h-full object-cover"
                                 muted
                                 autoPlay
@@ -503,7 +507,8 @@ export default function ProductsPage() {
         <DialogContent className="!w-[95vw] max-w-5xl h-[92vh] rounded-[2rem] md:rounded-[3rem] border-neutral-100 dark:border-neutral-800 p-0 overflow-hidden bg-white dark:bg-black shadow-2xl">
           {previewProduct &&
             (() => {
-              const { price: ghsPrice, discountPrice: discountedGHS } = getProductPrice(previewProduct, "GHS");
+              const { price: ghsPrice, discountPrice: discountedGHS } =
+                getProductPrice(previewProduct, "GHS");
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-12 h-full overflow-y-auto md:overflow-hidden">
@@ -515,14 +520,17 @@ export default function ProductsPage() {
                       className="aspect-[3/4] rounded-2xl md:rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black shadow-xl relative group"
                     >
                       <AnimatePresence mode="wait">
-                        {previewProduct.media?.[activeImageIndex]?.type === 'VIDEO' ? (
+                        {previewProduct.media?.[activeImageIndex]?.type ===
+                        "VIDEO" ? (
                           <motion.video
                             key={activeImageIndex}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.3 }}
-                            src={previewProduct.media[activeImageIndex].src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                            src={previewProduct.media[
+                              activeImageIndex
+                            ].src.replace(/\.(mov|webm|ogg)$/i, ".mp4")}
                             className="w-full h-full object-cover"
                             controls
                             autoPlay
@@ -552,15 +560,19 @@ export default function ProductsPage() {
                         <button
                           key={i}
                           onClick={() => setActiveImageIndex(i)}
-                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${activeImageIndex === i
-                            ? "border-black dark:border-white ring-2 ring-black/5 dark:ring-white/5 scale-105"
-                            : "border-neutral-100 dark:border-neutral-800 opacity-50 hover:opacity-100"
-                            } bg-white dark:bg-black`}
+                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${
+                            activeImageIndex === i
+                              ? "border-black dark:border-white ring-2 ring-black/5 dark:ring-white/5 scale-105"
+                              : "border-neutral-100 dark:border-neutral-800 opacity-50 hover:opacity-100"
+                          } bg-white dark:bg-black`}
                         >
-                          {img.type === 'VIDEO' ? (
+                          {img.type === "VIDEO" ? (
                             <div className="relative w-full h-full">
                               <video
-                                src={img.src.replace(/\.(mov|webm|ogg)$/i, '.mp4')}
+                                src={img.src.replace(
+                                  /\.(mov|webm|ogg)$/i,
+                                  ".mp4",
+                                )}
                                 className="w-full h-full object-cover"
                                 muted
                               />
@@ -638,7 +650,7 @@ export default function ProductsPage() {
                           </p>
                           <p className="text-xl md:text-2xl font-black tracking-tighter">
                             GH₵{" "}
-                            {previewProduct.costPrice?.toLocaleString() ||
+                            {previewProduct?.costPrice?.toLocaleString() ||
                               "---"}
                           </p>
                         </div>
@@ -648,7 +660,7 @@ export default function ProductsPage() {
                             Selling Price (GHS)
                           </p>
                           <p className="text-xl md:text-2xl font-black tracking-tighter">
-                            GH₵ {previewProduct.price.toLocaleString()}
+                            GH₵ {previewProduct?.price.toLocaleString()}
                           </p>
                         </div>
                         {/* Discounted Price */}
@@ -658,7 +670,7 @@ export default function ProductsPage() {
                               Discount Price (GHS)
                             </p>
                             <p className="text-xl md:text-2xl font-black tracking-tighter text-emerald-500">
-                              GH₵ {discountedGHS.toLocaleString()}
+                              GH₵ {discountedGHS?.toLocaleString()}
                             </p>
                           </div>
                         )}
@@ -683,17 +695,18 @@ export default function ProductsPage() {
                             </p>
                             <div className="flex flex-col">
                               <p
-                                className={`text-xl md:text-2xl font-black tracking-tighter ${price.discountPrice
-                                  ? "text-emerald-500"
-                                  : "text-black dark:text-white"
-                                  }`}
+                                className={`text-xl md:text-2xl font-black tracking-tighter ${
+                                  price.discountPrice
+                                    ? "text-emerald-500"
+                                    : "text-black dark:text-white"
+                                }`}
                               >
-                                {price.discountPrice?.toLocaleString() ||
-                                  price.price.toLocaleString()}
+                                {price?.discountPrice?.toLocaleString() ||
+                                  price?.price?.toLocaleString()}
                               </p>
-                              {price.discountPrice && (
+                              {price?.discountPrice && (
                                 <span className="text-[9px] md:text-[10px] font-bold opacity-30 line-through mt-0.5 md:mt-1 tracking-tight">
-                                  {price.price.toLocaleString()}
+                                  {price?.price?.toLocaleString()}
                                 </span>
                               )}
                             </div>
@@ -714,16 +727,18 @@ export default function ProductsPage() {
                           {previewProduct.variants?.map((v: any) => (
                             <div
                               key={v.id}
-                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${v.isAvailable
-                                ? "border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/20 hover:border-black dark:hover:border-white"
-                                : "border-rose-100/50 bg-rose-50/30 text-rose-400"
-                                }`}
+                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${
+                                v.isAvailable
+                                  ? "border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/20 hover:border-black dark:hover:border-white"
+                                  : "border-rose-100/50 bg-rose-50/30 text-rose-400"
+                              }`}
                             >
                               <span
-                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${v.isAvailable
-                                  ? "text-neutral-700 dark:text-neutral-300"
-                                  : "text-rose-400"
-                                  }`}
+                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${
+                                  v.isAvailable
+                                    ? "text-neutral-700 dark:text-neutral-300"
+                                    : "text-rose-400"
+                                }`}
                               >
                                 {v.name}
                               </span>

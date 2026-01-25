@@ -127,6 +127,7 @@
     @apply bg-background text-foreground;
   }
 }
+
 /* Hide WhatsApp button when sticky buy bar is present on mobile */
 @media (max-width: 1023px) {
   body:has(.sticky-buy-bar) .whatsapp-button {
@@ -136,4 +137,18 @@
 
 .whatsapp-button {
   transition: bottom 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+
+/* disable input spinners */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }

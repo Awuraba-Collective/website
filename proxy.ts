@@ -22,6 +22,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
+  if (
+    session &&
+    !isAdminRole &&
+    isDashboardRoute &&
+    !openRoutes.includes(pathname)
+  ) {
+    return NextResponse.rewrite(new URL("/404", request.url));
+  }
+
   if (session && isAdminRole && openRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
@@ -35,6 +44,6 @@ export const config = {
     // "/admin",
     // "/admin/login",
     // "/admin/:path*",
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
+    // "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
   ], // Specify the routes the middleware applies to
 };

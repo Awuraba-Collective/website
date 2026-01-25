@@ -65,13 +65,21 @@ export async function DELETE(
         id: product.id,
       });
     } else {
-      const product = await prisma.product.delete({
-        where: { id },
+      // Delete related records first to avoid FK constraint violations
+      await prisma.$transaction(async (tx) => {
+        // Delete variants (if not in use by cart/order items)
+        await tx.productVariant.deleteMany({ where: { productId: id } });
+        // Delete media
+        await tx.productMedia.deleteMany({ where: { productId: id } });
+        // Delete prices
+        await tx.productPrice.deleteMany({ where: { productId: id } });
+        // Finally delete the product
+        await tx.product.delete({ where: { id } });
       });
 
       return NextResponse.json({
         message: "Product deleted permanently",
-        id: product.id,
+        id,
       });
     }
   } catch (error) {
@@ -187,9 +195,14 @@ export async function PATCH(
         // Update or Create incoming variants
         for (const v of variants) {
           if (v.id) {
-            await tx.productVariant.update({
+            await tx.productVariant.upsert({
               where: { id: v.id },
-              data: {
+              create: {
+                name: v.name,
+                isAvailable: v.available,
+                productId: id,
+              },
+              update: {
                 name: v.name,
                 isAvailable: v.available,
               },
