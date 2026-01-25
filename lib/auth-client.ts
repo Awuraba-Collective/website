@@ -19,5 +19,3 @@ const signUpAdminByEmail = async (email: string, password: string) => {
 
   return session;
 };
-
-// signUpAdminByEmail("helloawuraba@gmail.com", "nBkdySKH93EBypB");

@@ -61,12 +61,17 @@ export async function DELETE(
       });
 
       return NextResponse.json({
-        message: "Product deleted permanently",
+        message: "Product archived",
         id: product.id,
       });
     } else {
-      return await prisma.product.delete({
+      const product = await prisma.product.delete({
         where: { id },
+      });
+
+      return NextResponse.json({
+        message: "Product deleted permanently",
+        id: product.id,
       });
     }
   } catch (error) {
