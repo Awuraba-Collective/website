@@ -13,8 +13,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const { currency } = useAppSelector((state) => state.shop);
 
   // Filter media
@@ -24,11 +26,9 @@ export function ProductCard({ product }: ProductCardProps) {
   // Get currency-aware pricing
   const { price, discountPrice } = getProductPrice(product, currency);
 
-  // Handle Autoplay logic
+  // Handle Visibility/Autoplay logic
   useEffect(() => {
-    if (!video) return;
-
-    // Desktop: Play on hover
+    // Desktop logic: Hover based
     if (window.matchMedia("(min-width: 1024px)").matches) {
       if (isHovered) {
         videoRef.current?.play().catch(() => { });
@@ -40,28 +40,37 @@ export function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    // Mobile: Play when in viewport
+    // Mobile logic: Intersection based
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            videoRef.current?.play().catch(() => { });
-            setIsPlaying(true);
+            setIsInView(true);
+            if (video) {
+              videoRef.current?.play().catch(() => { });
+              setIsPlaying(true);
+            }
           } else {
-            videoRef.current?.pause();
-            setIsPlaying(false);
+            setIsInView(false);
+            if (video) {
+              videoRef.current?.pause();
+              setIsPlaying(false);
+            }
           }
         });
       },
-      { threshold: 0.8 } // 80% visible
+      { threshold: 0.6 } // 60% visible to trigger
     );
 
-    if (videoRef.current) {
-      observer.observe(videoRef.current);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
 
     return () => observer.disconnect();
   }, [isHovered, video]);
+
+  const hasSecondMedia = !!video || (product.media.length > 1 && !!product.media[1]?.src);
+  const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
 
   return (
     <Link
@@ -70,14 +79,17 @@ export function ProductCard({ product }: ProductCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none">
+      <div
+        ref={containerRef}
+        className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none"
+      >
         {/* Main Poster Image */}
         {poster && poster.src && (
           <Image
             src={poster.src}
             alt={poster.alt}
             fill
-            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isPlaying && video ? "opacity-0" : "opacity-100"
+            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${showSecondMedia ? "opacity-0" : "opacity-100"
               }`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             placeholder="blur"
@@ -95,7 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-0"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${showSecondMedia ? "opacity-100" : "opacity-0"
               }`}
             onContextMenu={(e) => e.preventDefault()}
           />
@@ -107,7 +119,8 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.media[1].src}
             alt={product.media[1].alt}
             fill
-            className="absolute inset-0 object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+            className={`absolute inset-0 object-cover transition-opacity duration-500 ${showSecondMedia ? "opacity-100" : "opacity-0"
+              }`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}

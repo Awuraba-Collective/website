@@ -12,12 +12,14 @@ import type { SerializableProduct } from "@/types";
 
 interface ShopClientProps {
   products: SerializableProduct[];
+  heroProducts: SerializableProduct[];
   activeFilter: string;
   filters: string[];
 }
 
 export default function ShopClient({
   products,
+  heroProducts,
   activeFilter,
   filters,
 }: ShopClientProps) {
@@ -72,7 +74,7 @@ export default function ShopClient({
       transition={{ duration: 0.5 }}
       className="bg-white dark:bg-black min-h-screen pb-20"
     >
-      <ShopHero />
+      <ShopHero products={heroProducts} />
 
       <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
         {/* Search & Filters Container */}

@@ -109,8 +109,48 @@ export default async function ShopPage({
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { isNewDrop: "desc" },
+      { createdAt: "desc" }
+    ],
   });
+
+  // Fetch items for hero carousel: prioritize sales, then new drops, then price
+  const heroSourceProducts = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { isNewDrop: true },
+        { discount: { isNot: null } }
+      ]
+    },
+    include: {
+      media: { orderBy: { position: "asc" } },
+      prices: true,
+      discount: true,
+    },
+  });
+
+  const heroProducts = heroSourceProducts
+    .sort((a, b) => {
+      // Prioritize those on sale
+      const aOnSale = !!a.discount;
+      const bOnSale = !!b.discount;
+
+      if (aOnSale && !bOnSale) return -1;
+      if (!aOnSale && bOnSale) return 1;
+
+      // Then by price (desc)
+      const priceA = Number(a.prices.find(p => p.currencyCode === 'GHS')?.price || 0);
+      const priceB = Number(b.prices.find(p => p.currencyCode === 'GHS')?.price || 0);
+      return priceB - priceA;
+    })
+    .slice(0, 5)
+    .map(({ costPrice, ...product }) => ({
+      ...product,
+      prices: product.prices.map(p => ({ ...p, price: Number(p.price) })),
+      discount: product.discount ? { ...product.discount, value: Number(product.discount.value) } : null,
+    })) as SerializableProduct[];
 
   const filteredProducts: SerializableProduct[] = products.map(
     ({ costPrice, ...product }) => ({
@@ -150,6 +190,7 @@ export default async function ShopPage({
   return (
     <ShopClient
       products={filteredProducts}
+      heroProducts={heroProducts}
       activeFilter={activeFilter}
       filters={allFilters}
     />
