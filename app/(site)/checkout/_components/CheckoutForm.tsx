@@ -71,8 +71,8 @@ interface PaystackConfig {
 const checkoutSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  whatsapp: z.string().min(1, "WhatsApp number is required").regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)"),
-  phone: z.string().regex(/^\+\d{7,15}$/, "Invalid international phone format (e.g. +233123456789)").or(z.literal("")),
+  whatsapp: z.string().min(1, "WhatsApp number is required").regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)"),
+  phone: z.string().regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)").or(z.literal("")),
   address: z.string().optional(),
   city: z.string().optional(),
   region: z.string().optional(),
@@ -96,7 +96,7 @@ export function CheckoutForm() {
       firstName: "",
       lastName: "",
       phone: "",
-      whatsapp: "+",
+      whatsapp: "",
       address: "",
       city: "",
       region: "",
@@ -431,13 +431,13 @@ export function CheckoutForm() {
                         <FormControl>
                           <Input
                             type="tel"
-                            placeholder="+233 123456789"
+                            placeholder="233 123 456 789"
                             className="bg-transparent border-neutral-200 dark:border-neutral-800"
                             {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-[10px] text-neutral-400 uppercase tracking-widest">
-                          Include country code (e.g., +233 for Ghana)
+                          Include country code (e.g., 233 for Ghana)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -454,7 +454,7 @@ export function CheckoutForm() {
                         <FormControl>
                           <Input
                             type="tel"
-                            placeholder="+1 234567890"
+                            placeholder="233 123 456 789"
                             disabled={useWhatsAppAsPhone}
                             className="bg-transparent border-neutral-200 dark:border-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             {...field}
