@@ -78,7 +78,7 @@ export function ShopHero({ products }: ShopHeroProps) {
             </AnimatePresence>
 
             {/* Content Area */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pb-16 md:pb-0">
                 <motion.div
                     key={`content-${currentIndex}`}
                     initial={{ y: 20, opacity: 0 }}
