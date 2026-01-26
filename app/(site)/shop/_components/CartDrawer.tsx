@@ -44,7 +44,7 @@ export function CartDrawer() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-[100] flex justify-end">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity cursor-pointer"
@@ -181,7 +181,7 @@ export function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 space-y-4 bg-white dark:bg-neutral-900">
+          <div className="p-6 pb-[env(safe-area-inset-bottom,24px)] border-t border-neutral-100 dark:border-neutral-800 space-y-4 bg-white dark:bg-neutral-900">
             <div className="flex justify-between items-center text-lg font-serif">
               <span>Subtotal</span>
               <span>{formatPrice(total, currency)}</span>

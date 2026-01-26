@@ -136,7 +136,7 @@
 }
 
 .whatsapp-button {
-  transition: bottom 0.3s ease-in-out, transform 0.3s ease-in-out;
+  transition: bottom 0.3s ease-in-out, transform 0.3s ease-in-out, padding-bottom 0.3s ease-in-out;
 }
 
 

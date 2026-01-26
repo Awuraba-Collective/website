@@ -944,7 +944,7 @@ export function ProductDetailClient({
       </div>
 
       {/* Mobile Sticky Buy Bar */}
-      <div className="sticky-buy-bar lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300">
+      <div className="sticky-buy-bar lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-neutral-200 dark:border-neutral-800 p-4 pb-[env(safe-area-inset-bottom,16px)] z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom duration-300">
         <div className="flex-grow">
           <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold line-clamp-1 mb-1">
             {product.name}

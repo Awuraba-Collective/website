@@ -5,13 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Send } from 'lucide-react';
 import Image from 'next/image';
 import posthog from 'posthog-js';
+import { useAppSelector } from '@/store/hooks';
 
 export function WhatsAppButton() {
     const [isOpen, setIsOpen] = useState(false);
+    const { isOpen: isCartOpen } = useAppSelector((state) => state.cart);
     const whatsappUrl = "https://wa.me/233549726818";
 
+    if (isCartOpen) return null;
+
     return (
-        <div className="whatsapp-button fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div className="whatsapp-button fixed bottom-6 sm:bottom-6 right-6 z-50 flex flex-col items-end pb-[env(safe-area-inset-bottom,0px)]">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
