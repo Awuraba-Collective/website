@@ -6,6 +6,8 @@ import { useRef, useEffect, useState } from "react";
 import type { SerializableProduct } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { getProductPrice, formatPrice } from "@/lib/utils/currency";
+import { Countdown } from "@/components/Countdown";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductCardProps {
   product: SerializableProduct;
@@ -89,7 +91,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={poster.src}
             alt={poster.alt}
             fill
-            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${showSecondMedia ? "opacity-0" : "opacity-100"
+            className={`object-cover transition-all duration-1000 ease-in-out group-hover:scale-105 ${showSecondMedia ? "opacity-0" : "opacity-100"
               }`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             placeholder="blur"
@@ -107,7 +109,7 @@ export function ProductCard({ product }: ProductCardProps) {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${showSecondMedia ? "opacity-100" : "opacity-0"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${showSecondMedia ? "opacity-100" : "opacity-0"
               }`}
             onContextMenu={(e) => e.preventDefault()}
           />
@@ -119,7 +121,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.media[1].src}
             alt={product.media[1].alt}
             fill
-            className={`absolute inset-0 object-cover transition-opacity duration-500 ${showSecondMedia ? "opacity-100" : "opacity-0"
+            className={`absolute inset-0 object-cover transition-all duration-1000 ease-in-out ${showSecondMedia ? "opacity-100" : "opacity-0"
               }`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onContextMenu={(e) => e.preventDefault()}
@@ -129,6 +131,20 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Dark Gradient Overlay */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-[1]" />
+
+        {/* Countdown Overlay */}
+        <AnimatePresence>
+          {showSecondMedia && product.discount?.endDate && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-2 left-2 z-10"
+            >
+              <Countdown endDate={product.discount.endDate} variant="card" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* New Drop Badge */}
         {product.isNewDrop && (

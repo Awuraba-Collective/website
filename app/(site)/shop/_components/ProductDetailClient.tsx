@@ -26,6 +26,7 @@ import type {
   SerializableLengthStandard,
 } from "@/types";
 import { SizingDiagram } from "@/app/(site)/sizing/_components/SizingDiagram";
+import { Countdown } from "@/components/Countdown";
 
 interface ProductDetailClientProps {
   product: SerializableProduct;
@@ -660,22 +661,8 @@ export function ProductDetailClient({
                 </div>
 
                 {product.discount?.endDate && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] uppercase tracking-[0.25em] font-black text-white bg-black dark:bg-white dark:text-black px-2 py-0.5">
-                      Limited Offer
-                    </span>
-                    <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-neutral-500">
-                      {(() => {
-                        const daysLeft = Math.ceil(
-                          (new Date(product.discount.endDate).getTime() -
-                            new Date().getTime()) /
-                          (1000 * 60 * 60 * 24)
-                        );
-                        return daysLeft > 0
-                          ? `${daysLeft} days remaining at this price`
-                          : "Ends soon";
-                      })()}
-                    </span>
+                  <div className="mt-2">
+                    <Countdown endDate={product.discount.endDate} variant="detail" />
                   </div>
                 )}
               </div>

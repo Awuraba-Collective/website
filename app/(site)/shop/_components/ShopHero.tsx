@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { SerializableProduct } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { getProductPrice, formatPrice } from "@/lib/utils/currency";
+import { Countdown } from "@/components/Countdown";
 
 interface ShopHeroProps {
     products: SerializableProduct[];
@@ -102,6 +103,18 @@ export function ShopHero({ products }: ShopHeroProps) {
                     <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.85] text-white">
                         {currentProduct.name}
                     </h2>
+
+                    {/* Countdown Timer */}
+                    {currentProduct.discount?.endDate && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="pt-4 border-t border-white/10"
+                        >
+                            <Countdown endDate={currentProduct.discount.endDate} variant="hero" />
+                        </motion.div>
+                    )}
 
                     {/* Pricing & CTA Row */}
                     <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 pt-6">
