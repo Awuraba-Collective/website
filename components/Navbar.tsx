@@ -51,7 +51,7 @@ export function Navbar() {
                 </Link>
 
                 {/* Desktop Nav */}
-                <div className="hidden lg:flex lg:items-center lg:gap-8">
+                <div className="hidden lg:flex lg:items-center lg:gap-10">
                     {navLinks.map((link) => {
                         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
                         return (
@@ -59,19 +59,21 @@ export function Navbar() {
                                 key={link.name}
                                 href={link.href}
                                 className={clsx(
-                                    "relative text-sm font-medium uppercase tracking-wider transition-colors py-2",
+                                    "relative text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-300 py-2 group",
                                     isActive
                                         ? "text-black dark:text-white"
-                                        : "text-neutral-500 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                                        : "text-neutral-400 hover:text-black dark:hover:text-white"
                                 )}
                             >
-                                {link.name}
-                                {isActive && (
+                                <span className="relative z-10">{link.name}</span>
+                                {isActive ? (
                                     <motion.div
                                         layoutId="nav-underline"
-                                        className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-black dark:bg-white"
-                                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-black dark:bg-white"
+                                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                     />
+                                ) : (
+                                    <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-neutral-200 dark:bg-neutral-800 transition-all duration-300 group-hover:w-full" />
                                 )}
                             </Link>
                         );
@@ -96,7 +98,7 @@ export function Navbar() {
                                     });
                                     dispatch(toggleCart());
                                 }}
-                                className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                                className="relative p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white transition-colors"
                             >
                                 <ShoppingBag className="h-5 w-5" />
                                 {cartCount > 0 && (
@@ -112,7 +114,7 @@ export function Navbar() {
 
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="lg:hidden p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                        className="lg:hidden p-2 text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white transition-colors"
                     >
                         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                     </button>
@@ -122,11 +124,11 @@ export function Navbar() {
             {/* Mobile Nav */}
             <div
                 className={clsx(
-                    "lg:hidden absolute top-16 left-0 w-full bg-white dark:bg-black border-b border-black/5 dark:border-white/10 transition-all duration-300 ease-in-out overflow-hidden",
+                    "lg:hidden absolute top-16 left-0 w-full bg-white dark:bg-black border-b border-black/5 dark:border-white/10 transition-all duration-500 ease-in-out overflow-hidden z-[60]",
                     isOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"
                 )}
             >
-                <div className="flex flex-col space-y-4 p-8">
+                <div className="flex flex-col space-y-6 p-10">
                     {navLinks.map((link) => {
                         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
                         return (
@@ -135,12 +137,19 @@ export function Navbar() {
                                 href={link.href}
                                 onClick={() => setIsOpen(false)}
                                 className={clsx(
-                                    "relative text-xl font-medium tracking-tight flex items-center gap-4",
+                                    "relative text-2xl font-serif tracking-tight flex items-center justify-between group",
                                     isActive ? "text-black dark:text-white" : "text-neutral-400"
                                 )}
                             >
-                                {isActive && <motion.div layoutId="mobile-indicator" className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />}
-                                {link.name}
+                                <span>{link.name}</span>
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="mobile-indicator"
+                                        className="h-px bg-black dark:bg-white flex-grow ml-4 origin-left"
+                                        initial={{ scaleX: 0 }}
+                                        animate={{ scaleX: 1 }}
+                                    />
+                                )}
                             </Link>
                         );
                     })}

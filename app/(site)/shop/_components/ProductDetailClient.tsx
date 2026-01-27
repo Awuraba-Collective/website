@@ -383,9 +383,9 @@ export function ProductDetailClient({
 
   return (
     <div className="bg-white dark:bg-black min-h-screen text-black dark:text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 mb-8 lg:mb-12 overflow-x-auto whitespace-nowrap pb-2">
+        <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 mb-6 lg:mb-12 overflow-x-auto whitespace-nowrap pb-2">
           <Link
             href="/shop"
             className="hover:text-black dark:hover:text-white transition-colors"
@@ -518,11 +518,12 @@ export function ProductDetailClient({
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20">
           {/* Image Gallery */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
+            {/* Desktop main image */}
             <div
-              className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 select-none"
+              className="hidden lg:block relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 select-none"
               onMouseMove={
                 activeMedia[activeImage]?.type === "IMAGE"
                   ? handleMouseMove
@@ -568,8 +569,94 @@ export function ProductDetailClient({
               {/* Dark Gradient Overlay */}
               <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/30 to-transparent pointer-events-none z-[1]" />
             </div>
+
+            {/* Mobile Slider */}
+            <div className="lg:hidden -mx-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide flex scroll-smooth">
+              {activeMedia.map((media, idx) => (
+                <div key={idx} className="w-full flex-shrink-0 snap-center px-4 space-y-3">
+                  <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 select-none">
+                    {media.type === "VIDEO" ? (
+                      <video
+                        src={media.src}
+                        controls
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover"
+                        onContextMenu={(e) => e.preventDefault()}
+                      />
+                    ) : (
+                      <Image
+                        src={media.src}
+                        alt={media.alt}
+                        fill
+                        className="object-cover"
+                        priority={idx === 0}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                      />
+                    )}
+                    {/* Image index indicator for mobile */}
+                    <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full z-10">
+                      {idx + 1} / {activeMedia.length}
+                    </div>
+                  </div>
+
+                  {/* Mobile Model Guide (inside slider) */}
+                  {media.modelHeight && (
+                    <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800 mx-1">
+                      <p className="text-[10px] uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
+                        <Info className="w-2.5 h-2.5" /> Model Info
+                      </p>
+                      <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-tight">
+                        Model is wearing the <span className="font-medium text-black dark:text-white">{media.modelHeight}</span> length in size <span className="font-medium text-black dark:text-white">{media.modelWearingSize}</span> ({media.modelWearingVariant}).
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Thumbnails */}
+            {activeMedia.length > 1 && (
+              <div className="hidden lg:flex gap-4 overflow-x-auto pb-2">
+                {activeMedia.map((media, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${activeImage === idx
+                      ? "border-black dark:border-white opacity-100"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                      } select-none`}
+                  >
+                    {media.type === "VIDEO" ? (
+                      <div className="relative w-full h-full">
+                        <video
+                          src={media.src}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center backdrop-blur-sm">
+                            <Play className="w-4 h-4 text-black fill-black" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Image
+                        src={media.src}
+                        alt={media.alt}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Desktop Model Guide */}
             {activeMedia[activeImage]?.modelHeight && (
-              <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
+              <div className="hidden lg:block bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-sm border border-neutral-100 dark:border-neutral-800">
                 <p className="text-xs uppercase tracking-widest font-bold mb-2 flex items-center gap-2">
                   <Info className="w-3 h-3" /> Model Guide
                 </p>
@@ -586,49 +673,11 @@ export function ProductDetailClient({
                 </p>
               </div>
             )}
-            {activeMedia.length > 1 && (
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {activeMedia.map((media, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className={`relative w-24 aspect-[3/4] flex-shrink-0 border-2 transition-all ${activeImage === idx
-                      ? "border-black dark:border-white opacity-100"
-                      : "border-transparent opacity-60 hover:opacity-100"
-                      } select-none`}
-                  >
-                    {media.type === "VIDEO" ? (
-                      <div className="relative w-full h-full">
-                        <video
-                          src={media.src}
-                          className="w-full h-full object-cover"
-                          onContextMenu={(e) => e.preventDefault()}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="w-8 h-8 rounded-full bg-white/50 flex items-center justify-center backdrop-blur-sm">
-                            <Play className="w-4 h-4 text-black fill-black" />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Image
-                        src={media.src}
-                        alt={media.alt}
-                        fill
-                        className="object-cover"
-                        onContextMenu={(e) => e.preventDefault()}
-                        onDragStart={(e) => e.preventDefault()}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Product Info & Controls */}
           <div className="flex flex-col h-full">
-            <div className="mb-10 border-b border-neutral-100 dark:border-neutral-900 pb-10">
+            <div className="mb-8 border-b border-neutral-100 dark:border-neutral-900 pb-8 lg:mb-10 lg:pb-10">
               <div className="flex justify-between items-start gap-4 mb-4">
                 <h1 className="font-serif text-4xl lg:text-5xl tracking-tight lowercase first-letter:uppercase">
                   {product.name}
@@ -668,10 +717,13 @@ export function ProductDetailClient({
               </div>
             </div>
 
-            <div className="space-y-8 flex-grow">
-              <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed font-light">
-                {product.description}
-              </p>
+            <div className="space-y-6 lg:space-y-8 flex-grow">
+              {/* Description (Desktop Only) */}
+              <div className="hidden lg:block">
+                <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed font-light">
+                  {product.description}
+                </p>
+              </div>
 
               {/* Variants */}
               <div>
@@ -842,9 +894,16 @@ export function ProductDetailClient({
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
+
+              {/* Description (Mobile Only) */}
+              <div className="lg:hidden pt-6 border-t border-neutral-100 dark:border-neutral-900">
+                <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed font-light">
+                  {product.description}
+                </p>
+              </div>
             </div>
 
-            <div className="pt-8 mt-8 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="pt-6 mt-6 border-t border-neutral-200 dark:border-neutral-800 lg:pt-8 lg:mt-8">
               <button
                 onClick={handleAddToCart}
                 className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${isAdded
@@ -866,8 +925,8 @@ export function ProductDetailClient({
 
         {/* Recommendations */}
         {recommendations.length > 0 && (
-          <div className="mt-32">
-            <h2 className="font-serif text-3xl mb-12">
+          <div className="mt-20 lg:mt-32">
+            <h2 className="font-serif text-2xl lg:text-3xl mb-8 lg:mb-12">
               {isFBT ? "Frequently Bought Together" : "You Might Also Like"}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

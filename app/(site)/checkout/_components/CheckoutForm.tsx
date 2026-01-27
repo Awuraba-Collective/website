@@ -365,7 +365,7 @@ export function CheckoutForm() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
           {/* Form Section */}
-          <div className="space-y-8">
+          <div className="space-y-8 order-2 lg:order-1">
             <div className="bg-white dark:bg-black p-6 sm:p-8 shadow-sm rounded-sm">
               <h2 className="font-serif text-2xl mb-6">Contact & Payment</h2>
               <Form {...form}>
@@ -582,7 +582,7 @@ export function CheckoutForm() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:sticky lg:top-24 h-fit space-y-6">
+          <div className="lg:sticky lg:top-24 h-fit space-y-6 order-1 lg:order-2">
             <div className="bg-white dark:bg-black p-6 sm:p-8 shadow-sm rounded-sm">
               <h3 className="font-serif text-xl mb-6">Order Summary</h3>
               <div className="space-y-4 mb-6 max-h-96 overflow-y-auto py-2 pr-4 custom-scrollbar">
