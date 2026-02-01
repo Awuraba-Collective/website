@@ -4,6 +4,7 @@ import { SizingTables } from "./_components/SizingTables";
 import { Metadata } from 'next';
 import { prisma } from "@/lib/database";
 
+
 export const metadata: Metadata = {
     title: "Size Guidelines",
     description: "Find your perfect fit with the AWURABA size guide. Detailed measurements for all our handcrafted African ready-to-wear pieces.",
@@ -14,7 +15,6 @@ export const metadata: Metadata = {
 };
 
 export default async function SizingPage() {
-    // Fetch all sizing data
     const [fitCategories, lengthStandards] = await Promise.all([
         prisma.fitCategory.findMany({
             include: {
@@ -92,7 +92,6 @@ export default async function SizingPage() {
                     </div>
                 </section>
 
-                {/* Body Measurement Tables / Cards */}
                 <SizingTables fitCategories={fitCategories} lengthStandards={lengthStandards} />
 
                 <section className="space-y-6 ">

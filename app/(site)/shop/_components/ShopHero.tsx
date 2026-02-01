@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { SerializableProduct } from "@/types";
 import { useAppSelector } from "@/store/hooks";
-import { getProductPrice, formatPrice } from "@/lib/utils/currency";
+import { getProductPrice, formatPrice, isDiscountActive } from "@/lib/utils/currency";
 import { Countdown } from "@/components/Countdown";
 
 interface ShopHeroProps {
@@ -88,7 +88,7 @@ export function ShopHero({ products }: ShopHeroProps) {
                 >
                     {/* Top Badge */}
                     <div className="flex items-center justify-center">
-                        {currentProduct.discount ? (
+                        {currentProduct.discount && isDiscountActive(currentProduct.discount) ? (
                             <span className="bg-white text-black px-4 py-1.5 text-[10px] md:text-[11px] tracking-[0.4em] uppercase font-black">
                                 Sale
                             </span>

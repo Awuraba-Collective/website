@@ -245,8 +245,8 @@ export function AdminCreateOrderDialog({
                                                     setStep(2);
                                                 }}
                                                 className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group ${selectedCustomer?.id === c.id
-                                                        ? "border-black dark:border-white bg-black/5 dark:bg-white/5"
-                                                        : "border-neutral-100 dark:border-neutral-800 bg-white dark:bg-black hover:border-neutral-300"
+                                                    ? "border-black dark:border-white bg-black/5 dark:bg-white/5"
+                                                    : "border-neutral-100 dark:border-neutral-800 bg-white dark:bg-black hover:border-neutral-300"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -458,7 +458,7 @@ export function AdminCreateOrderDialog({
                                                                     <SelectValue />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
-                                                                    {["MINI", "MIDI", "MAXI", "REGULAR"].map((l) => (
+                                                                    {["PETITE", "REGULAR", "TALL"].map((l) => (
                                                                         <SelectItem key={l} value={l} className="text-[10px] font-bold uppercase">{l}</SelectItem>
                                                                     ))}
                                                                 </SelectContent>

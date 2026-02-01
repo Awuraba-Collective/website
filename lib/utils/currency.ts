@@ -39,6 +39,11 @@ export function isDiscountActive(discount: {
     const startDate = new Date(discount.startDate);
     const endDate = discount.endDate ? new Date(discount.endDate) : null;
 
+    // If endDate is just a date string (no time), normalize it to the end of the day
+    if (endDate && typeof discount.endDate === 'string' && !discount.endDate.includes('T')) {
+        endDate.setHours(23, 59, 59, 999);
+    }
+
     return startDate <= now && (!endDate || endDate >= now);
 }
 

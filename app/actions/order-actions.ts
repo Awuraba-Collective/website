@@ -31,6 +31,7 @@ interface CreateOrderResult {
 export async function createOrder(
   input: CreateOrderInput,
 ): Promise<CreateOrderResult> {
+  await requireAdmin();
   try {
     const { customer, items } = input;
 
@@ -148,7 +149,7 @@ export async function createOrder(
         timeline: {
           create: {
             status: OrderStatus.PENDING,
-            note: "Order placed via website",
+            note: "Order placed via Admin Panel",
           },
         },
       },
@@ -184,7 +185,14 @@ export async function getOrders() {
       },
     },
   });
-  return orders;
+
+  return orders.map((order) => ({
+    ...order,
+    subtotal: order.subtotal.toString(),
+    shippingCost: order.shippingCost.toString(),
+    discount: order.discount.toString(),
+    total: order.total.toString(),
+  }));
 }
 
 export async function getOrderById(id: string) {
@@ -198,7 +206,25 @@ export async function getOrderById(id: string) {
       },
     },
   });
-  return order;
+
+  if (!order) return null;
+
+  return {
+    ...order,
+    subtotal: order.subtotal.toString(),
+    shippingCost: order.shippingCost.toString(),
+    discount: order.discount.toString(),
+    total: order.total.toString(),
+    items: order.items.map((item) => ({
+      ...item,
+      unitPrice: item.unitPrice.toString(),
+      totalPrice: item.totalPrice.toString(),
+    })),
+    payments: order.payments.map((payment) => ({
+      ...payment,
+      amount: payment.amount.toString(),
+    })),
+  };
 }
 
 // Admin only
