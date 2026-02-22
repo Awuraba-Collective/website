@@ -191,10 +191,10 @@ export default function ProductsPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/admin/products/upload"
-            className="flex items-center gap-2 px-6 py-2 border-2 border-black dark:border-white text-black dark:text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+            className="flex items-center gap-2 h-10 px-6 bg-black dark:bg-white text-white dark:text-black rounded-lg text-[11px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
           >
-            <Plus className="w-3.5 h-3.5" />
-            New Creation
+            <Plus className="w-4 h-4" />
+            New Product
           </Link>
         </div>
       </div>
@@ -330,11 +330,10 @@ export default function ProductsPage() {
                           className="scale-75 data-[state=checked]:bg-emerald-500"
                         />
                         <span
-                          className={`text-[8px] font-black uppercase tracking-widest ${
-                            product.isActive
+                          className={`text-[8px] font-black uppercase tracking-widest ${product.isActive
                               ? "text-emerald-500 shadow-emerald-500/20"
                               : "text-neutral-300"
-                          }`}
+                            }`}
                         >
                           {product.isActive ? "Active" : "Hidden"}
                         </span>
@@ -521,7 +520,7 @@ export default function ProductsPage() {
                     >
                       <AnimatePresence mode="wait">
                         {previewProduct.media?.[activeImageIndex]?.type ===
-                        "VIDEO" ? (
+                          "VIDEO" ? (
                           <motion.video
                             key={activeImageIndex}
                             initial={{ opacity: 0 }}
@@ -560,11 +559,10 @@ export default function ProductsPage() {
                         <button
                           key={i}
                           onClick={() => setActiveImageIndex(i)}
-                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${
-                            activeImageIndex === i
+                          className={`aspect-[3/4] rounded-lg md:rounded-xl overflow-hidden border transition-all ${activeImageIndex === i
                               ? "border-black dark:border-white ring-2 ring-black/5 dark:ring-white/5 scale-105"
                               : "border-neutral-100 dark:border-neutral-800 opacity-50 hover:opacity-100"
-                          } bg-white dark:bg-black`}
+                            } bg-white dark:bg-black`}
                         >
                           {img.type === "VIDEO" ? (
                             <div className="relative w-full h-full">
@@ -627,11 +625,9 @@ export default function ProductsPage() {
                             "Independent Piece"}
                         </p>
                       </div>
-                      <p className="text-neutral-500 font-light leading-relaxed text-sm md:text-base max-w-xl italic">
-                        "
+                      <p className="text-neutral-500 font-light leading-relaxed text-sm md:text-base max-w-xl">
                         {previewProduct.description ||
-                          "No description provided for this architectural piece."}
-                        "
+                          "No description provided for this piece."}
                       </p>
                     </motion.div>
 
@@ -660,7 +656,7 @@ export default function ProductsPage() {
                             Selling Price (GHS)
                           </p>
                           <p className="text-xl md:text-2xl font-black tracking-tighter">
-                            GH₵ {previewProduct?.price.toLocaleString()}
+                            GH₵ {previewProduct?.price?.toLocaleString() ?? "—"}
                           </p>
                         </div>
                         {/* Discounted Price */}
@@ -695,11 +691,10 @@ export default function ProductsPage() {
                             </p>
                             <div className="flex flex-col">
                               <p
-                                className={`text-xl md:text-2xl font-black tracking-tighter ${
-                                  price.discountPrice
+                                className={`text-xl md:text-2xl font-black tracking-tighter ${price.discountPrice
                                     ? "text-emerald-500"
                                     : "text-black dark:text-white"
-                                }`}
+                                  }`}
                               >
                                 {price?.discountPrice?.toLocaleString() ||
                                   price?.price?.toLocaleString()}
@@ -727,18 +722,16 @@ export default function ProductsPage() {
                           {previewProduct.variants?.map((v: any) => (
                             <div
                               key={v.id}
-                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${
-                                v.isAvailable
+                              className={`group px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${v.isAvailable
                                   ? "border-neutral-100 dark:border-neutral-900 bg-neutral-50/50 dark:bg-neutral-900/20 hover:border-black dark:hover:border-white"
                                   : "border-rose-100/50 bg-rose-50/30 text-rose-400"
-                              }`}
+                                }`}
                             >
                               <span
-                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${
-                                  v.isAvailable
+                                className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest ${v.isAvailable
                                     ? "text-neutral-700 dark:text-neutral-300"
                                     : "text-rose-400"
-                                }`}
+                                  }`}
                               >
                                 {v.name}
                               </span>

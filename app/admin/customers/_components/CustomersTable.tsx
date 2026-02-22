@@ -167,7 +167,7 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                         Customers
                     </h1>
                     <p className="text-neutral-500 mt-1 font-light">
-                        Track client history, lifetime value, and delivery logistics.
+                        Track customer history, lifetime value, and delivery logistics.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -257,7 +257,7 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                     <td colSpan={3} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3 text-neutral-400">
                                             <Users className="w-10 h-10 opacity-20" />
-                                            <p className="text-sm font-light italic">No customers found.</p>
+                                            <p className="text-sm font-light">No customers found.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -303,7 +303,7 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <div className="inline-flex flex-col items-end">
-                                                <span className="text-sm font-black tracking-tight italic font-serif text-black dark:text-white">
+                                                <span className="text-sm font-black tracking-tight text-black dark:text-white">
                                                     GHS {parseFloat(customer.confirmedSpend).toFixed(2)}
                                                 </span>
                                                 {parseFloat(customer.pendingSpend) > 0 && (
@@ -338,11 +338,11 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                         <Badge variant="outline" className="rounded-full border-neutral-200 px-4 py-1 text-[10px] font-black uppercase tracking-[0.2em] bg-neutral-50 mb-4">
                                             Customer Account
                                         </Badge>
-                                        <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-xl font-serif italic shadow-lg transform -rotate-6">
+                                        <div className="w-10 h-10 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-base font-bold shadow-sm">
                                             {selectedCustomer.firstName[0]}
                                         </div>
                                     </div>
-                                    <SheetTitle className="font-serif text-5xl italic font-bold tracking-tight leading-none">
+                                    <SheetTitle className="font-serif text-4xl font-bold tracking-tight leading-none">
                                         {selectedCustomer.firstName} <br />
                                         <span className="text-neutral-300 font-light">{selectedCustomer.lastName}</span>
                                     </SheetTitle>
@@ -366,14 +366,14 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-8 rounded-3xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 shadow-sm">
                                         <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Confirmed Spend</p>
-                                        <p className="text-3xl font-serif font-bold italic text-green-600">GHS {parseFloat(selectedCustomer.confirmedSpend).toFixed(2)}</p>
+                                        <p className="text-3xl font-bold text-black dark:text-white">GHS {parseFloat(selectedCustomer.confirmedSpend).toFixed(2)}</p>
                                         <div className="flex items-center gap-1 text-[9px] font-black text-neutral-400 uppercase tracking-widest mt-2">
                                             {selectedCustomer.orderCount} Orders
                                         </div>
                                     </div>
                                     <div className="p-8 rounded-3xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 shadow-sm">
                                         <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">Pending Capital</p>
-                                        <p className="text-3xl font-serif font-bold italic text-amber-600">GHS {parseFloat(selectedCustomer.pendingSpend).toFixed(2)}</p>
+                                        <p className="text-3xl font-bold text-black dark:text-white">GHS {parseFloat(selectedCustomer.pendingSpend).toFixed(2)}</p>
                                     </div>
                                 </div>
 
@@ -392,13 +392,13 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                                         <p className="text-xs font-bold mt-1 uppercase tracking-tighter">{order.status.replace(/_/g, ' ')}</p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-sm font-bold font-serif italic">GHS {parseFloat(order.total.toString()).toFixed(2)}</p>
+                                                        <p className="text-sm font-bold">GHS {parseFloat(order.total.toString()).toFixed(2)}</p>
                                                         <p className="text-[9px] text-neutral-400 mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
                                             ))
                                         ) : (
-                                            <p className="text-[10px] text-neutral-400 italic">No orders recorded yet.</p>
+                                            <p className="text-[10px] text-neutral-400 font-light">No orders recorded yet.</p>
                                         )}
                                     </div>
                                 </div>
@@ -410,7 +410,7 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
                                         Delivery Address
                                     </h4>
                                     <div className="p-6 rounded-2xl border border-neutral-100 dark:border-neutral-800 space-y-1 bg-white dark:bg-black text-[11px]">
-                                        <p className="font-serif italic font-bold text-neutral-800 dark:text-neutral-200">
+                                        <p className="font-bold text-neutral-800 dark:text-neutral-200">
                                             {selectedCustomer.lastAddress || "No address recorded"}
                                         </p>
                                         <p className="text-neutral-500">
@@ -421,7 +421,7 @@ export function CustomersTable({ customers: initialCustomers }: CustomersTablePr
 
                                 <div className="pt-8 border-t border-neutral-100 dark:border-neutral-800 opacity-60">
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-1">Awuraba Collective</p>
-                                    <p className="text-[10px] text-neutral-400 italic">ID: {selectedCustomer.id.slice(-8).toUpperCase()}</p>
+                                    <p className="text-[10px] text-neutral-400">ID: {selectedCustomer.id.slice(-8).toUpperCase()}</p>
                                 </div>
                             </div>
                         </>

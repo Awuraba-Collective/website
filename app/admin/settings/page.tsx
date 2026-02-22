@@ -9,10 +9,10 @@ import { Separator } from "@/components/ui/separator";
 
 export default function SettingsPage() {
     return (
-        <div className="max-w-[1200px] mx-auto px-4 py-12 space-y-12 pb-32">
+        <div className="space-y-12 pb-10">
             <div className="space-y-4">
-                <h1 className="text-4xl font-black font-serif uppercase tracking-tight">Admin Settings</h1>
-                <p className="text-neutral-500 font-medium max-w-2xl">
+                <h1 className="text-3xl font-bold font-serif tracking-tight">Admin Settings</h1>
+                <p className="text-neutral-500 font-light ">
                     Manage global configurations for the store, including product categories, currency rates, and sizing standards.
                 </p>
             </div>

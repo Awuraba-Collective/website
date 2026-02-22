@@ -266,6 +266,10 @@ export async function deleteOrder(orderId: string) {
   await requireAdmin();
 
   try {
+    // Delete related records first (no cascade in schema)
+    await prisma.orderEvent.deleteMany({ where: { orderId } });
+    await prisma.payment.deleteMany({ where: { orderId } });
+    await prisma.orderItem.deleteMany({ where: { orderId } });
     await prisma.order.delete({ where: { id: orderId } });
     return { success: true };
   } catch (error) {
@@ -297,5 +301,49 @@ export async function updateOrder(
   } catch (error) {
     console.error("Failed to update order:", error);
     return { success: false, error: "Failed to update order" };
+  }
+}
+
+export async function updateOrderItemPrice(
+  itemId: string,
+  amountPaid: number,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin();
+  try {
+    // Fetch the item and its order
+    const item = await prisma.orderItem.findUnique({
+      where: { id: itemId },
+      include: { order: { include: { items: true } } },
+    });
+    if (!item) return { success: false, error: "Item not found" };
+
+    // Update amountPaid on this item
+    await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { amountPaid: new Prisma.Decimal(amountPaid) },
+    });
+
+    // Recalculate order subtotal & total from all items
+    const updatedItems = item.order.items.map((i) =>
+      i.id === itemId ? { ...i, amountPaid: new Prisma.Decimal(amountPaid) } : i,
+    );
+    const newSubtotal = updatedItems.reduce((sum, i) => {
+      const price = i.amountPaid != null ? Number(i.amountPaid) : Number(i.unitPrice);
+      return sum + price * i.quantity;
+    }, 0);
+    const newTotal = newSubtotal + Number(item.order.shippingCost) - Number(item.order.discount);
+
+    await prisma.order.update({
+      where: { id: item.order.id },
+      data: {
+        subtotal: new Prisma.Decimal(newSubtotal),
+        total: new Prisma.Decimal(newTotal),
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update item price:", error);
+    return { success: false, error: "Failed to update price" };
   }
 }

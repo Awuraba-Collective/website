@@ -263,7 +263,7 @@ export function AdminCreateOrderDialog({
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
-                                            Identify Client
+                                            Identify Customer
                                         </Label>
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -310,7 +310,7 @@ export function AdminCreateOrderDialog({
                                         )}
 
                                         {customerSearch.length >= 2 && customers.length === 0 && !isSearchingCustomers && (
-                                            <p className="text-xs text-neutral-400 italic">No existing customers found. Fill in the form below to add a new one.</p>
+                                            <p className="text-xs text-neutral-400 font-light">No existing customers found. Fill in the form below to add a new one.</p>
                                         )}
                                     </div>
 
@@ -385,7 +385,7 @@ export function AdminCreateOrderDialog({
                                         {selectedCustomer && (
                                             <Badge variant="secondary" className="text-[10px] gap-2">
                                                 <Check className="w-3 h-3 text-green-500" />
-                                                Client: {selectedCustomer.firstName}
+                                                Customer: {selectedCustomer.firstName}
                                             </Badge>
                                         )}
                                     </div>
@@ -434,7 +434,7 @@ export function AdminCreateOrderDialog({
                                         {orderItems.length === 0 ? (
                                             <div className="py-12 border-2 border-dashed border-neutral-100 dark:border-neutral-900 rounded-3xl flex flex-col items-center justify-center text-neutral-400">
                                                 <Package className="w-12 h-12 mb-2 opacity-20" />
-                                                <p className="text-sm font-light italic">No items added yet</p>
+                                                <p className="text-sm font-light">No items added yet</p>
                                             </div>
                                         ) : (
                                             orderItems.map((item, idx) => (
@@ -447,7 +447,7 @@ export function AdminCreateOrderDialog({
                                                             {item.image && <img src={item.image} alt={item.name} className="w-full h-full object-cover" />}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-serif font-bold italic text-md leading-tight truncate">{item.name}</p>
+                                                            <p className="font-bold text-sm leading-tight truncate">{item.name}</p>
                                                             <p className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">
                                                                 List: GHS {item.price}
                                                             </p>
@@ -574,7 +574,7 @@ export function AdminCreateOrderDialog({
                                             <div className="p-6 rounded-2xl bg-white dark:bg-black border border-neutral-100 dark:border-neutral-800 shadow-sm space-y-3">
                                                 <div>
                                                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Authorized Customer</p>
-                                                    <p className="text-md font-serif font-bold italic tracking-tight">
+                                                    <p className="text-md font-bold tracking-tight">
                                                         {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : `${newCustomer.firstName || "Customer"} ${newCustomer.lastName}`}
                                                     </p>
                                                 </div>
@@ -648,7 +648,7 @@ export function AdminCreateOrderDialog({
                                                 <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                                                     <div>
                                                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Total Paid</p>
-                                                        <p className="text-3xl font-serif font-bold italic tracking-tight">
+                                                        <p className="text-3xl font-bold tracking-tight">
                                                             GHS {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                         </p>
                                                     </div>

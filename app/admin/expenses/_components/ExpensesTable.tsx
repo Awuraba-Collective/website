@@ -271,7 +271,7 @@ export function ExpensesTable({ expenses: initialExpenses }: { expenses: Expense
                                     <td colSpan={6} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3 text-neutral-400">
                                             <Receipt className="w-10 h-10 opacity-20" />
-                                            <p className="text-sm font-light italic">
+                                            <p className="text-sm font-light">
                                                 {expenses.length === 0 ? "No expenses recorded yet." : "No expenses match your search."}
                                             </p>
                                             {expenses.length === 0 && (
@@ -303,7 +303,7 @@ export function ExpensesTable({ expenses: initialExpenses }: { expenses: Expense
                                             <span className="text-sm text-neutral-500">{new Date(expense.date).toLocaleDateString()}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs text-neutral-400 italic">{expense.note || "—"}</span>
+                                            <span className="text-xs text-neutral-400">{expense.note || "—"}</span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className="text-sm font-black text-black dark:text-white">
@@ -355,7 +355,7 @@ export function ExpensesTable({ expenses: initialExpenses }: { expenses: Expense
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="max-w-md bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800">
                     <DialogHeader>
-                        <DialogTitle className="font-serif text-xl font-bold italic">
+                        <DialogTitle className="font-serif text-xl font-bold">
                             {editingExpense ? "Edit Expense" : "Add Expense"}
                         </DialogTitle>
                     </DialogHeader>

@@ -23,22 +23,6 @@ export default async function OrdersPage() {
     },
   });
 
-  // Serialize Decimal objects to strings before passing to Client Component
-  // const serializedOrders = orders.map(order => ({
-  //   ...order,
-  //   subtotal: order.subtotal.toString(),
-  //   total: order.total.toString(),
-  //   shippingCost: order.shippingCost.toString(),
-  //   discount: order.discount.toString(),
-  //   items: order.items.map(item => ({
-  //     ...item,
-  //     product: {
-  //       ...item.product,
-  //       costPrice: item.product.costPrice?.toString() || "0"
-  //     }
-  //   }))
-  // }));
-
   const serializedOrders = serializePrisma(orders);
 
   return <OrdersTable orders={serializedOrders as any} />;
