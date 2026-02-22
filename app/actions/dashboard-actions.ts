@@ -118,12 +118,34 @@ export async function getDashboardStats() {
             revenue: (item._sum.totalPrice || 0).toString(),
         }));
 
+        // 8. Total items income (amountPaid fallback to unitPrice)
+        const confirmedItems = await prisma.orderItem.findMany({
+            where: { order: { status: { in: confirmedStatuses as any } } },
+            select: { amountPaid: true, unitPrice: true, quantity: true },
+        });
+        const totalIncome = confirmedItems.reduce((sum, item) => {
+            const paid = item.amountPaid != null
+                ? parseFloat(item.amountPaid.toString()) * item.quantity
+                : parseFloat(item.unitPrice.toString()) * item.quantity;
+            return sum + paid;
+        }, 0);
+
+        // 9. Total expenses
+        const allExpenses = await prisma.expense.findMany({ select: { amount: true } });
+        const totalExpenses = allExpenses.reduce((sum, e) => sum + parseFloat(e.amount.toString()), 0);
+
+        // 10. Total customers
+        const totalCustomers = await prisma.customer.count();
+
         return {
             stats: {
                 confirmedRevenue: totalRevenue.toString(),
                 pendingRevenue: pendingRevenue.toString(),
                 totalOrders: totalOrdersCount.toString(),
                 activeCustomers: activeCustomersCount.toString(),
+                totalIncome: totalIncome.toString(),
+                totalExpenses: totalExpenses.toString(),
+                totalCustomers: totalCustomers.toString(),
             },
             recentTransactions: recentTransactions.map(order => ({
                 id: order.orderNumber,

@@ -19,6 +19,7 @@ interface CustomerInfo {
 interface CreateOrderInput {
   customer: CustomerInfo;
   items: CartItem[];
+  orderDate?: string; // ISO string, manually selected date
 }
 
 interface CreateOrderResult {
@@ -33,15 +34,15 @@ export async function createOrder(
 ): Promise<CreateOrderResult> {
   await requireAdmin();
   try {
-    const { customer, items } = input;
+    const { customer, items, orderDate } = input;
 
     if (!items || items.length === 0) {
       return { success: false, error: "No items in cart" };
     }
 
-    // Calculate totals
+    // Calculate totals using amountPaid if provided, else unitPrice
     const subtotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + (item.amountPaid ?? item.price) * item.quantity,
       0,
     );
     const shippingCost = 0; // Pay on delivery
@@ -109,8 +110,11 @@ export async function createOrder(
         total: new Prisma.Decimal(total),
         currency: "GHS",
 
+        // Manual order date
+        orderDate: orderDate ? new Date(orderDate) : undefined,
+
         // Shipping address
-        shippingName: `${customer.firstName} ${customer.lastName}`,
+        shippingName: `${customer.firstName} ${customer.lastName}`.trim() || "Guest",
         shippingAddress: customer.address || "To be confirmed",
         shippingCity: customer.city || "To be confirmed",
         // @ts-ignore
@@ -126,8 +130,9 @@ export async function createOrder(
             productName: item.name,
             variantName: item.selectedVariant.name,
             unitPrice: new Prisma.Decimal(item.price),
+            amountPaid: item.amountPaid != null ? new Prisma.Decimal(item.amountPaid) : undefined,
             quantity: item.quantity,
-            totalPrice: new Prisma.Decimal(item.price * item.quantity),
+            totalPrice: new Prisma.Decimal((item.amountPaid ?? item.price) * item.quantity),
             selectedSize: item.selectedSize,
             selectedLength: item.selectedLength,
             fitCategory: item.fitCategory,
@@ -218,6 +223,7 @@ export async function getOrderById(id: string) {
     items: order.items.map((item) => ({
       ...item,
       unitPrice: item.unitPrice.toString(),
+      amountPaid: item.amountPaid?.toString() ?? null,
       totalPrice: item.totalPrice.toString(),
     })),
     payments: order.payments.map((payment) => ({
@@ -253,5 +259,43 @@ export async function updateOrderStatus(
   } catch (error) {
     console.error("Failed to update order status:", error);
     return { success: false, error: "Failed to update order status" };
+  }
+}
+
+export async function deleteOrder(orderId: string) {
+  await requireAdmin();
+
+  try {
+    await prisma.order.delete({ where: { id: orderId } });
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete order:", error);
+    return { success: false, error: "Failed to delete order" };
+  }
+}
+
+export async function updateOrder(
+  orderId: string,
+  data: {
+    orderDate?: string;
+    notes?: string;
+    adminNotes?: string;
+  }
+) {
+  await requireAdmin();
+
+  try {
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        orderDate: data.orderDate ? new Date(data.orderDate) : undefined,
+        notes: data.notes,
+        adminNotes: data.adminNotes,
+      },
+    });
+    return { success: true, order };
+  } catch (error) {
+    console.error("Failed to update order:", error);
+    return { success: false, error: "Failed to update order" };
   }
 }

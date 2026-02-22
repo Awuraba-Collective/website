@@ -22,6 +22,9 @@ interface DashboardStats {
     pendingRevenue: string;
     totalOrders: string;
     activeCustomers: string;
+    totalIncome: string;
+    totalExpenses: string;
+    totalCustomers: string;
 }
 
 interface Transaction {
@@ -57,31 +60,23 @@ interface DashboardOverviewProps {
 export function DashboardOverview({ data }: DashboardOverviewProps) {
     const stats = [
         {
-            name: 'Confirmed Settlement',
-            value: `GH₵ ${parseFloat(data.stats.confirmedRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            change: '',
-            trending: 'up',
+            name: 'Total Income',
+            value: `GH₵ ${parseFloat(data.stats.totalIncome || '0').toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             icon: DollarSign
         },
         {
-            name: 'Pending Revenue',
-            value: `GH₵ ${parseFloat(data.stats.pendingRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-            change: '',
-            trending: 'up',
+            name: 'Total Expenses',
+            value: `GH₵ ${parseFloat(data.stats.totalExpenses || '0').toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             icon: TrendingUp
         },
         {
             name: 'Total Orders',
             value: data.stats.totalOrders,
-            change: '',
-            trending: 'up',
             icon: ShoppingBag
         },
         {
-            name: 'Active Customers',
-            value: data.stats.activeCustomers,
-            change: '',
-            trending: 'up',
+            name: 'Total Customers',
+            value: data.stats.totalCustomers || data.stats.activeCustomers,
             icon: Users
         },
     ];

@@ -12,6 +12,8 @@ import {
   Settings,
   LogOut,
   MoreVertical,
+  Receipt,
+  TrendingUp,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,6 +41,8 @@ const sidebarLinks = [
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Customers", href: "/admin/customers", icon: Users },
+  { name: "Expenses", href: "/admin/expenses", icon: Receipt },
+  { name: "Financials", href: "/admin/financials", icon: TrendingUp },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -112,11 +116,10 @@ export function AdminSidebar({
                   asChild
                   tooltip={link.name}
                   isActive={isActive}
-                  className={`py-6 transition-colors ${
-                    isActive
+                  className={`py-6 transition-colors ${isActive
                       ? "bg-white text-black hover:bg-white/90"
                       : "text-neutral-400 hover:text-white hover:bg-neutral-900"
-                  }`}
+                    }`}
                 >
                   <Link href={link.href}>
                     <Icon className="size-5" />

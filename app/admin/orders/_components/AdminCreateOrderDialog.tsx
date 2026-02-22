@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
     Dialog,
     DialogContent,
@@ -17,9 +17,9 @@ import {
     Trash2,
     Check,
     ChevronRight,
-    UserPlus,
     Package,
     Loader2,
+    Calendar,
 } from "lucide-react";
 import { searchProductsForOrder } from "@/app/actions/product-actions";
 import { getCustomers } from "@/app/actions/customer-actions";
@@ -54,6 +54,7 @@ export function AdminCreateOrderDialog({
     const [customers, setCustomers] = useState<any[]>([]);
     const [customerSearch, setCustomerSearch] = useState("");
     const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+    const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
     const [newCustomer, setNewCustomer] = useState({
         firstName: "",
         lastName: "",
@@ -63,6 +64,11 @@ export function AdminCreateOrderDialog({
         region: "",
     });
 
+    // Order date (defaults to today)
+    const [orderDate, setOrderDate] = useState(() =>
+        new Date().toISOString().split("T")[0]
+    );
+
     // Product State
     const [productSearch, setProductSearch] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -70,21 +76,34 @@ export function AdminCreateOrderDialog({
     const [orderItems, setOrderItems] = useState<any[]>([]);
 
     useEffect(() => {
-        if (open) {
-            loadCustomers();
-        } else {
+        if (!open) {
             resetForm();
         }
     }, [open]);
 
-    const loadCustomers = async () => {
+    // Lazy customer search — only fetches when typing 2+ chars
+    const handleCustomerSearch = useCallback(async (val: string) => {
+        setCustomerSearch(val);
+        if (val.length < 2) {
+            setCustomers([]);
+            return;
+        }
+        setIsSearchingCustomers(true);
         const data = await getCustomers();
-        setCustomers(data);
-    };
+        const filtered = data.filter(
+            (c: any) =>
+                `${c.firstName} ${c.lastName}`.toLowerCase().includes(val.toLowerCase()) ||
+                c.whatsappNumber.includes(val)
+        );
+        setCustomers(filtered);
+        setIsSearchingCustomers(false);
+    }, []);
 
     const resetForm = () => {
         setStep(1);
         setSelectedCustomer(null);
+        setCustomers([]);
+        setCustomerSearch("");
         setNewCustomer({
             firstName: "",
             lastName: "",
@@ -96,16 +115,8 @@ export function AdminCreateOrderDialog({
         setOrderItems([]);
         setProductSearch("");
         setSearchResults([]);
+        setOrderDate(new Date().toISOString().split("T")[0]);
     };
-
-    const filteredCustomers = useMemo(() => {
-        if (!customerSearch) return customers.slice(0, 5);
-        return customers.filter(
-            (c) =>
-                `${c.firstName} ${c.lastName}`.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                c.whatsappNumber.includes(customerSearch)
-        );
-    }, [customers, customerSearch]);
 
     const handleSearchProducts = async (val: string) => {
         setProductSearch(val);
@@ -120,10 +131,12 @@ export function AdminCreateOrderDialog({
     };
 
     const addProductToOrder = (product: any) => {
+        const basePrice = product.basePrice;
         const newItem = {
             productId: product.id,
             name: product.name,
-            price: product.basePrice,
+            price: basePrice,
+            amountPaid: basePrice, // Editable field, starts at list price
             quantity: 1,
             selectedVariant: product.variants[0],
             selectedSize: product.fitCategory?.sizes[0]?.name || "Standard",
@@ -131,7 +144,6 @@ export function AdminCreateOrderDialog({
             fitCategory: product.fitCategory?.name || "Standard",
             image: product.media[0]?.src || "",
             note: "",
-            // Helper for UI
             availableVariants: product.variants,
             availableSizes: product.fitCategory?.sizes || [],
         };
@@ -151,12 +163,17 @@ export function AdminCreateOrderDialog({
     };
 
     const subtotal = useMemo(() => {
-        return orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        return orderItems.reduce((sum, item) => sum + (item.amountPaid ?? item.price) * item.quantity, 0);
     }, [orderItems]);
 
     const handleSubmit = async () => {
         if (orderItems.length === 0) {
             toast.error("Add at least one item to the order");
+            return;
+        }
+
+        if (!selectedCustomer && !newCustomer.whatsapp) {
+            toast.error("WhatsApp number is required");
             return;
         }
 
@@ -171,11 +188,19 @@ export function AdminCreateOrderDialog({
                     city: selectedCustomer.lastCity,
                     region: selectedCustomer.lastRegion,
                 }
-                : newCustomer;
+                : {
+                    firstName: newCustomer.firstName || "Customer",
+                    lastName: newCustomer.lastName,
+                    whatsapp: newCustomer.whatsapp,
+                    address: newCustomer.address,
+                    city: newCustomer.city,
+                    region: newCustomer.region,
+                };
 
             const res = await createOrder({
                 customer: customerInfo,
                 items: orderItems,
+                orderDate,
             });
 
             if (res.success) {
@@ -199,8 +224,8 @@ export function AdminCreateOrderDialog({
                 <DialogHeader className="p-6 border-b border-neutral-100 dark:border-neutral-900">
                     <div className="flex items-center justify-between">
                         <div>
-                            <DialogTitle className="font-serif text-2xl font-bold italic">
-                                Create Physical Order
+                            <DialogTitle className="font-serif text-2xl font-bold ">
+                                Create Order
                             </DialogTitle>
                             <p className="text-sm text-neutral-500 mt-1">
                                 Step {step} of 3: {step === 1 ? "Customer Information" : step === 2 ? "Add Products" : "Review & Confirm"}
@@ -220,97 +245,127 @@ export function AdminCreateOrderDialog({
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
-                                className="space-y-6"
+                                className="grid gap-y-4"
                             >
-                                <div className="space-y-4">
-                                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
-                                        Identify Client
-                                    </Label>
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                {/* Order Date */}
+                                <div className="grid grid-cols-2 gap-x-4">
+                                    <div className="space-y-2 ">
+                                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 flex items-center gap-2">
+                                            <Calendar className="w-3 h-3" />
+                                            Order Date
+                                        </Label>
                                         <Input
-                                            placeholder="Search existing customers by name or phone..."
-                                            value={customerSearch}
-                                            onChange={(e) => setCustomerSearch(e.target.value)}
-                                            className="pl-10 h-11 bg-white dark:bg-black"
+                                            type="date"
+                                            value={orderDate}
+                                            onChange={(e) => setOrderDate(e.target.value)}
+                                            className="h-11 bg-white dark:bg-black "
                                         />
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
+                                            Identify Client
+                                        </Label>
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                            <Input
+                                                placeholder="Type 2+ characters to search existing customers..."
+                                                value={customerSearch}
+                                                onChange={(e) => handleCustomerSearch(e.target.value)}
+                                                className="pl-10 h-11 bg-white dark:bg-black"
+                                            />
+                                            {isSearchingCustomers && (
+                                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 animate-spin" />
+                                            )}
+                                        </div>
 
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {filteredCustomers.map((c) => (
-                                            <button
-                                                key={c.id}
-                                                onClick={() => {
-                                                    setSelectedCustomer(c);
-                                                    setStep(2);
-                                                }}
-                                                className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group ${selectedCustomer?.id === c.id
-                                                    ? "border-black dark:border-white bg-black/5 dark:bg-white/5"
-                                                    : "border-neutral-100 dark:border-neutral-800 bg-white dark:bg-black hover:border-neutral-300"
-                                                    }`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all">
-                                                        {c.firstName[0]}{c.lastName[0]}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-sm">
-                                                            {c.firstName} {c.lastName}
-                                                        </p>
-                                                        <p className="text-xs text-neutral-500">{c.whatsappNumber}</p>
-                                                    </div>
-                                                </div>
-                                                <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-black dark:group-hover:text-white" />
-                                            </button>
-                                        ))}
+                                        {customers.length > 0 && (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {customers.slice(0, 6).map((c) => (
+                                                    <button
+                                                        key={c.id}
+                                                        onClick={() => {
+                                                            setSelectedCustomer(c);
+                                                            setStep(2);
+                                                        }}
+                                                        className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left group ${selectedCustomer?.id === c.id
+                                                            ? "border-black dark:border-white bg-black/5 dark:bg-white/5"
+                                                            : "border-neutral-100 dark:border-neutral-800 bg-white dark:bg-black hover:border-neutral-300"
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500 group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all">
+                                                                {(c.firstName?.[0] || "?")}{(c.lastName?.[0] || "")}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-sm">
+                                                                    {c.firstName} {c.lastName}
+                                                                </p>
+                                                                <p className="text-xs text-neutral-500">{c.whatsappNumber}</p>
+                                                            </div>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-black dark:group-hover:text-white" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {customerSearch.length >= 2 && customers.length === 0 && !isSearchingCustomers && (
+                                            <p className="text-xs text-neutral-400 italic">No existing customers found. Fill in the form below to add a new one.</p>
+                                        )}
                                     </div>
 
-                                    <div className="relative py-4">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <span className="w-full border-t border-neutral-100 dark:border-neutral-900" />
-                                        </div>
-                                        <div className="relative flex justify-center text-xs uppercase">
-                                            <span className="bg-white dark:bg-black px-2 text-neutral-400 font-black tracking-widest">Or</span>
-                                        </div>
-                                    </div>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <UserPlus className="w-4 h-4 text-neutral-400" />
-                                            <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400">Add New Guest</h3>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="firstName" className="text-[10px] font-bold uppercase text-neutral-500">First Name</Label>
-                                                <Input
-                                                    id="firstName"
-                                                    value={newCustomer.firstName}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
-                                                    className="h-10 bg-white dark:bg-black"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="lastName" className="text-[10px] font-bold uppercase text-neutral-500">Last Name</Label>
-                                                <Input
-                                                    id="lastName"
-                                                    value={newCustomer.lastName}
-                                                    onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
-                                                    className="h-10 bg-white dark:bg-black"
-                                                />
-                                            </div>
+
+
+
+
+                                <div className="relative py-4">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t border-neutral-100 dark:border-neutral-900" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white dark:bg-black px-2 text-neutral-400 font-black tracking-widest">Or Add New Customer</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="firstName" className="text-[10px] font-bold uppercase text-neutral-500">First Name <span className="text-neutral-300">(optional)</span></Label>
+                                            <Input
+                                                id="firstName"
+                                                placeholder="Customer"
+                                                value={newCustomer.firstName}
+                                                onChange={(e) => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
+                                                className="h-10 bg-white dark:bg-black"
+                                            />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="whatsapp" className="text-[10px] font-bold uppercase text-neutral-500">WhatsApp Number</Label>
+                                            <Label htmlFor="lastName" className="text-[10px] font-bold uppercase text-neutral-500">Last Name <span className="text-neutral-300">(optional)</span></Label>
                                             <Input
-                                                id="whatsapp"
-                                                placeholder="e.g. 23354XXXXXXX"
-                                                value={newCustomer.whatsapp}
-                                                onChange={(e) => setNewCustomer({ ...newCustomer, whatsapp: e.target.value })}
+                                                id="lastName"
+                                                value={newCustomer.lastName}
+                                                onChange={(e) => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
                                                 className="h-10 bg-white dark:bg-black"
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="whatsapp" className="text-[10px] font-bold uppercase text-neutral-500">
+                                            WhatsApp Number <span className="text-red-400">*</span>
+                                        </Label>
+                                        <Input
+                                            id="whatsapp"
+                                            placeholder="e.g. 23354XXXXXXX"
+                                            value={newCustomer.whatsapp}
+                                            onChange={(e) => setNewCustomer({ ...newCustomer, whatsapp: e.target.value })}
+                                            className="h-10 bg-white dark:bg-black"
+                                        />
+                                    </div>
                                 </div>
+
                             </motion.div>
                         )}
 
@@ -393,11 +448,9 @@ export function AdminCreateOrderDialog({
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-serif font-bold italic text-md leading-tight truncate">{item.name}</p>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-[10px] font-black uppercase tracking-widest">
-                                                                    GHS {item.price}
-                                                                </span>
-                                                            </div>
+                                                            <p className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">
+                                                                List: GHS {item.price}
+                                                            </p>
                                                         </div>
                                                         <button
                                                             onClick={() => removeOrderItem(idx)}
@@ -407,7 +460,7 @@ export function AdminCreateOrderDialog({
                                                         </button>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                                         {/* Variant */}
                                                         <div className="space-y-1">
                                                             <Label className="text-[9px] font-black uppercase text-neutral-400">Variant</Label>
@@ -476,6 +529,24 @@ export function AdminCreateOrderDialog({
                                                                 className="h-8 text-[11px] font-bold text-center pl-3 pr-1"
                                                             />
                                                         </div>
+
+                                                        {/* Price Paid */}
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[9px] font-black uppercase text-neutral-400">
+                                                                Price Paid <span className="text-green-500">✦</span>
+                                                            </Label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-neutral-400 font-bold">GHS</span>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={item.amountPaid ?? item.price}
+                                                                    onChange={(e) => updateOrderItem(idx, { amountPaid: parseFloat(e.target.value) || 0 })}
+                                                                    className="h-8 text-[11px] font-bold pl-9 pr-1"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))
@@ -504,12 +575,16 @@ export function AdminCreateOrderDialog({
                                                 <div>
                                                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Authorized Customer</p>
                                                     <p className="text-md font-serif font-bold italic tracking-tight">
-                                                        {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : `${newCustomer.firstName} ${newCustomer.lastName}`}
+                                                        {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : `${newCustomer.firstName || "Customer"} ${newCustomer.lastName}`}
                                                     </p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">WhatsApp Access</p>
                                                     <p className="text-sm font-medium">{selectedCustomer ? selectedCustomer.whatsappNumber : newCustomer.whatsapp}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Order Date</p>
+                                                    <p className="text-sm font-medium">{new Date(orderDate).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -561,13 +636,18 @@ export function AdminCreateOrderDialog({
                                                     {orderItems.map((item, idx) => (
                                                         <div key={idx} className="flex justify-between text-xs opacity-80">
                                                             <p>{item.quantity}x {item.name}</p>
-                                                            <p>GHS {(item.price * item.quantity).toFixed(2)}</p>
+                                                            <div className="text-right">
+                                                                <p>GHS {((item.amountPaid ?? item.price) * item.quantity).toFixed(2)}</p>
+                                                                {item.amountPaid != null && item.amountPaid !== item.price && (
+                                                                    <p className="text-[9px] text-amber-400 opacity-70">List: GHS {(item.price * item.quantity).toFixed(2)}</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                                 <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                                                     <div>
-                                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Total Payable</p>
+                                                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Total Paid</p>
                                                         <p className="text-3xl font-serif font-bold italic tracking-tight">
                                                             GHS {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                         </p>
@@ -589,7 +669,15 @@ export function AdminCreateOrderDialog({
                     <div className="flex items-center justify-between w-full">
                         <Button
                             variant="ghost"
-                            onClick={() => (step === 1 ? onOpenChange(false) : setStep(step - 1))}
+                            onClick={() => {
+                                if (step === 1) onOpenChange(false);
+                                else if (step === 2 && selectedCustomer) {
+                                    setSelectedCustomer(null);
+                                    setStep(1);
+                                } else {
+                                    setStep(step - 1);
+                                }
+                            }}
                             className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-black dark:hover:text-white"
                         >
                             {step === 1 ? "Cancel" : "Back"}
@@ -598,7 +686,7 @@ export function AdminCreateOrderDialog({
                             onClick={() => (step === 3 ? handleSubmit() : setStep(step + 1))}
                             disabled={
                                 isLoading ||
-                                (step === 1 && !selectedCustomer && (!newCustomer.firstName || !newCustomer.whatsapp)) ||
+                                (step === 1 && !selectedCustomer && !newCustomer.whatsapp) ||
                                 (step === 2 && orderItems.length === 0)
                             }
                             className="h-12 px-8 bg-black dark:bg-white text-white dark:text-black font-bold uppercase tracking-widest text-[11px] hover:scale-[1.02] transition-transform shadow-lg"

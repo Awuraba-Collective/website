@@ -53,6 +53,7 @@ export interface CartItem {
   productId: string;
   name: string;
   price: number; // GHS price (base currency)
+  amountPaid?: number; // Actual price paid (may differ if subsidized) — admin use
   priceUSD?: number; // Legacy USD price
   currency: string; // Currency code when added to cart
   currencyPrice: number; // Price in the selected currency when added

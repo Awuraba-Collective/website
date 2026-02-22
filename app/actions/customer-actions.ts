@@ -104,3 +104,42 @@ export async function getCustomerById(id: string) {
     return null;
   }
 }
+
+export async function createCustomer(data: {
+  firstName: string;
+  lastName: string;
+  whatsapp: string;
+  address?: string;
+  city?: string;
+  region?: string;
+}) {
+  try {
+    const whatsappClean = data.whatsapp.replace(/[\s\-\+\(\)]/g, "");
+
+    const existing = await prisma.customer.findUnique({
+      where: { whatsappNumber: whatsappClean },
+    });
+
+    if (existing) {
+      return { success: false, error: "A customer with this WhatsApp number already exists." };
+    }
+
+    const customer = await prisma.customer.create({
+      data: {
+        firstName: data.firstName || "Guest",
+        lastName: data.lastName || "",
+        whatsappNumber: whatsappClean,
+        lastAddress: data.address || undefined,
+        lastCity: data.city || undefined,
+        // @ts-ignore
+        lastRegion: data.region || undefined,
+        orderCount: 0,
+      },
+    });
+
+    return { success: true, customer: { ...customer, totalSpent: customer.totalSpent.toString() } };
+  } catch (error) {
+    console.error("Failed to create customer:", error);
+    return { success: false, error: "Failed to create customer. Please try again." };
+  }
+}

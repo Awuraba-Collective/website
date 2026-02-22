@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { AdminSidebar } from "@/app/admin/_components/admin-sidebar";
 import {
   SidebarInset,
@@ -29,14 +29,6 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
-              <div className="relative hidden sm:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input
-                  type="text"
-                  placeholder="Search everything..."
-                  className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full py-1.5 pl-10 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white w-64"
-                />
-              </div>
             </div>
 
             <div className="flex items-center gap-4">
