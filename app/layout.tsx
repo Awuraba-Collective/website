@@ -114,6 +114,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script
+          defer
+          data-website-id="dfid_MxTsKrTuE8gpS5wXqTgci"
+          data-domain="awuraba.co"
+          src="https://datafa.st/js/script.js"
+        ></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased min-h-screen flex flex-col bg-white text-black dark:bg-black dark:text-white`}
