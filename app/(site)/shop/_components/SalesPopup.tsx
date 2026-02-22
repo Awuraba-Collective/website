@@ -9,24 +9,24 @@ export function SalesPopup() {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        // Cutoff date: 1st February 2026
         const cutoffDate = new Date("2026-02-01T00:00:00Z").getTime();
         const now = new Date().getTime();
 
         if (now > cutoffDate) return;
 
-        // Check localStorage for the last shown time
         const lastShown = localStorage.getItem("sales_popup_last_shown");
         const eightHours = 8 * 60 * 60 * 1000;
 
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
         if (!lastShown || now - parseInt(lastShown) > eightHours) {
-            // Delay it slightly for a better UX
-            const timer = setTimeout(() => {
+            timer = setTimeout(() => {
                 setIsOpen(true);
                 localStorage.setItem("sales_popup_last_shown", now.toString());
             }, 2000);
-            return () => clearTimeout(timer);
         }
+
+        return () => clearTimeout(timer);
     }, []);
 
     const closePopup = () => setIsOpen(false);

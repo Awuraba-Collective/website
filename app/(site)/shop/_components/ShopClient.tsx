@@ -27,7 +27,7 @@ export default function ShopClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
+    searchParams.get("search") || "",
   );
   const debouncedSearch = useDebounce(searchQuery, 500);
 
@@ -41,7 +41,7 @@ export default function ShopClient({
       }
       return params.toString();
     },
-    [searchParams]
+    [searchParams],
   );
 
   useEffect(() => {
@@ -109,9 +109,10 @@ export default function ShopClient({
                   key={filter}
                   onClick={() => handleFilterClick(filter)}
                   className={`text-[9px] sm:text-[10px] tracking-[0.3em] uppercase transition-all whitespace-nowrap pb-4 -mb-4 border-b-2 relative
-                    ${activeFilter === filter
-                      ? "text-black dark:text-white font-bold"
-                      : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
+                    ${
+                      activeFilter === filter
+                        ? "text-black dark:text-white font-bold"
+                        : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
                     }
                   `}
                 >

@@ -2,6 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 import type { PageProps, SerializableProduct } from "@/types";
 import { prisma } from "@/lib/database";
 import ShopClient from "./_components/ShopClient";
+import { serializePrisma } from "@/lib/serializers/serializePrisma";
 
 type Props = PageProps<Record<string, never>>;
 
@@ -16,7 +17,7 @@ const FILTERS = [
 
 export async function generateMetadata(
   { searchParams }: Props,
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const resolvedSearchParams = await searchParams;
   const category = resolvedSearchParams.category as string | undefined;
@@ -109,20 +110,14 @@ export default async function ShopPage({
         },
       },
     },
-    orderBy: [
-      { isNewDrop: "desc" },
-      { createdAt: "desc" }
-    ],
+    orderBy: [{ isNewDrop: "desc" }, { createdAt: "desc" }],
   });
 
   // Fetch items for hero carousel: prioritize sales, then new drops, then price
   const heroSourceProducts = await prisma.product.findMany({
     where: {
       isActive: true,
-      OR: [
-        { isNewDrop: true },
-        { discount: { isNot: null } }
-      ]
+      OR: [{ isNewDrop: true }, { discount: { isNot: null } }],
     },
     include: {
       media: { orderBy: { position: "asc" } },
@@ -141,51 +136,59 @@ export default async function ShopPage({
       if (!aOnSale && bOnSale) return 1;
 
       // Then by price (desc)
-      const priceA = Number(a.prices.find(p => p.currencyCode === 'GHS')?.price || 0);
-      const priceB = Number(b.prices.find(p => p.currencyCode === 'GHS')?.price || 0);
+      const priceA = Number(
+        a.prices.find((p) => p.currencyCode === "GHS")?.price || 0,
+      );
+      const priceB = Number(
+        b.prices.find((p) => p.currencyCode === "GHS")?.price || 0,
+      );
       return priceB - priceA;
     })
     .slice(0, 5)
     .map(({ costPrice, ...product }) => ({
       ...product,
-      prices: product.prices.map(p => ({ ...p, price: Number(p.price) })),
-      discount: product.discount ? { ...product.discount, value: Number(product.discount.value) } : null,
+      prices: product.prices.map((p) => ({ ...p, price: Number(p.price) })),
+      discount: product.discount
+        ? { ...product.discount, value: Number(product.discount.value) }
+        : null,
     })) as SerializableProduct[];
 
-  const filteredProducts: SerializableProduct[] = products.map(
-    ({ costPrice, ...product }) => ({
-      ...product,
-      discount: product.discount
-        ? {
-          ...product.discount,
-          value: Number(product.discount.value),
-        }
-        : null,
-      prices:
-        product.prices?.map((p) => ({
-          ...p,
-          price: Number(p.price),
-        })) || [],
-      fitCategory: product.fitCategory
-        ? {
-          ...product.fitCategory,
-          sizes: product.fitCategory.sizes.map((s) => ({
-            ...s,
-            measurements: s.measurements as any,
-          })),
-        }
-        : null,
-      relatedProducts:
-        product.relatedProducts?.map((rp) => ({
-          ...rp,
-          prices:
-            rp.prices?.map((p) => ({ ...p, price: Number(p.price) })) || [],
-          discount: rp.discount
-            ? { ...rp.discount, value: Number(rp.discount.value) }
-            : null,
-        })) || [],
-    })
-  ) as any; // Cast as any if still complex, but structure is now correct for the type
+  // const filteredProducts: SerializableProduct[] = products.map(
+  //   ({ costPrice, ...product }) => ({
+  //     ...product,
+  //     discount: product.discount
+  //       ? {
+  //         ...product.discount,
+  //         value: Number(product.discount.value),
+  //       }
+  //       : null,
+  //     prices:
+  //       product.prices?.map((p) => ({
+  //         ...p,
+  //         price: Number(p.price),
+  //       })) || [],
+  //     fitCategory: product.fitCategory
+  //       ? {
+  //         ...product.fitCategory,
+  //         sizes: product.fitCategory.sizes.map((s) => ({
+  //           ...s,
+  //           measurements: s.measurements as any,
+  //         })),
+  //       }
+  //       : null,
+  //     relatedProducts:
+  //       product.relatedProducts?.map((rp) => ({
+  //         ...rp,
+  //         prices:
+  //           rp.prices?.map((p) => ({ ...p, price: Number(p.price) })) || [],
+  //         discount: rp.discount
+  //           ? { ...rp.discount, value: Number(rp.discount.value) }
+  //           : null,
+  //       })) || [],
+  //   })
+  // ) as any; // Cast as any if still complex, but structure is now correct for the type
+
+  const filteredProducts = products.map(serializePrisma);
 
   return (
     <ShopClient

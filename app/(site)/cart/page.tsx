@@ -19,7 +19,7 @@ import {
 } from "@/store/slices/cartSlice";
 import { motion, AnimatePresence } from "framer-motion";
 import { EditItemModal } from "@/app/(site)/shop/_components/EditItemModal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { fetchProducts } from "@/store/slices/shopSlice";
 import { CartItem } from "@/types/shop";
 import posthog from "posthog-js";
@@ -48,6 +48,11 @@ export default function CartPage() {
   const total = items.reduce((sum, item) => {
     return sum + getItemDisplayPrice(item) * item.quantity;
   }, 0);
+
+  const editingProduct = useMemo(
+    () => products.find((p) => p.id === editingItem?.productId),
+    [products, editingItem?.productId]
+  );
 
   if (items.length === 0) {
     return (
@@ -284,17 +289,9 @@ export default function CartPage() {
         {editingItem && (
           <EditItemModal
             item={editingItem}
-            variants={
-              products.find((p) => p.id === editingItem.productId)?.variants ||
-              []
-            }
-            media={
-              products.find((p) => p.id === editingItem.productId)?.media as any
-            }
-            fitCategory={
-              (products.find((p) => p.id === editingItem.productId) as any)
-                ?.fitCategory
-            }
+            variants={editingProduct?.variants || []}
+            media={editingProduct?.media as any}
+            fitCategory={(editingProduct as any)?.fitCategory}
             onClose={() => setEditingItem(null)}
             onSave={(updatedItem) => {
               dispatch(
