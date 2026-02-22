@@ -1,6 +1,7 @@
 'use client';
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from 'lucide-react';
 import { useProductForm } from "../_hooks/useProductForm";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { PricingSection } from "./PricingSection";
@@ -79,5 +80,3 @@ export function ProductForm() {
         </Form>
     );
 }
-
-import { Loader2 } from 'lucide-react';

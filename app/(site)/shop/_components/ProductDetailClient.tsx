@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -228,12 +228,15 @@ export function ProductDetailClient({
 
   const { price, discountPrice } = getProductPrice(product, currency);
 
-  const handleAddToCart = () => {
-    if (!selectedSize) {
-      toast.error("Please select a size before adding to bag");
-      return;
-    }
+  const [isAdded, setIsAdded] = useState(false);
 
+  useEffect(() => {
+    if (!isAdded) return;
+    const t = setTimeout(() => setIsAdded(false), 3000);
+    return () => clearTimeout(t);
+  }, [isAdded]);
+
+  const handleAddToCart = () => {
     if (!selectedSize) {
       toast.error("Please select a size before adding to bag");
       return;
@@ -288,10 +291,7 @@ export function ProductDetailClient({
     });
 
     toast.success(`${product.name} added to your bag!`);
-
-    // Sophisticated feedback instead of alert
     setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 3000);
   };
 
   const handleShare = async () => {
@@ -326,7 +326,6 @@ export function ProductDetailClient({
     }
   };
 
-  const [isAdded, setIsAdded] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
 
@@ -340,43 +339,41 @@ export function ProductDetailClient({
 
   const allProducts = useAppSelector((state) => state.shop.products);
 
-  // Recommendations Logic: FBT or Fallback
-  const recommendations = (() => {
+  const recommendations = useMemo(() => {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
       return product.relatedProducts;
     }
-
-    // Fallback: Randomly generated from same category
     const sameCategory = allProducts.filter(
       (p) =>
         p.id !== product.id &&
         (p.category as any)?.id === (product.category as any)?.id
     );
-    return [...sameCategory].sort(() => 0.5 - Math.random()).slice(0, 4);
-  })();
+    const shuffled = [...sameCategory];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 4);
+  }, [product.relatedProducts, product.id, allProducts]);
 
   const isFBT = product.relatedProducts && product.relatedProducts.length > 0;
 
   const selectedVariantName = selectedVariant?.name || "";
 
-  // Filter media by selected variant
-  const activeMedia = (() => {
+  const activeMedia = useMemo(() => {
     const variantMedia = product.media.filter(
       (m) =>
         m.modelWearingVariant?.toLowerCase() ===
         selectedVariantName.toLowerCase() ||
         m.alt.toLowerCase().includes(selectedVariantName.toLowerCase())
     );
-    // Fallback to all media if no matches
     const finalMedia = variantMedia.length > 0 ? variantMedia : product.media;
-
-    // Sort: Images first, then Videos
     return [...finalMedia].sort((a, b) => {
       if (a.type === "IMAGE" && b.type === "VIDEO") return -1;
       if (a.type === "VIDEO" && b.type === "IMAGE") return 1;
       return 0;
     });
-  })();
+  }, [product.media, selectedVariantName]);
 
   const sizes = product?.fitCategory?.sizes.map((s) => s.name);
   const lengths = Object.values(Length);
