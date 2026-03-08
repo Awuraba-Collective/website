@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,30 @@ import { Countdown } from "@/components/Countdown";
 
 interface ShopHeroProps {
     products: SerializableProduct[];
+}
+
+function HeroVideo({ src }: { src: string }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.play().catch(() => {
+                // Autoplay was prevented
+            });
+        }
+    }, [src]);
+
+    return (
+        <video
+            ref={videoRef}
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+        />
+    );
 }
 
 export function ShopHero({ products }: ShopHeroProps) {
@@ -64,14 +88,7 @@ export function ShopHero({ products }: ShopHeroProps) {
                     className="absolute inset-0"
                 >
                     {heroVideo ? (
-                        <video
-                            src={heroVideo}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="w-full h-full object-cover"
-                        />
+                        <HeroVideo src={heroVideo} />
                     ) : heroImage ? (
                         <Image
                             src={heroImage}

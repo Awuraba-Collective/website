@@ -56,7 +56,7 @@ export function ProductCard({ product }: ProductCardProps) {
           }
         });
       },
-      { threshold: 0.6 } // 60% visible to trigger
+      { threshold: 0.3 } // 30% visibility for mobile to trigger
     );
 
     if (containerRef.current) {
@@ -80,32 +80,33 @@ export function ProductCard({ product }: ProductCardProps) {
         ref={containerRef}
         className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none"
       >
-        {/* Media Layer */}
-        <div className="absolute inset-0 transition-opacity duration-500">
-          {showSecondMedia && video ? (
-            <video
-              ref={videoRef}
-              src={video.src}
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-              onContextMenu={(e) => e.preventDefault()}
-            />
-          ) : (poster || videoThumbnail) ? (
-            <Image
-              src={poster?.src || videoThumbnail || ""}
-              alt={poster?.alt || product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className={`object-cover transition-transform duration-700 ${isHovered ? "scale-105" : "scale-100"}`}
-              placeholder="blur"
-              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
-              onContextMenu={(e) => e.preventDefault()}
-              onDragStart={(e) => e.preventDefault()}
-            />
-          ) : null}
-        </div>
+        {/* Poster Image Layer */}
+        {(poster || videoThumbnail) && (
+          <Image
+            src={poster?.src || videoThumbnail || ""}
+            alt={poster?.alt || product.name}
+            fill
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"}`}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            placeholder="blur"
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        )}
+
+        {/* Video layer: Always rendered but opacity controlled */}
+        {video && (
+          <video
+            ref={videoRef}
+            src={video.src}
+            muted
+            loop
+            playsInline
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        )}
 
         {/* Dark Gradient Overlay */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-[1]" />
