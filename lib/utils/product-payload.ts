@@ -1,8 +1,7 @@
-import { ProductFormValues, ProductApiPayload } from "@/lib/validations/product";
+import { uploadFileAction } from "@/app/admin/products/upload/_actions/upload-action";
 
 /**
- * Dummy function to simulate file upload to storage
- * In production, this would upload to S3, Cloudinary, etc.
+ * Upload files via Server Action to bypass Vercel payload limits
  */
 export async function uploadImagesToStorage(files: (File | null)[]): Promise<string[]> {
     const validFiles = files.filter(f => f !== null) as File[];
@@ -14,17 +13,8 @@ export async function uploadImagesToStorage(files: (File | null)[]): Promise<str
     });
 
     try {
-        const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!res.ok) {
-            throw new Error('Upload failed');
-        }
-
-        const data = await res.json();
-        return data.urls;
+        const { urls } = await uploadFileAction(formData);
+        return urls;
     } catch (error) {
         console.error('Storage upload error:', error);
         throw error;

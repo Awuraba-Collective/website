@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 import cloudinary from "@/lib/cloudinary";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "video/mp4"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"];
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+
+export const maxDuration = 60; // 60 seconds
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdminApi();
