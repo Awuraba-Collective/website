@@ -24,6 +24,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const poster = product.media.find((m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i));
   const video = product.media.find((m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm|ogg)$/i));
 
+  // Find second image if it exists
+  const secondaryImage = product.media.filter(m => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i))[1];
+
   // Use video thumbnail if no image poster exists
   const videoThumbnail = !poster && video
     ? video.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
@@ -66,7 +69,7 @@ export function ProductCard({ product }: ProductCardProps) {
     return () => observer.disconnect();
   }, [isHovered, video]);
 
-  const hasSecondMedia = !!video || (product.media.length > 1 && !!product.media[1]?.src);
+  const hasSecondMedia = !!video || !!secondaryImage;
   const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
 
   return (
@@ -80,7 +83,7 @@ export function ProductCard({ product }: ProductCardProps) {
         ref={containerRef}
         className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none"
       >
-        {/* Poster Image Layer */}
+        {/* Layer 1: Primary Image (Poster or Video Thumbnail) */}
         {(poster || videoThumbnail) && (
           <Image
             src={poster?.src || videoThumbnail || ""}
@@ -95,11 +98,25 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         )}
 
-        {/* Video layer: Always rendered but opacity controlled */}
+        {/* Layer 2: Secondary Image (only if no video) */}
+        {!video && secondaryImage && (
+          <Image
+            src={secondaryImage.src}
+            alt={secondaryImage.alt || product.name}
+            fill
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        )}
+
+        {/* Layer 3: Video Layer (Always rendered if video exists) */}
         {video && (
           <video
             ref={videoRef}
             src={video.src}
+            poster={poster?.src || videoThumbnail || ""}
             muted
             loop
             playsInline
