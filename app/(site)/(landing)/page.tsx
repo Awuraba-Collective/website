@@ -51,16 +51,28 @@ export default async function Home() {
   });
   const bestSellers = bestSellersSource.map(serializePrisma) as SerializableProduct[];
 
-  // 3. Fetch Active Collections
-  const collections = await prisma.collection.findMany({
+  // 3. Fetch Active Collections (including first product image/video as fallback)
+  const collectionsSource = await prisma.collection.findMany({
     where: { isActive: true },
     include: {
       _count: {
         select: { products: true }
+      },
+      products: {
+        where: { isActive: true },
+        take: 1,
+        include: {
+          media: {
+            orderBy: { position: 'asc' },
+            take: 2 // Take first two in case first is video and second is image
+          }
+        }
       }
     },
     orderBy: { createdAt: "desc" }
   });
+
+  const collections = collectionsSource.map(serializePrisma);
 
   return (
     <HomeClient

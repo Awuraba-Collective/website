@@ -68,12 +68,30 @@ export function WhatWeOffer({ collections }: WhatWeOfferProps) {
                                 variants={itemAnim}
                                 className="relative group h-[500px] rounded-2xl overflow-hidden shadow-2xl"
                             >
-                                <Image
-                                    src={item.image || "/images/placeholder-collection.jpg"}
-                                    alt={item.name}
-                                    fill
-                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                                />
+                                {item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src ? (
+                                    <Image
+                                        src={item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src || "/images/fabrics.webp"}
+                                        alt={item.name}
+                                        fill
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    />
+                                ) : item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src ? (
+                                    <video
+                                        src={item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    />
+                                ) : (
+                                    <Image
+                                        src="/images/fabrics.webp"
+                                        alt={item.name}
+                                        fill
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    />
+                                )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
                                 <div className="absolute bottom-0 left-0 right-0 p-8 text-white transition-transform duration-500 group-hover:-translate-y-2">

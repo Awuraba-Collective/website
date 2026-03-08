@@ -69,7 +69,7 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                             </div>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                            {bestSellers.map((product) => (
+                            {bestSellers.slice(0, 4).map((product) => (
                                 <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
@@ -90,7 +90,7 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                         <h2 className="font-serif text-3xl sm:text-4xl md:text-7xl">
                             {title}
                         </h2>
-                        <p className="text-neutral-400 text-xl max-w-2xl mx-auto">
+                        <p className="hidden md:block text-neutral-400 text-xl max-w-2xl mx-auto">
                             {description}
                         </p>
                     </div>
@@ -103,7 +103,7 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                         href="/shop"
                         className="inline-flex items-center gap-3 bg-white text-black px-10 py-4 rounded-full font-black uppercase tracking-[0.2em] text-sm hover:scale-105 transition-transform shadow-2xl"
                     >
-                        <ShoppingBag className="w-5 h-5" /> {buttonText}
+                        {buttonText}
                     </Link>
                 </div>
             </section>
