@@ -72,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [isHovered, video]);
 
   const hasSecondMedia = !!video || (product.media.length > 1 && !!product.media[1]?.src);
-  const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
+  const showSecondMedia = (!poster && !!video) || (isHovered || isInView) && hasSecondMedia;
 
   return (
     <Link

@@ -732,16 +732,20 @@ export function ProductDetailClient({
                 </span>
                 <div className="flex flex-wrap gap-3">
                   {product.variants.map((variant) => {
-                    // Find the first IMAGE for this variant preview
+                    // Find the first IMAGE or VIDEO for this variant preview
                     const variantPreview = product.media.find(
-                      (img) =>
-                        img.type === "IMAGE" &&
-                        (img.modelWearingVariant?.toLowerCase() ===
-                          variant.name.toLowerCase() ||
-                          img.alt
-                            .toLowerCase()
-                            .includes(variant.name.toLowerCase()))
+                      (m) =>
+                      (m.modelWearingVariant?.toLowerCase() ===
+                        variant.name.toLowerCase() ||
+                        m.alt
+                          .toLowerCase()
+                          .includes(variant.name.toLowerCase()))
                     );
+
+                    // For video thumbnails, replace the extension with .jpg (Cloudinary convention)
+                    const previewSrc = variantPreview?.type === "VIDEO"
+                      ? variantPreview.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
+                      : variantPreview?.src;
 
                     return (
                       <button
@@ -756,13 +760,15 @@ export function ProductDetailClient({
                           }`}
                         title={variant.name}
                       >
-                        {variantPreview ? (
-                          <Image
-                            src={variantPreview.src}
-                            alt={variant.name}
-                            fill
-                            className="object-cover scale-150"
-                          />
+                        {previewSrc ? (
+                          <div className="relative w-full h-full">
+                            <Image
+                              src={previewSrc}
+                              alt={variant.name}
+                              fill
+                              className="object-cover scale-150"
+                            />
+                          </div>
                         ) : (
                           <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
                             <span className="text-[10px] font-bold text-neutral-400 uppercase text-center px-1">
