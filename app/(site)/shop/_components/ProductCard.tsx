@@ -16,14 +16,18 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const { currency } = useAppSelector((state) => state.shop);
 
   // Filter media
-  const poster = product.media.find((m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm)$/i));
-  const video = product.media.find((m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm)$/i));
+  const poster = product.media.find((m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i));
+  const video = product.media.find((m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm|ogg)$/i));
+
+  // Use video thumbnail if no image poster exists
+  const videoThumbnail = !poster && video
+    ? video.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
+    : null;
 
   // Get currency-aware pricing
   const { price, discountPrice } = getProductPrice(product, currency);
@@ -34,10 +38,8 @@ export function ProductCard({ product }: ProductCardProps) {
     if (window.matchMedia("(min-width: 1024px)").matches) {
       if (isHovered) {
         videoRef.current?.play().catch(() => { });
-        setIsPlaying(true);
       } else {
         videoRef.current?.pause();
-        setIsPlaying(false);
       }
       return;
     }
@@ -46,18 +48,11 @@ export function ProductCard({ product }: ProductCardProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          setIsInView(entry.isIntersecting);
           if (entry.isIntersecting) {
-            setIsInView(true);
-            if (video) {
-              videoRef.current?.play().catch(() => { });
-              setIsPlaying(true);
-            }
+            videoRef.current?.play().catch(() => { });
           } else {
-            setIsInView(false);
-            if (video) {
-              videoRef.current?.pause();
-              setIsPlaying(false);
-            }
+            videoRef.current?.pause();
           }
         });
       },
@@ -72,7 +67,7 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [isHovered, video]);
 
   const hasSecondMedia = !!video || (product.media.length > 1 && !!product.media[1]?.src);
-  const showSecondMedia = (!poster && !!video) || (isHovered || isInView) && hasSecondMedia;
+  const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
 
   return (
     <Link
@@ -85,49 +80,32 @@ export function ProductCard({ product }: ProductCardProps) {
         ref={containerRef}
         className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none"
       >
-        {/* Main Poster Image */}
-        {poster && poster.src && (
-          <Image
-            src={poster.src}
-            alt={poster.alt}
-            fill
-            className={`object-cover transition-all duration-1000 ease-in-out group-hover:scale-105 ${showSecondMedia ? "opacity-0" : "opacity-100"
-              }`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            placeholder="blur"
-            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
-            onContextMenu={(e) => e.preventDefault()}
-            onDragStart={(e) => e.preventDefault()}
-          />
-        )}
-
-        {/* Video Layer */}
-        {video && (
-          <video
-            ref={videoRef}
-            src={video.src}
-            muted
-            loop
-            playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${showSecondMedia ? "opacity-100" : "opacity-0"
-              }`}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-        )}
-
-        {/* Fallback Hover Image (only if no video and exists) */}
-        {!video && product.media[1] && product.media[1].type === "IMAGE" && product.media[1].src && (
-          <Image
-            src={product.media[1].src}
-            alt={product.media[1].alt}
-            fill
-            className={`absolute inset-0 object-cover transition-all duration-1000 ease-in-out ${showSecondMedia ? "opacity-100" : "opacity-0"
-              }`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onContextMenu={(e) => e.preventDefault()}
-            onDragStart={(e) => e.preventDefault()}
-          />
-        )}
+        {/* Media Layer */}
+        <div className="absolute inset-0 transition-opacity duration-500">
+          {showSecondMedia && video ? (
+            <video
+              ref={videoRef}
+              src={video.src}
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          ) : (poster || videoThumbnail) ? (
+            <Image
+              src={poster?.src || videoThumbnail || ""}
+              alt={poster?.alt || product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className={`object-cover transition-transform duration-700 ${isHovered ? "scale-105" : "scale-100"}`}
+              placeholder="blur"
+              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            />
+          ) : null}
+        </div>
 
         {/* Dark Gradient Overlay */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-[1]" />
