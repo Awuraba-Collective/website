@@ -52,14 +52,19 @@ export function ProductCard({ product }: ProductCardProps) {
       (entries) => {
         entries.forEach((entry) => {
           setIsInView(entry.isIntersecting);
-          if (entry.isIntersecting) {
-            videoRef.current?.play().catch(() => { });
+          if (entry.isIntersecting && videoRef.current) {
+            videoRef.current.play().catch(() => {
+              // Fallback for some browsers: try again once
+              setTimeout(() => {
+                videoRef.current?.play().catch(() => { });
+              }, 100);
+            });
           } else {
             videoRef.current?.pause();
           }
         });
       },
-      { threshold: 0.3 } // 30% visibility for mobile to trigger
+      { threshold: 0.1 } // More sensitive for mobile
     );
 
     if (containerRef.current) {
@@ -67,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
     }
 
     return () => observer.disconnect();
-  }, [isHovered, video]);
+  }, [isHovered, video, isInView]);
 
   const hasSecondMedia = !!video || !!secondaryImage;
   const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
@@ -117,6 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
             ref={videoRef}
             src={video.src}
             poster={poster?.src || videoThumbnail || ""}
+            autoPlay
             muted
             loop
             playsInline

@@ -127,7 +127,7 @@ export function ShopHero({ products }: ShopHeroProps) {
                     </div>
 
                     {/* Title */}
-                    <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[0.85] text-white">
+                    <h2 className="font-serif text-4xl md:text-7xl lg:text-8xl tracking-tight leading-[0.85] text-white">
                         {currentProduct.name}
                     </h2>
 
@@ -146,7 +146,7 @@ export function ShopHero({ products }: ShopHeroProps) {
                     {/* Pricing & CTA Row */}
                     <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 pt-6">
                         <div className="flex items-center gap-4">
-                            <p className="text-3xl md:text-5xl font-bold tracking-tighter text-white">
+                            <p className="text-2xl md:text-5xl font-bold tracking-tighter text-white">
                                 {formatPrice(discountPrice ?? price, currency)}
                             </p>
                             {discountPrice && (

@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "./ProductCard";
-import { ShopHero } from "./ShopHero";
 import { Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import posthog from "posthog-js";
@@ -13,14 +12,12 @@ import { SalesPopup } from "./SalesPopup";
 
 interface ShopClientProps {
   products: SerializableProduct[];
-  heroProducts: SerializableProduct[];
   activeFilter: string;
   filters: string[];
 }
 
 export default function ShopClient({
   products,
-  heroProducts,
   activeFilter,
   filters,
 }: ShopClientProps) {
@@ -76,9 +73,8 @@ export default function ShopClient({
       className="bg-white dark:bg-black min-h-screen pb-20"
     >
       <SalesPopup />
-      <ShopHero products={heroProducts} />
 
-      <div className="max-w-7xl mx-auto px-6 mt-12 mb-12">
+      <div className="max-w-7xl mx-auto px-6 pt-12 mb-12">
         {/* Search & Filters Container */}
         <div className="space-y-12 mb-16 text-center">
           {/* Search Bar */}
@@ -109,10 +105,9 @@ export default function ShopClient({
                   key={filter}
                   onClick={() => handleFilterClick(filter)}
                   className={`text-[9px] sm:text-[10px] tracking-[0.3em] uppercase transition-all whitespace-nowrap pb-4 -mb-4 border-b-2 relative
-                    ${
-                      activeFilter === filter
-                        ? "text-black dark:text-white font-bold"
-                        : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
+                    ${activeFilter === filter
+                      ? "text-black dark:text-white font-bold"
+                      : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
                     }
                   `}
                 >

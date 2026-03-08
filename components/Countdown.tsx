@@ -63,7 +63,7 @@ export function Countdown({ endDate, variant = "detail", className = "" }: Count
                     { label: "Secs", value: timeLeft.seconds },
                 ].map((item, idx) => (
                     <div key={idx} className="flex flex-col items-center">
-                        <span className="text-3xl md:text-5xl font-black tracking-tighter tabular-nums">
+                        <span className="text-2xl md:text-5xl font-black tracking-tighter tabular-nums">
                             {item.value}
                         </span>
                         <span className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] font-bold text-white/50 mt-1">

@@ -14,8 +14,8 @@ import { CurrencySwitcher } from "@/app/(site)/shop/_components/CurrencySwitcher
 
 const navLinks = [
     { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
     { name: "Shop", href: "/shop" },
+    { name: "About", href: "/about" },
     { name: "Sizing", href: "/sizing" },
     { name: "Partners", href: "/partners" },
     { name: "FAQ", href: "/faq" },
