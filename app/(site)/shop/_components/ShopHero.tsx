@@ -48,7 +48,8 @@ export function ShopHero({ products }: ShopHeroProps) {
     }
 
     const currentProduct = products[currentIndex];
-    const heroImage = currentProduct.media.find(m => m.type === 'IMAGE')?.src || currentProduct.media[0]?.src;
+    const heroImage = currentProduct.media.find(m => m.type === 'IMAGE' && !m.src.match(/\.(mov|mp4|webm|ogg)$/i))?.src;
+    const heroVideo = currentProduct.media.find(m => m.type === 'VIDEO' || m.src.match(/\.(mov|mp4|webm|ogg)$/i))?.src;
     const { price, discountPrice } = getProductPrice(currentProduct, currency);
 
     return (
@@ -62,7 +63,16 @@ export function ShopHero({ products }: ShopHeroProps) {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="absolute inset-0"
                 >
-                    {heroImage && (
+                    {heroVideo ? (
+                        <video
+                            src={heroVideo}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                    ) : heroImage ? (
                         <Image
                             src={heroImage}
                             alt={currentProduct.name}
@@ -70,7 +80,7 @@ export function ShopHero({ products }: ShopHeroProps) {
                             className="object-cover"
                             priority
                         />
-                    )}
+                    ) : null}
                     {/* Dark Grid/Radial Overlay */}
                     <div className="absolute inset-0 bg-black/40" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />

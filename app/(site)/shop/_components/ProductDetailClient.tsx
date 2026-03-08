@@ -576,6 +576,7 @@ export function ProductDetailClient({
                       <video
                         src={media.src}
                         controls
+                        autoPlay
                         muted
                         loop
                         playsInline
