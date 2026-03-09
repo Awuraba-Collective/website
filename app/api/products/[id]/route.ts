@@ -2,6 +2,7 @@ import { prisma } from "@/lib/database";
 import { requireAdminApi } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { generateSlug } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 
 // GET: Public (product detail page)
 export async function GET(
@@ -60,6 +61,9 @@ export async function DELETE(
         },
       });
 
+      revalidatePath("/");
+      revalidatePath("/shop");
+
       return NextResponse.json({
         message: "Product archived",
         id: product.id,
@@ -76,6 +80,9 @@ export async function DELETE(
         // Finally delete the product
         await tx.product.delete({ where: { id } });
       });
+
+      revalidatePath("/");
+      revalidatePath("/shop");
 
       return NextResponse.json({
         message: "Product deleted permanently",
@@ -109,6 +116,8 @@ export async function PATCH(
         where: { id },
         data: { isActive: payload.isActive },
       });
+      revalidatePath("/");
+      revalidatePath("/shop");
       return NextResponse.json({ message: "Status updated", id: product.id });
     }
 
@@ -277,6 +286,8 @@ export async function PATCH(
       },
     );
 
+    revalidatePath("/");
+    revalidatePath("/shop");
     return NextResponse.json(result);
   } catch (error) {
     console.error("Failed to update product:", error);

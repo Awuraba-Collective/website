@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { requireAdminApi } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 // Helper to generate slug from name
 function generateSlug(name: string): string {
@@ -88,12 +89,12 @@ export async function POST(req: Request) {
             // Handle Frequently Bought Together links immediately
             ...(frequentlyBoughtTogether &&
               frequentlyBoughtTogether.length > 0 && {
-                relatedProducts: {
-                  connect: frequentlyBoughtTogether.map((id: string) => ({
-                    id,
-                  })),
-                },
-              }),
+              relatedProducts: {
+                connect: frequentlyBoughtTogether.map((id: string) => ({
+                  id,
+                })),
+              },
+            }),
           },
         });
 
@@ -103,6 +104,9 @@ export async function POST(req: Request) {
         timeout: 20000, // 20 seconds
       },
     );
+
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

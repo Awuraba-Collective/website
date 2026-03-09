@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Curated elegant African ready-to-wear pieces for everyday life, special occasions, and everything in between.",
 };
 
+export const revalidate = 3600; // Revalidate every hour
+
 export default async function Home() {
   // 1. Fetch Hero Products (copying logic from shop/page.tsx for consistency)
   const heroSourceProducts = await prisma.product.findMany({
@@ -16,8 +18,17 @@ export default async function Home() {
       isActive: true,
       OR: [{ isNewDrop: true }, { discount: { isNot: null } }],
     },
-    include: {
-      media: { orderBy: { position: "asc" } },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      isActive: true,
+      isNewDrop: true,
+      media: {
+        orderBy: { position: "asc" },
+        take: 1,
+        select: { src: true, alt: true, type: true, position: true }
+      },
       prices: true,
       discount: true,
     },
@@ -39,12 +50,21 @@ export default async function Home() {
   // 2. Fetch Best Sellers (Top 8 of currently active products)
   const bestSellersSource = await prisma.product.findMany({
     where: { isActive: true },
-    include: {
-      media: { orderBy: { position: "asc" } },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      isActive: true,
+      isNewDrop: true,
+      media: {
+        orderBy: { position: "asc" },
+        take: 2,
+        select: { src: true, alt: true, type: true, position: true }
+      },
       prices: true,
       discount: true,
-      category: true,
-      collection: true,
+      category: { select: { name: true } },
+      collection: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" }, // fallback: most recent
     take: 8,
@@ -54,17 +74,22 @@ export default async function Home() {
   // 3. Fetch Active Collections (including first product image/video as fallback)
   const collectionsSource = await prisma.collection.findMany({
     where: { isActive: true },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      image: true,
       _count: {
-        select: { products: true }
+        select: { products: { where: { isActive: true } } }
       },
       products: {
         where: { isActive: true },
         take: 1,
-        include: {
+        select: {
           media: {
             orderBy: { position: 'asc' },
-            take: 2 // Take first two in case first is video and second is image
+            take: 1,
+            select: { src: true, type: true }
           }
         }
       }

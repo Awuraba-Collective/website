@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/database";
 import { requireAdminApi } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 // Helper to generate slug from name
 function generateSlug(name: string): string {
@@ -78,6 +79,9 @@ export async function POST(req: Request) {
       },
     });
 
+    revalidatePath("/");
+    revalidatePath("/shop");
+
     return NextResponse.json(collection, { status: 201 });
   } catch (error) {
     console.error("Failed to create collection:", error);
@@ -104,6 +108,9 @@ export async function DELETE(req: Request) {
     await prisma.collection.delete({
       where: { id },
     });
+
+    revalidatePath("/");
+    revalidatePath("/shop");
 
     return NextResponse.json({ success: true });
   } catch (error) {
