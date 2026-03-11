@@ -210,19 +210,6 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
     const callbackUrl = `${baseUrl}/checkout/callback`;
 
-    console.log(`Payment initialization: origin=${request.nextUrl.origin}, baseUrl=${process.env.NEXT_PUBLIC_BASE_URL}, callbackUrl=${callbackUrl}`);
-
-    // Check for Paystack key
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) {
-      console.error("Missing PAYSTACK_SECRET_KEY in environment");
-      return NextResponse.json(
-        { error: "Payment provider not configured (missing API key)" },
-        { status: 500 },
-      );
-    }
-
-    console.log(`Using Paystack key starting with: ${secretKey.substring(0, 7)}...`);
 
     try {
       // Initialize Paystack payment
