@@ -13,6 +13,7 @@ import { EmptyCart } from "@/components/EmptyCart";
 import { useEffect } from "react";
 import posthog from "posthog-js";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
+import { getMediaThumbnail } from "@/lib/utils";
 
 export function CartDrawer() {
   const dispatch = useAppDispatch();
@@ -78,7 +79,7 @@ export function CartDrawer() {
                 <div className="relative w-20 aspect-[3/4] bg-neutral-100 rounded-xs overflow-hidden flex-shrink-0">
                   {item.image ? (
                     <Image
-                      src={item.image}
+                      src={getMediaThumbnail(item.image)}
                       alt={item.name}
                       fill
                       className="object-cover"

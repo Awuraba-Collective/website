@@ -22,6 +22,7 @@ import {
   getProductPrice,
   CURRENCY_SYMBOLS,
 } from "@/lib/utils/currency";
+import { getMediaThumbnail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -59,6 +60,7 @@ interface PaystackConfig {
   amount: number;
   publicKey: string;
   currency: string;
+  accessCode?: string;
   metadata: {
     custom_fields: Array<{
       display_name: string;
@@ -226,6 +228,7 @@ export function CheckoutForm() {
         amount: Math.round(ghsTotal * 100), // Convert GHS to pesewas
         publicKey: PAYSTACK_PUBLIC_KEY,
         currency: "GHS",
+        accessCode: result.accessCode,
         metadata: {
           custom_fields: [
             {
@@ -289,12 +292,20 @@ export function CheckoutForm() {
 
   // Paystack payment hook - only initialize when config is ready
   const initPaystack = usePaystackPayment(
-    paymentConfig || {
-      reference: "",
-      email: "",
-      amount: 0,
-      publicKey: PAYSTACK_PUBLIC_KEY,
-    }
+    paymentConfig
+      ? {
+        ...paymentConfig,
+        amount: paymentConfig.amount,
+        email: paymentConfig.email,
+        reference: paymentConfig.reference,
+        publicKey: paymentConfig.publicKey,
+      }
+      : {
+        reference: "",
+        email: "",
+        amount: 0,
+        publicKey: PAYSTACK_PUBLIC_KEY,
+      }
   );
 
   // Effect to trigger Paystack popup when config is ready
@@ -593,7 +604,7 @@ export function CheckoutForm() {
                   >
                     <div className="relative w-16 h-20 bg-neutral-100 flex-shrink-0">
                       <Image
-                        src={item.image}
+                        src={getMediaThumbnail(item.image)}
                         alt={item.name}
                         fill
                         className="object-cover"

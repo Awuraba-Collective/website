@@ -24,6 +24,7 @@ import { fetchProducts } from "@/store/slices/shopSlice";
 import { CartItem } from "@/types/shop";
 import posthog from "posthog-js";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
+import { getMediaThumbnail } from "@/lib/utils";
 
 import { EmptyCart } from "@/components/EmptyCart";
 
@@ -105,7 +106,7 @@ export default function CartPage() {
                     <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800">
                       {item.image ? (
                         <Image
-                          src={item.image}
+                          src={getMediaThumbnail(item.image)}
                           alt={item.name}
                           fill
                           className="object-cover transition-transform duration-700 group-hover:scale-105"

@@ -8,6 +8,7 @@ import { SerializableFitSize } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Length, ProductVariant } from "@/app/generated/prisma";
+import { getMediaThumbnail } from "@/lib/utils";
 
 const lengths = Object.values(Length);
 
@@ -64,7 +65,7 @@ export function EditItemModal({
             m.alt.toLowerCase().includes(selectedVariant.name.toLowerCase()))
       );
       if (variantImage) {
-        newImage = variantImage.src;
+        newImage = getMediaThumbnail(variantImage.src);
       }
     }
 
@@ -139,14 +140,14 @@ export function EditItemModal({
                       selectedVariant.name === v.name
                         ? "border-black dark:border-white ring-2 ring-black dark:ring-white ring-offset-2"
                         : v.isAvailable
-                        ? "border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600"
-                        : "border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50"
+                          ? "border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600"
+                          : "border-neutral-200 dark:border-neutral-800 cursor-not-allowed opacity-50"
                     )}
                     title={v.name}
                   >
                     {variantPreview && variantPreview.src ? (
                       <Image
-                        src={variantPreview.src}
+                        src={getMediaThumbnail(variantPreview.src)}
                         alt={v.name}
                         fill
                         className="object-cover scale-150"

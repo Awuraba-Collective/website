@@ -19,6 +19,7 @@ import posthog from "posthog-js";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
+import { getMediaThumbnail } from "@/lib/utils";
 import type {
   SerializableProduct,
   Length,
@@ -260,10 +261,10 @@ export function ProductDetailClient({
         currencyPrice: finalCurrencyPrice, // Store the price in selected currency
         prices: product.prices, // Store the full pricing list
         discount: product.discount, // Store discount information
-        image:
+        image: getMediaThumbnail(
           activeMedia.find((m) => m.type === "IMAGE")?.src ||
-          activeMedia[0]?.src ||
-          "",
+          activeMedia[0]?.src
+        ),
         selectedSize,
         selectedLength,
         selectedVariant,
