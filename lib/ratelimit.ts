@@ -15,11 +15,11 @@ const redis = isConfigured ? Redis.fromEnv() : null;
  */
 export const paymentRatelimit = redis
   ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(5, "1 m"),
-      analytics: true,
-      prefix: "@awuraba/payment",
-    })
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "1 m"),
+    analytics: true,
+    prefix: "@awuraba/payment",
+  })
   : null;
 
 /**
@@ -28,11 +28,11 @@ export const paymentRatelimit = redis
  */
 export const apiRatelimit = redis
   ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(60, "1 m"),
-      analytics: true,
-      prefix: "@awuraba/api",
-    })
+    redis,
+    limiter: Ratelimit.slidingWindow(60, "1 m"),
+    analytics: true,
+    prefix: "@awuraba/api",
+  })
   : null;
 
 /**
@@ -48,9 +48,15 @@ export async function checkRateLimit(
     return { success: true };
   }
 
-  const result = await limiter.limit(identifier);
-  return {
-    success: result.success,
-    reset: result.reset,
-  };
+  try {
+    const result = await limiter.limit(identifier);
+    return {
+      success: result.success,
+      reset: result.reset,
+    };
+  } catch (error) {
+    console.error("Rate limit check failed (failing open):", error);
+    // Fail open: allow the request even if rate limiting service is down
+    return { success: true };
+  }
 }
