@@ -46,7 +46,7 @@ export interface Collection {
 
 export const useProductForm = () => {
   const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawProductId = searchParams.get("id");

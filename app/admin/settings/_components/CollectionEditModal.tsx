@@ -73,6 +73,10 @@ export function CollectionEditModal({
             setCoverType((collection.coverType as "IMAGE" | "VIDEO") || "IMAGE");
             setSourceType(collection.coverProductId ? "PRODUCT" : "UPLOAD");
             
+            // Clear search states on setiap collection change
+            setSearchQuery("");
+            setSearchResults([]);
+
             if (collection.coverProductId) {
                 setPreviewUrl(collection.coverType === "VIDEO" ? collection.coverVideo || null : collection.coverImage || null);
                 // Fetch product details for the link
@@ -85,6 +89,8 @@ export function CollectionEditModal({
                     .catch(console.error);
             } else {
                 setPreviewUrl(collection.coverType === "VIDEO" ? collection.coverVideo || null : collection.coverImage || null);
+                setSelectedProduct(null);
+                setSelectedMediaUrl(null);
             }
             setSelectedFile(null);
         }

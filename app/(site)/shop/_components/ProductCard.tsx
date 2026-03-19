@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 import type { SerializableProduct } from "@/types";
 import { useAppSelector } from "@/store/hooks";
-import { getProductPrice, formatPrice } from "@/lib/utils/currency";
+import { getProductPrice, formatPrice, isDiscountActive } from "@/lib/utils/currency";
 import { Countdown } from "@/components/Countdown";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -37,6 +37,21 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
   const { price, discountPrice } = getProductPrice(product, currency);
 
   const isOutOfStock = product.variants?.length > 0 && product.variants.every(v => !v.isAvailable);
+  const isNewDrop = product.isNewDrop && (!product.newDropExpiresAt || new Date(product.newDropExpiresAt) > new Date());
+
+  // Priority Tag Selection
+  let activeTag = null;
+  if (isOutOfStock) {
+    activeTag = { label: "Out of Stock", type: "out-of-stock" };
+  } else if (isNewDrop) {
+    activeTag = { label: "New Drop", type: "new-drop" };
+  } else if (discountPrice) {
+    const discount = product.discount;
+    const discountLabel = discount && discount.type === 'PERCENTAGE' 
+      ? `${Math.round(Number(discount.value))}% OFF` 
+      : "SALE";
+    activeTag = { label: discountLabel, type: "sale" };
+  }
 
   // Handle Visibility/Autoplay logic
   useEffect(() => {
@@ -97,7 +112,7 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
             src={poster?.src || videoThumbnail || ""}
             alt={poster?.alt || product.name}
             fill
-            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             placeholder="blur"
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
@@ -112,7 +127,7 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
             src={secondaryImage.src}
             alt={secondaryImage.alt || product.name}
             fill
-            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
@@ -129,7 +144,7 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
             onContextMenu={(e) => e.preventDefault()}
           />
         )}
@@ -151,24 +166,16 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
           )}
         </AnimatePresence>
 
-        {/* Out of Stock Badge */}
-        {!hideTags && isOutOfStock && (
-          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm dark:bg-black/90 text-black dark:text-white text-[10px] px-2 py-1 uppercase tracking-[0.2em] font-black border border-neutral-200 dark:border-neutral-800 shadow-sm z-10">
-            Out of Stock
-          </div>
-        )}
-
-        {/* New Drop Badge */}
-        {!hideTags && !isOutOfStock && product.isNewDrop && (
-          <div className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-1 uppercase tracking-widest z-10">
-            New Drop
-          </div>
-        )}
-
-        {/* Sale Badge */}
-        {!hideTags && !isOutOfStock && discountPrice && (
-          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm dark:bg-black/90 text-black dark:text-white text-[10px] px-2 py-1 uppercase tracking-[0.2em] font-bold border border-neutral-200 dark:border-neutral-800 shadow-sm z-10">
-            Sale
+        {/* Sleek Priority Tag */}
+        {!hideTags && activeTag && (
+          <div className={`absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md border transition-all duration-300 shadow-sm ${
+            activeTag.type === 'new-drop' 
+              ? 'bg-black/90 text-white border-white/20' 
+              : activeTag.type === 'out-of-stock'
+              ? 'bg-white/90 text-black border-neutral-200 dark:border-neutral-800'
+              : 'bg-white/90 text-rose-600 border-rose-100 dark:bg-black/90 dark:text-rose-400 dark:border-rose-900/30'
+          }`}>
+            {activeTag.label}
           </div>
         )}
       </div>

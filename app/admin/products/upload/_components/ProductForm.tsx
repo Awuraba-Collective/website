@@ -29,7 +29,7 @@ export function ProductForm() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-neutral-300" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Archiving Product Archives...</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Preparing Launch Details...</p>
             </div>
         );
     }

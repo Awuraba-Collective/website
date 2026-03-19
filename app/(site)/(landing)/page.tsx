@@ -54,7 +54,6 @@ export default async function Home() {
     where: {
       isActive: true,
       isBestSeller: true,
-      variants: { some: { isAvailable: true } },
     },
     select: {
       id: true,
@@ -88,6 +87,8 @@ export default async function Home() {
       slug: true,
       image: true,
       coverImage: true,
+      coverVideo: true,
+      coverType: true,
       _count: {
         select: { products: { where: { isActive: true } } }
       },

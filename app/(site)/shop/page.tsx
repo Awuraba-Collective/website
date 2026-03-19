@@ -81,6 +81,10 @@ export default async function ShopPage({
   // Apply category/drop filters
   if (activeFilter === "New Drop") {
     where.isNewDrop = true;
+    where.OR = [
+      { newDropExpiresAt: null },
+      { newDropExpiresAt: { gt: new Date() } }
+    ];
   } else if (activeFilter !== "All") {
     where.OR = [
       { category: { name: activeFilter } },
