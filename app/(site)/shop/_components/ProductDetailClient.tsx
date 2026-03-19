@@ -28,6 +28,7 @@ import type {
 } from "@/types";
 import { SizingDiagram } from "@/app/(site)/sizing/_components/SizingDiagram";
 import { Countdown } from "@/components/Countdown";
+import { ProductCard } from "./ProductCard";
 
 interface ProductDetailClientProps {
   product: SerializableProduct;
@@ -342,9 +343,11 @@ export function ProductDetailClient({
 
   const recommendations = useMemo(() => {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
+      // FBT: Fetch irrespective of out of stock
       return product.relatedProducts;
     }
-    return fallbackRecommendations;
+    // Pieces You'll Love: Don't fetch out of stock products
+    return fallbackRecommendations.filter(p => !p.variants || p.variants.some(v => v.isAvailable));
   }, [product.relatedProducts, fallbackRecommendations]);
 
   const isFBT = product.relatedProducts && product.relatedProducts.length > 0;
@@ -921,93 +924,16 @@ export function ProductDetailClient({
         {/* Recommendations */}
         {recommendations.length > 0 && (
           <div className="mt-20 lg:mt-32">
-            <h2 className="font-serif text-2xl lg:text-3xl mb-8 lg:mb-12">
-              {isFBT ? "Complete the Look" : "Pieces You'll Love"}
+            <h2 className="font-serif text-2xl lg:text-3xl mb-8 lg:mb-12 lowercase first-letter:uppercase">
+              {isFBT ? "Frequently Bought Together" : "Pieces You'll Love"}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {(recommendations as SerializableProduct[]).map((p) => (
-                <div
-                  key={p.id}
-                  className="group cursor-pointer"
-                  onClick={() => {
-                    // PostHog: Track related product clicked
-                    posthog.capture("related_product_clicked", {
-                      source_product_id: product.id,
-                      source_product_name: product.name,
-                      clicked_product_id: p.id,
-                      clicked_product_name: p.name,
-                      clicked_product_slug: p.slug,
-                      clicked_product_category: (p.category as any)?.name,
-                      clicked_product_price:
-                        getProductPrice(p, currency).discountPrice ??
-                        getProductPrice(p, currency).price,
-                      has_discount: !!getProductPrice(p, currency)
-                        .discountPrice,
-                      currency: currency,
-                    });
-                    window.location.href = `/shop/${p.slug}`;
-                  }}
-                >
-                  <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
-                    {(() => {
-                      const mainMedia =
-                        p.media.find((m) => m.type === "IMAGE") || p.media[0];
-
-                      if (!mainMedia) {
-                        return (
-                          <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-neutral-400 text-xs uppercase tracking-widest font-bold">
-                            No Media
-                          </div>
-                        );
-                      }
-
-                      if (mainMedia.type === "VIDEO") {
-                        return (
-                          <video
-                            src={mainMedia.src}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            muted
-                            autoPlay
-                            loop
-                            playsInline
-                          />
-                        );
-                      }
-
-                      return (
-                        <Image
-                          src={mainMedia.src}
-                          alt={p.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      );
-                    })()}
-                  </div>
-                  <h3 className="text-sm font-medium">{p.name}</h3>
-                  <p className="text-sm">
-                    {(() => {
-                      const { price: rp, discountPrice: rdp } = getProductPrice(
-                        p,
-                        currency
-                      );
-                      return rdp ? (
-                        <span className="flex gap-2">
-                          <span className="font-bold">
-                            {formatPrice(rdp, currency)}
-                          </span>
-                          <span className="text-neutral-400 line-through">
-                            {formatPrice(rp, currency)}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="text-neutral-500">
-                          {formatPrice(rp, currency)}
-                        </span>
-                      );
-                    })()}
-                  </p>
-                </div>
+                <ProductCard 
+                  key={p.id} 
+                  product={p} 
+                  context={isFBT ? 'fbt' : 'pieces-you-love'} 
+                />
               ))}
             </div>
           </div>

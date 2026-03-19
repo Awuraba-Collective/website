@@ -14,9 +14,10 @@ import { getDropStatus } from "@/lib/utils/drop-logic";
 interface HomeClientProps {
     heroProducts: SerializableProduct[];
     bestSellers: SerializableProduct[];
+    newArrivals: SerializableProduct[];
     collections: any[]; // Specific type based on Prisma include
 }
-export default function HomeClient({ heroProducts, bestSellers, collections }: HomeClientProps) {
+export default function HomeClient({ heroProducts, bestSellers, newArrivals, collections }: HomeClientProps) {
     // Automated Drop Cycle Logic
     const { status, targetDate, label, title, description, buttonText } = getDropStatus();
 
@@ -52,12 +53,37 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                 </div>
             </section>
 
+            {/* New Arrivals Section */}
+            {newArrivals.length > 0 && (
+                <section className="py-20 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-16 space-y-4">
+                            <h2 className="font-serif text-3xl md:text-5xl text-black dark:text-white lowercase first-letter:uppercase">New Arrivals</h2>
+                            <p className="text-neutral-500 dark:text-neutral-400 text-lg max-w-2xl mx-auto">Explore our latest arrivals.</p>
+                            <div className="pt-2">
+                                <Link
+                                    href="/shop?filter=New+Drop"
+                                    className="group inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-black dark:text-white border-b border-black/10 dark:border-white/10 pb-1 hover:border-black dark:hover:border-white transition-all"
+                                >
+                                    Shop the Drop <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+                                </Link>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                            {newArrivals.slice(0, 4).map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* Best Sellers Section */}
             {bestSellers.length > 0 && (
                 <section className="py-20 px-4 sm:px-6 lg:px-8 bg-neutral-50 dark:bg-neutral-900/50">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center mb-16 space-y-4">
-                            <h2 className="font-serif text-3xl md:text-5xl text-black dark:text-white">Best Sellers</h2>
+                            <h2 className="font-serif text-3xl md:text-5xl text-black dark:text-white lowercase first-letter:uppercase">Best Sellers</h2>
                             <p className="text-neutral-500 dark:text-neutral-400 text-lg max-w-2xl mx-auto">Most loved. Most worn. Shop the iconic pieces that define the AWURABA style.</p>
                             <div className="pt-2">
                                 <Link
@@ -70,7 +96,7 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                             {bestSellers.slice(0, 4).map((product) => (
-                                <ProductCard key={product.id} product={product} hideTags />
+                                <ProductCard key={product.id} product={product} context="best-sellers" />
                             ))}
                         </div>
                     </div>

@@ -12,29 +12,114 @@ export const metadata: Metadata = {
 export const revalidate = 3600; // Revalidate every hour
 
 export default async function Home() {
-  // 1. Fetch Hero Products (copying logic from shop/page.tsx for consistency)
-  const heroSourceProducts = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      discount: { isNot: null },
-      variants: { some: { isAvailable: true } },
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      isActive: true,
-      isNewDrop: true,
-      media: {
-        orderBy: { position: "asc" },
-        take: 1,
-        select: { src: true, alt: true, type: true, position: true }
+  const [heroSourceProducts, bestSellersSource, collectionsSource, newArrivalsSource] = await Promise.all([
+    // 1. Fetch Hero Products
+    prisma.product.findMany({
+      where: {
+        isActive: true,
+        discount: { isNot: null },
+        variants: { some: { isAvailable: true } },
       },
-      prices: true,
-      discount: true,
-      variants: true,
-    },
-  });
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+        isNewDrop: true,
+        media: {
+          orderBy: { position: "asc" },
+          take: 1,
+          select: { src: true, alt: true, type: true, position: true }
+        },
+        prices: true,
+        discount: true,
+        variants: true,
+      },
+    }),
+    // 2. Fetch Best Sellers
+    prisma.product.findMany({
+      where: {
+        isActive: true,
+        isBestSeller: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+        isNewDrop: true,
+        isBestSeller: true,
+        media: {
+          orderBy: { position: "asc" },
+          take: 2,
+          select: { src: true, alt: true, type: true, position: true }
+        },
+        prices: true,
+        discount: true,
+        variants: true,
+        category: { select: { name: true } },
+        collection: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    // 3. Fetch Active Collections
+    prisma.collection.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        coverImage: true,
+        coverVideo: true,
+        coverType: true,
+        _count: {
+          select: { products: { where: { isActive: true } } }
+        },
+        products: {
+          where: { isActive: true },
+          take: 1,
+          select: {
+            media: {
+              orderBy: { position: 'asc' },
+              take: 1,
+              select: { src: true, type: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    }),
+    // 4. Fetch New Arrivals
+    prisma.product.findMany({
+      where: {
+        isActive: true,
+        isNewDrop: true,
+        OR: [
+          { newDropExpiresAt: null },
+          { newDropExpiresAt: { gt: new Date() } }
+        ]
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+        isNewDrop: true,
+        media: {
+          orderBy: { position: "asc" },
+          take: 1,
+          select: { src: true, alt: true, type: true, position: true }
+        },
+        prices: true,
+        discount: true,
+        variants: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    })
+  ]);
 
   const heroProducts = heroSourceProducts
     .sort((a, b) => {
@@ -49,70 +134,15 @@ export default async function Home() {
     .slice(0, 5)
     .map(serializePrisma) as SerializableProduct[];
 
-  // 2. Fetch Best Sellers (explicitly marked by admin)
-  const bestSellersSource = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      isBestSeller: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      isActive: true,
-      isNewDrop: true,
-      isBestSeller: true,
-      media: {
-        orderBy: { position: "asc" },
-        take: 2,
-        select: { src: true, alt: true, type: true, position: true }
-      },
-      prices: true,
-      discount: true,
-      variants: true,
-      category: { select: { name: true } },
-      collection: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" }, // most recent best sellers first
-    take: 8,
-  });
   const bestSellers = bestSellersSource.map(serializePrisma) as SerializableProduct[];
-
-  // 3. Fetch Active Collections (using coverImage if available)
-  const collectionsSource = await prisma.collection.findMany({
-    where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      image: true,
-      coverImage: true,
-      coverVideo: true,
-      coverType: true,
-      _count: {
-        select: { products: { where: { isActive: true } } }
-      },
-      products: {
-        where: { isActive: true },
-        take: 1,
-        select: {
-          media: {
-            orderBy: { position: 'asc' },
-            take: 1,
-            select: { src: true, type: true }
-          }
-        }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
   const collections = collectionsSource.map(serializePrisma);
+  const newArrivals = newArrivalsSource.map(serializePrisma) as SerializableProduct[];
 
   return (
     <HomeClient
       heroProducts={heroProducts}
       bestSellers={bestSellers}
+      newArrivals={newArrivals}
       collections={collections.map(serializePrisma)}
     />
   );

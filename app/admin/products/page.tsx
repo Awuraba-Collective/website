@@ -796,7 +796,7 @@ export default function ProductsPage() {
                               Recommendations
                             </p>
                             <p className="text-[8px] md:text-[9px] font-medium text-neutral-400 uppercase tracking-widest leading-relaxed">
-                              Linked for "Complete the Look"
+                              Linked for "Frequently Bought Together"
                             </p>
                           </div>
                         </div>

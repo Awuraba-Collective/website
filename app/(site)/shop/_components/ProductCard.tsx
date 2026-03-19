@@ -12,9 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface ProductCardProps {
   product: SerializableProduct;
   hideTags?: boolean;
+  context?: 'shop' | 'best-sellers' | 'fbt' | 'pieces-you-love';
 }
 
-export function ProductCard({ product, hideTags }: ProductCardProps) {
+export function ProductCard({ product, hideTags, context = 'shop' }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -38,19 +39,23 @@ export function ProductCard({ product, hideTags }: ProductCardProps) {
 
   const isOutOfStock = product.variants?.length > 0 && product.variants.every(v => !v.isAvailable);
   const isNewDrop = product.isNewDrop && (!product.newDropExpiresAt || new Date(product.newDropExpiresAt) > new Date());
+  const isSale = !!discountPrice;
 
-  // Priority Tag Selection
+  // Priority Tag Selection based on Context
   let activeTag = null;
-  if (isOutOfStock) {
-    activeTag = { label: "Out of Stock", type: "out-of-stock" };
-  } else if (isNewDrop) {
-    activeTag = { label: "New Drop", type: "new-drop" };
-  } else if (discountPrice) {
-    const discount = product.discount;
-    const discountLabel = discount && discount.type === 'PERCENTAGE' 
-      ? `${Math.round(Number(discount.value))}% OFF` 
-      : "SALE";
-    activeTag = { label: discountLabel, type: "sale" };
+
+  if (context === 'best-sellers') {
+    // Best Sellers: Show SALE only. No New Drop or OOS tags.
+    if (isSale) activeTag = { label: "SALE", type: "sale" };
+  } else if (context === 'fbt' || context === 'pieces-you-love') {
+    // FBT & Pieces You'll Love: New Drop > Sale. No OOS tags.
+    if (isNewDrop) activeTag = { label: "New Drop", type: "new-drop" };
+    else if (isSale) activeTag = { label: "SALE", type: "sale" };
+  } else {
+    // Default Shop: OOS > New Drop > Sale.
+    if (isOutOfStock) activeTag = { label: "Out of Stock", type: "out-of-stock" };
+    else if (isNewDrop) activeTag = { label: "New Drop", type: "new-drop" };
+    else if (isSale) activeTag = { label: "SALE", type: "sale" };
   }
 
   // Handle Visibility/Autoplay logic

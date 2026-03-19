@@ -88,30 +88,29 @@ export default async function ProductDetailPage({
     notFound();
   }
 
-  // Fetch fallback recommendations if needed
+  // Fetch fallback recommendations if needed (concurrently to reduce sequential roundtrips)
   let fallbackRecommendations: any[] = [];
   if (product.relatedProducts.length === 0) {
-    // 1. Try Category
-    fallbackRecommendations = await prisma.product.findMany({
-      where: {
-        categoryId: product.categoryId,
-        id: { not: product.id },
-        isActive: true,
-      },
-      take: 4,
-      include: {
-        media: { orderBy: { position: "asc" } },
-        category: true,
-        prices: true,
-        discount: true,
-        variants: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // 2. If STILL empty, try Collection
-    if (fallbackRecommendations.length === 0 && product.collectionId) {
-      fallbackRecommendations = await prisma.product.findMany({
+    const [categoryFallback, collectionFallback, latestFallback] = await Promise.all([
+      // 1. Try Category
+      prisma.product.findMany({
+        where: {
+          categoryId: product.categoryId,
+          id: { not: product.id },
+          isActive: true,
+        },
+        take: 4,
+        include: {
+          media: { orderBy: { position: "asc" } },
+          category: true,
+          prices: true,
+          discount: true,
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      // 2. Try Collection (if available)
+      product.collectionId ? prisma.product.findMany({
         where: {
           collectionId: product.collectionId,
           id: { not: product.id },
@@ -126,12 +125,9 @@ export default async function ProductDetailPage({
           variants: true,
         },
         orderBy: { createdAt: "desc" },
-      });
-    }
-
-    // 3. If STILL empty, just get latest products
-    if (fallbackRecommendations.length === 0) {
-      fallbackRecommendations = await prisma.product.findMany({
+      }) : Promise.resolve([]),
+      // 3. Try Latest
+      prisma.product.findMany({
         where: {
           id: { not: product.id },
           isActive: true,
@@ -145,8 +141,14 @@ export default async function ProductDetailPage({
           variants: true,
         },
         orderBy: { createdAt: "desc" },
-      });
-    }
+      })
+    ]);
+
+    fallbackRecommendations = categoryFallback.length > 0 
+      ? categoryFallback 
+      : collectionFallback.length > 0 
+      ? collectionFallback 
+      : latestFallback;
   }
 
   const prod = product as ProductWithRelations;
