@@ -11,9 +11,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductCardProps {
   product: SerializableProduct;
+  hideTags?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, hideTags }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -34,6 +35,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Get currency-aware pricing
   const { price, discountPrice } = getProductPrice(product, currency);
+
+  const isOutOfStock = product.variants?.length > 0 && product.variants.every(v => !v.isAvailable);
 
   // Handle Visibility/Autoplay logic
   useEffect(() => {
@@ -94,7 +97,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={poster?.src || videoThumbnail || ""}
             alt={poster?.alt || product.name}
             fill
-            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"}`}
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             placeholder="blur"
             blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8+vZrPQAJDgNY5U8QkAAAAABJRU5ErkJggg=="
@@ -109,7 +112,7 @@ export function ProductCard({ product }: ProductCardProps) {
             src={secondaryImage.src}
             alt={secondaryImage.alt || product.name}
             fill
-            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
+            className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onContextMenu={(e) => e.preventDefault()}
             onDragStart={(e) => e.preventDefault()}
@@ -126,7 +129,7 @@ export function ProductCard({ product }: ProductCardProps) {
             muted
             loop
             playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"} ${isOutOfStock ? "grayscale-[0.5] opacity-80" : ""}`}
             onContextMenu={(e) => e.preventDefault()}
           />
         )}
@@ -148,15 +151,22 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
         </AnimatePresence>
 
+        {/* Out of Stock Badge */}
+        {!hideTags && isOutOfStock && (
+          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm dark:bg-black/90 text-black dark:text-white text-[10px] px-2 py-1 uppercase tracking-[0.2em] font-black border border-neutral-200 dark:border-neutral-800 shadow-sm z-10">
+            Out of Stock
+          </div>
+        )}
+
         {/* New Drop Badge */}
-        {product.isNewDrop && (
+        {!hideTags && !isOutOfStock && product.isNewDrop && (
           <div className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-1 uppercase tracking-widest z-10">
             New Drop
           </div>
         )}
 
         {/* Sale Badge */}
-        {discountPrice && (
+        {!hideTags && !isOutOfStock && discountPrice && (
           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm dark:bg-black/90 text-black dark:text-white text-[10px] px-2 py-1 uppercase tracking-[0.2em] font-bold border border-neutral-200 dark:border-neutral-800 shadow-sm z-10">
             Sale
           </div>

@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { CollectionEditModal } from "./CollectionEditModal";
 
 interface ListItem {
     id: string;
     name: string;
     slug: string;
+    coverImage?: string | null;
 }
 
 interface SettingsListManagerProps {
@@ -30,6 +32,9 @@ export function SettingsListManager({
     const [newItem, setNewItem] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [editingItem, setEditingItem] = useState<ListItem | null>(null);
+
+    const isCollections = title.toLowerCase().includes("collections");
 
     // Fetch items on mount
     useEffect(() => {
@@ -144,6 +149,16 @@ export function SettingsListManager({
                             >
                                 <span className="font-bold text-sm">{item.name}</span>
                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {isCollections && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setEditingItem(item)}
+                                            className="h-8 w-8 text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -163,6 +178,18 @@ export function SettingsListManager({
                     </div>
                 )}
             </div>
+
+            {isCollections && (
+                <CollectionEditModal
+                    collection={editingItem}
+                    isOpen={!!editingItem}
+                    onClose={() => setEditingItem(null)}
+                    onUpdate={(updated) => {
+                        setItems(prev => prev.map(item => item.id === updated.id ? updated : item));
+                        setEditingItem(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -216,6 +216,33 @@ export function RecommendationsAndDropSection() {
                     </div>
                 </div>
 
+                {/* Subsection: Best Seller Setting */}
+                <div className="space-y-6 pt-6 border-t border-dashed border-neutral-100 dark:border-neutral-800">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
+                                <Tag className="w-4 h-4 text-emerald-500" />
+                            </div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Best Seller Status</h3>
+                        </div>
+                        <FormField
+                            control={control}
+                            name="isBestSeller"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            className="data-[state=checked]:bg-emerald-500"
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+
                 {/* Subsection: New Drop Configuration */}
                 <div className="space-y-6 pt-6 border-t border-dashed border-neutral-100 dark:border-neutral-800">
                     <div className="flex items-center justify-between">

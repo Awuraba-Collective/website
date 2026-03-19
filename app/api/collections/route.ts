@@ -24,6 +24,11 @@ export async function GET() {
         id: true,
         name: true,
         slug: true,
+        image: true,
+        coverImage: true,
+        coverVideo: true,
+        coverType: true,
+        coverProductId: true,
       },
       orderBy: {
         name: "asc",
@@ -46,7 +51,7 @@ export async function POST(req: Request) {
   if (!auth.success) return auth.response;
 
   try {
-    const { name } = await req.json();
+    const { name, coverImage, coverVideo, coverType, coverProductId } = await req.json();
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -70,12 +75,20 @@ export async function POST(req: Request) {
       data: {
         name: name.trim(),
         slug,
+        coverImage: coverImage || null,
+        coverVideo: coverVideo || null,
+        coverType: coverType || "IMAGE",
+        coverProductId: coverProductId || null,
         isActive: true,
       },
       select: {
         id: true,
         name: true,
         slug: true,
+        coverImage: true,
+        coverVideo: true,
+        coverType: true,
+        coverProductId: true,
       },
     });
 

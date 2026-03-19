@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("q");
+    const collectionId = searchParams.get("collectionId");
 
     if (!query) {
         return NextResponse.json([]);
@@ -16,22 +17,20 @@ export async function GET(req: Request) {
                     contains: query,
                     mode: 'insensitive',
                 },
-                isActive: true
+                isActive: true,
+                ...(collectionId && { collectionId })
             },
             take: 10,
             select: {
                 id: true,
                 name: true,
                 media: {
-                    where: {
-                        type: 'IMAGE'
-                    },
                     orderBy: {
                         position: 'asc'
                     },
-                    take: 1,
                     select: {
-                        src: true
+                        src: true,
+                        type: true
                     }
                 }
             }
@@ -41,7 +40,7 @@ export async function GET(req: Request) {
         const formatted = products.map(p => ({
             id: p.id,
             name: p.name,
-            image: p.media[0]?.src || ''
+            media: p.media
         }));
 
         return NextResponse.json(formatted);

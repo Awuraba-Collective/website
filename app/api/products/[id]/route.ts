@@ -132,6 +132,7 @@ export async function PATCH(
       variants,
       images,
       frequentlyBoughtTogether,
+      isBestSeller,
       newDrop,
     } = payload;
 
@@ -149,6 +150,7 @@ export async function PATCH(
             costPrice: pricing.costPrice,
             discountId: pricing.discountId || null,
             isNewDrop: !!newDrop?.enabled,
+            isBestSeller: !!isBestSeller,
             newDropExpiresAt: newDrop?.expiresAt
               ? new Date(newDrop.expiresAt)
               : null,

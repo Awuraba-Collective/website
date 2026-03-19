@@ -72,12 +72,13 @@ export function ShopHero({ products }: ShopHeroProps) {
     }
 
     const currentProduct = products[currentIndex];
+    const isOutOfStock = currentProduct.variants?.length > 0 && currentProduct.variants.every(v => !v.isAvailable);
     const heroImage = currentProduct.media.find(m => m.type === 'IMAGE' && !m.src.match(/\.(mov|mp4|webm|ogg)$/i))?.src;
     const heroVideo = currentProduct.media.find(m => m.type === 'VIDEO' || m.src.match(/\.(mov|mp4|webm|ogg)$/i))?.src;
     const { price, discountPrice } = getProductPrice(currentProduct, currency);
 
     return (
-        <div className="relative w-full h-[60vh] md:h-[70vh] bg-black text-white overflow-hidden group">
+        <div className={`relative w-full h-[60vh] md:h-[70vh] bg-black text-white overflow-hidden group ${isOutOfStock ? "opacity-90 grayscale-[0.3]" : ""}`}>
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentIndex}
@@ -115,7 +116,11 @@ export function ShopHero({ products }: ShopHeroProps) {
                 >
                     {/* Top Badge */}
                     <div className="flex items-center justify-center">
-                        {currentProduct.discount && isDiscountActive(currentProduct.discount) ? (
+                        {isOutOfStock ? (
+                            <span className="bg-white/20 text-white px-4 py-1.5 text-[10px] md:text-[11px] tracking-[0.4em] uppercase font-black backdrop-blur-md border border-white/10">
+                                Out of Stock
+                            </span>
+                        ) : currentProduct.discount && isDiscountActive(currentProduct.discount) ? (
                             <span className="bg-white text-black px-4 py-1.5 text-[10px] md:text-[11px] tracking-[0.4em] uppercase font-black">
                                 Sale
                             </span>

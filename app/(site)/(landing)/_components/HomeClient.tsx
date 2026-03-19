@@ -70,7 +70,7 @@ export default function HomeClient({ heroProducts, bestSellers, collections }: H
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                             {bestSellers.slice(0, 4).map((product) => (
-                                <ProductCard key={product.id} product={product} />
+                                <ProductCard key={product.id} product={product} hideTags />
                             ))}
                         </div>
                     </div>

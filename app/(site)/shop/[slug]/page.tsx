@@ -69,13 +69,13 @@ export default async function ProductDetailPage({
             category: true,
             prices: true,
             discount: true,
+            variants: true,
           },
         },
       },
     }),
     prisma.measurementType.findMany({ orderBy: { order: "asc" } }),
     prisma.lengthStandard.findMany({ orderBy: { order: "asc" } }),
-    // Fetch standard fit category for loose fit products
     prisma.fitCategory.findFirst({
       where: { slug: "standard" },
       include: {
@@ -83,10 +83,70 @@ export default async function ProductDetailPage({
       },
     }),
   ]);
-  console.log("🚀 ~ ProductDetailPage ~ product:", product);
 
   if (!product) {
     notFound();
+  }
+
+  // Fetch fallback recommendations if needed
+  let fallbackRecommendations: any[] = [];
+  if (product.relatedProducts.length === 0) {
+    // 1. Try Category
+    fallbackRecommendations = await prisma.product.findMany({
+      where: {
+        categoryId: product.categoryId,
+        id: { not: product.id },
+        isActive: true,
+      },
+      take: 4,
+      include: {
+        media: { orderBy: { position: "asc" } },
+        category: true,
+        prices: true,
+        discount: true,
+        variants: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // 2. If STILL empty, try Collection
+    if (fallbackRecommendations.length === 0 && product.collectionId) {
+      fallbackRecommendations = await prisma.product.findMany({
+        where: {
+          collectionId: product.collectionId,
+          id: { not: product.id },
+          isActive: true,
+        },
+        take: 4,
+        include: {
+          media: { orderBy: { position: "asc" } },
+          category: true,
+          prices: true,
+          discount: true,
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    // 3. If STILL empty, just get latest products
+    if (fallbackRecommendations.length === 0) {
+      fallbackRecommendations = await prisma.product.findMany({
+        where: {
+          id: { not: product.id },
+          isActive: true,
+        },
+        take: 4,
+        include: {
+          media: { orderBy: { position: "asc" } },
+          category: true,
+          prices: true,
+          discount: true,
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
   }
 
   const prod = product as ProductWithRelations;
@@ -120,6 +180,7 @@ export default async function ProductDetailPage({
       />
       <ProductDetailClient
         product={serializableProduct}
+        recommendations={serializePrisma(fallbackRecommendations)}
         measurementTypes={measurementTypes as any}
         lengthStandards={lengthStandards as any}
         standardFitCategory={standardFitCategory as any}

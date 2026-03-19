@@ -59,6 +59,7 @@ export const productFormSchema = z
     category: z.string().min(1, "Category is required"),
     fitCategory: z.string().min(1, "Fit category is required"),
     collection: z.string().optional(),
+    isBestSeller: z.boolean(),
 
     // Pricing
     pricing: pricingInputSchema,
@@ -152,6 +153,8 @@ export interface ProductApiPayload {
     expiresAt?: string; // ISO date - when to remove badge
     durationDays?: number; // e.g., 14 days (used to calculate expiresAt)
   };
+
+  isBestSeller: boolean;
 
   // Metadata
   createdAt: string; // ISO timestamp

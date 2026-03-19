@@ -127,8 +127,12 @@ model Collection {
   name        String    @unique
   slug        String    @unique
   description String?
-  image       String?
-  isActive    Boolean   @default(true)
+  image          String?
+  coverImage     String?
+  coverVideo     String?
+  coverType      String    @default("IMAGE")
+  coverProductId String?
+  isActive       Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   products    Product[]
@@ -142,6 +146,7 @@ model Product {
   slug             String           @unique
   description      String
   isNewDrop        Boolean          @default(false)
+  isBestSeller     Boolean          @default(false)
   isActive         Boolean          @default(true)
   categoryId       String
   collectionId     String?

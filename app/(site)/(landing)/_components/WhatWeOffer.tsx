@@ -68,21 +68,21 @@ export function WhatWeOffer({ collections }: WhatWeOfferProps) {
                                 variants={itemAnim}
                                 className="relative group h-[500px] rounded-2xl overflow-hidden shadow-2xl"
                             >
-                                {item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src ? (
-                                    <Image
-                                        src={item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src || "/images/fabrics.webp"}
-                                        alt={item.name}
-                                        fill
-                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                                    />
-                                ) : item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src ? (
+                                {item.coverType === "VIDEO" && (item.coverVideo || item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src) ? (
                                     <video
-                                        src={item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src}
+                                        src={item.coverVideo || item.products?.[0]?.media?.find((m: any) => m.type === 'VIDEO')?.src}
                                         autoPlay
                                         muted
                                         loop
                                         playsInline
                                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    />
+                                ) : (item.coverImage || item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src) ? (
+                                    <Image
+                                        src={item.coverImage || item.image || item.products?.[0]?.media?.find((m: any) => m.type === 'IMAGE')?.src || "/images/fabrics.webp"}
+                                        alt={item.name}
+                                        fill
+                                        className="object-cover transition-transform duration-1000 group-hover:scale-110"
                                     />
                                 ) : (
                                     <Image

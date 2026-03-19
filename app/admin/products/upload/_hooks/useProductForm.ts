@@ -64,6 +64,7 @@ export const useProductForm = () => {
       category: "",
       fitCategory: "",
       collection: "",
+      isBestSeller: false,
       pricing: {
         costPrice: 0,
         projectedProfit: 0,
@@ -146,6 +147,7 @@ export const useProductForm = () => {
               category: product.categoryId || "",
               fitCategory: product.fitCategoryId || "",
               collection: product.collectionId || "",
+              isBestSeller: product.isBestSeller || false,
               pricing: {
                 costPrice: costPrice,
                 projectedProfit: basePrice - costPrice,
@@ -298,6 +300,7 @@ export const useProductForm = () => {
         category: values.category,
         fitCategory: values.fitCategory,
         collection: values.collection || undefined,
+        isBestSeller: values.isBestSeller,
 
         pricing: {
           costPrice: values.pricing.costPrice,

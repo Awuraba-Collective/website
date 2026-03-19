@@ -16,7 +16,8 @@ export default async function Home() {
   const heroSourceProducts = await prisma.product.findMany({
     where: {
       isActive: true,
-      OR: [{ isNewDrop: true }, { discount: { isNot: null } }],
+      discount: { isNot: null },
+      variants: { some: { isAvailable: true } },
     },
     select: {
       id: true,
@@ -31,6 +32,7 @@ export default async function Home() {
       },
       prices: true,
       discount: true,
+      variants: true,
     },
   });
 
@@ -47,15 +49,20 @@ export default async function Home() {
     .slice(0, 5)
     .map(serializePrisma) as SerializableProduct[];
 
-  // 2. Fetch Best Sellers (Top 8 of currently active products)
+  // 2. Fetch Best Sellers (explicitly marked by admin)
   const bestSellersSource = await prisma.product.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      isBestSeller: true,
+      variants: { some: { isAvailable: true } },
+    },
     select: {
       id: true,
       name: true,
       slug: true,
       isActive: true,
       isNewDrop: true,
+      isBestSeller: true,
       media: {
         orderBy: { position: "asc" },
         take: 2,
@@ -63,15 +70,16 @@ export default async function Home() {
       },
       prices: true,
       discount: true,
+      variants: true,
       category: { select: { name: true } },
       collection: { select: { name: true } },
     },
-    orderBy: { createdAt: "desc" }, // fallback: most recent
+    orderBy: { createdAt: "desc" }, // most recent best sellers first
     take: 8,
   });
   const bestSellers = bestSellersSource.map(serializePrisma) as SerializableProduct[];
 
-  // 3. Fetch Active Collections (including first product image/video as fallback)
+  // 3. Fetch Active Collections (using coverImage if available)
   const collectionsSource = await prisma.collection.findMany({
     where: { isActive: true },
     select: {
@@ -79,6 +87,7 @@ export default async function Home() {
       name: true,
       slug: true,
       image: true,
+      coverImage: true,
       _count: {
         select: { products: { where: { isActive: true } } }
       },

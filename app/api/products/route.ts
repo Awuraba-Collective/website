@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       images,
       frequentlyBoughtTogether,
       newDrop,
+      isBestSeller,
     } = payload;
 
     const slug = generateSlug(name);
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
 
             // New Drop Logic
             isNewDrop: !!newDrop?.enabled,
+            isBestSeller: !!isBestSeller,
             newDropExpiresAt: newDrop?.expiresAt
               ? new Date(newDrop.expiresAt)
               : null,
@@ -149,6 +151,8 @@ export async function GET(req: Request) {
           media: { orderBy: { position: "asc" }, take: 1 },
           category: true,
           collection: true,
+          prices: true,
+          discount: true,
         },
         orderBy: { createdAt: "desc" },
       }),

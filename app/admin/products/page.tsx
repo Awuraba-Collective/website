@@ -299,6 +299,15 @@ export default function ProductsPage() {
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
                   Collections
                 </th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
+                  Cost
+                </th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
+                  Selling (GHS)
+                </th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
+                  Profit
+                </th>
                 <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-[0.15em] text-neutral-400">
                   Actions
                 </th>
@@ -315,11 +324,17 @@ export default function ProductsPage() {
                   </td>
                 </tr>
               ) : (
-                products.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="group hover:bg-neutral-50/30 dark:hover:bg-neutral-900/5 transition-colors"
-                  >
+                products.map((product) => {
+                  const { price, discountPrice } = getProductPrice(product, "GHS");
+                  const sellingPrice = discountPrice || price;
+                  const cost = Number(product.costPrice) || 0;
+                  const profit = sellingPrice - cost;
+
+                  return (
+                    <tr
+                      key={product.id}
+                      className="group hover:bg-neutral-50/30 dark:hover:bg-neutral-900/5 transition-colors"
+                    >
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
                         <Switch
@@ -389,6 +404,21 @@ export default function ProductsPage() {
                         {product.collection?.name || "N/A"}
                       </p>
                     </td>
+                    <td className="px-6 py-6">
+                      <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
+                        {cost > 0 ? `₵${cost.toLocaleString()}` : "—"}
+                      </p>
+                    </td>
+                    <td className="px-6 py-6">
+                      <p className="text-[10px] font-bold text-black dark:text-white uppercase tracking-widest">
+                        ₵{sellingPrice.toLocaleString()}
+                      </p>
+                    </td>
+                    <td className="px-6 py-6">
+                      <p className={`text-[10px] font-bold uppercase tracking-widest ${profit >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                        ₵{profit.toLocaleString()}
+                      </p>
+                    </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -423,7 +453,8 @@ export default function ProductsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                );
+              })
               )}
             </tbody>
           </table>

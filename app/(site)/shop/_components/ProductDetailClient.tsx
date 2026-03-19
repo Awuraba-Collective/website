@@ -31,6 +31,7 @@ import { Countdown } from "@/components/Countdown";
 
 interface ProductDetailClientProps {
   product: SerializableProduct;
+  recommendations: SerializableProduct[];
   measurementTypes: SerializableMeasurementType[];
   lengthStandards: SerializableLengthStandard[];
   standardFitCategory?: any;
@@ -204,6 +205,7 @@ function SizingGuideModalContent({ product, standardFitCategory }: { product: Se
 
 export function ProductDetailClient({
   product,
+  recommendations: fallbackRecommendations,
   lengthStandards,
   standardFitCategory,
 }: ProductDetailClientProps) {
@@ -338,24 +340,12 @@ export function ProductDetailClient({
     setMousePos({ x, y });
   };
 
-  const allProducts = useAppSelector((state) => state.shop.products);
-
   const recommendations = useMemo(() => {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
       return product.relatedProducts;
     }
-    const sameCategory = allProducts.filter(
-      (p) =>
-        p.id !== product.id &&
-        (p.category as any)?.id === (product.category as any)?.id
-    );
-    const shuffled = [...sameCategory];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, 4);
-  }, [product.relatedProducts, product.id, allProducts]);
+    return fallbackRecommendations;
+  }, [product.relatedProducts, fallbackRecommendations]);
 
   const isFBT = product.relatedProducts && product.relatedProducts.length > 0;
 
@@ -932,7 +922,7 @@ export function ProductDetailClient({
         {recommendations.length > 0 && (
           <div className="mt-20 lg:mt-32">
             <h2 className="font-serif text-2xl lg:text-3xl mb-8 lg:mb-12">
-              {isFBT ? "Frequently Bought Together" : "You Might Also Like"}
+              {isFBT ? "Complete the Look" : "Pieces You'll Love"}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {(recommendations as SerializableProduct[]).map((p) => (
@@ -960,20 +950,37 @@ export function ProductDetailClient({
                 >
                   <div className="relative aspect-[3/4] overflow-hidden mb-4 rounded-sm bg-neutral-100">
                     {(() => {
-                      const imgSrc =
-                        p.media.find((m) => m.type === "IMAGE")?.src ||
-                        p.media[0]?.src;
-                      return imgSrc ? (
+                      const mainMedia =
+                        p.media.find((m) => m.type === "IMAGE") || p.media[0];
+
+                      if (!mainMedia) {
+                        return (
+                          <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-neutral-400 text-xs uppercase tracking-widest font-bold">
+                            No Media
+                          </div>
+                        );
+                      }
+
+                      if (mainMedia.type === "VIDEO") {
+                        return (
+                          <video
+                            src={mainMedia.src}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                          />
+                        );
+                      }
+
+                      return (
                         <Image
-                          src={imgSrc}
+                          src={mainMedia.src}
                           alt={p.name}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                      ) : (
-                        <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-neutral-400 text-xs uppercase tracking-widest font-bold">
-                          No Image
-                        </div>
                       );
                     })()}
                   </div>
