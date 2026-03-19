@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 import type { SerializableProduct } from "@/types";
 import { useAppSelector } from "@/store/hooks";
-import { getProductPrice, formatPrice, isDiscountActive } from "@/lib/utils/currency";
+import { getProductPrice, formatPrice } from "@/lib/utils/currency";
 import { Countdown } from "@/components/Countdown";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,6 +20,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isInView, setIsInView] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const { currency } = useAppSelector((state) => state.shop);
 
   // Filter media
@@ -74,8 +75,12 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          setIsInView(entry.isIntersecting);
-          if (entry.isIntersecting && videoRef.current) {
+          // isInView is for the 0.1 threshold (nearly in view)
+          setIsInView(entry.intersectionRatio >= 0.1);
+          // isFocused is for the 0.6 threshold (mainly in view)
+          setIsFocused(entry.intersectionRatio >= 0.6);
+
+          if (entry.intersectionRatio >= 0.1 && videoRef.current) {
             videoRef.current.play().catch(() => {
               // Fallback for some browsers: try again once
               setTimeout(() => {
@@ -87,7 +92,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
           }
         });
       },
-      { threshold: 0.1 } // More sensitive for mobile
+      { threshold: [0.1, 0.6] }
     );
 
     if (containerRef.current) {
@@ -98,7 +103,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
   }, [isHovered, video, isInView]);
 
   const hasSecondMedia = !!video || !!secondaryImage;
-  const showSecondMedia = (isHovered || isInView) && hasSecondMedia;
+  const showSecondMedia = isHovered || (video ? isInView : isFocused);
 
   return (
     <Link
@@ -171,15 +176,13 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
           )}
         </AnimatePresence>
 
-        {/* Sleek Priority Tag */}
         {!hideTags && activeTag && (
-          <div className={`absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md border transition-all duration-300 shadow-sm ${
-            activeTag.type === 'new-drop' 
-              ? 'bg-black/90 text-white border-white/20' 
-              : activeTag.type === 'out-of-stock'
-              ? 'bg-white/90 text-black border-neutral-200 dark:border-neutral-800'
-              : 'bg-white/90 text-rose-600 border-rose-100 dark:bg-black/90 dark:text-rose-400 dark:border-rose-900/30'
-          }`}>
+          <div className={`absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-2xl border transition-all duration-300 shadow-sm ${activeTag.type === 'new-drop'
+            ? 'bg-black/40 text-white border-white/20'
+            : activeTag.type === 'out-of-stock'
+              ? 'bg-white/70 text-black border-white/40 dark:bg-black/40 dark:text-white dark:border-white/20'
+              : 'bg-white/70 text-rose-600 border-white/40 dark:bg-black/40 dark:text-rose-400 dark:border-white/10'
+            }`}>
             {activeTag.label}
           </div>
         )}
