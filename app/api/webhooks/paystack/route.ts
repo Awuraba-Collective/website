@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/database";
 import { verifyWebhookSignature } from "@/lib/paystack";
 import { OrderStatus, PaymentStatus, Prisma } from "@/app/generated/prisma";
+import { getLogger, withFlush } from "@/lib/logger";
+
+const log = getLogger("webhooks/paystack");
 
 interface PaystackWebhookEvent {
   event: string;
@@ -29,7 +32,7 @@ interface PaystackWebhookEvent {
   };
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withFlush(async (request: NextRequest) => {
   try {
     const body = await request.text();
     const signature = request.headers.get("x-paystack-signature") || "";
@@ -37,12 +40,19 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature
     const isValid = await verifyWebhookSignature(body, signature);
     if (!isValid) {
-      console.error("Invalid Paystack webhook signature");
+      log.error("Invalid Paystack webhook signature", {
+        endpoint: "/api/webhooks/paystack",
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const event: PaystackWebhookEvent = JSON.parse(body);
-    console.log(`Paystack webhook received: ${event.event}`);
+
+    log.info(`Paystack webhook received: ${event.event}`, {
+      endpoint: "/api/webhooks/paystack",
+      eventType: event.event,
+      reference: event.data.reference,
+    });
 
     // Handle different event types
     switch (event.event) {
@@ -56,12 +66,20 @@ export async function POST(request: NextRequest) {
         });
 
         if (!payment) {
-          console.error(`Payment not found for reference: ${reference}`);
+          log.warn("charge.success received but payment record not found", {
+            endpoint: "/api/webhooks/paystack",
+            reference,
+          });
           return NextResponse.json({ received: true });
         }
 
         // Skip if already completed
         if (payment.status === PaymentStatus.COMPLETED) {
+          log.info("charge.success ignored — payment already completed", {
+            endpoint: "/api/webhooks/paystack",
+            reference,
+            orderId: payment.orderId,
+          });
           return NextResponse.json({ received: true });
         }
 
@@ -92,7 +110,14 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        console.log(`Payment ${reference} marked as completed`);
+        log.info("charge.success processed — order confirmed", {
+          endpoint: "/api/webhooks/paystack",
+          reference,
+          orderId: payment.orderId,
+          orderNumber: payment.order.orderNumber,
+          channel: event.data.channel,
+          amountKobo: event.data.amount,
+        });
         break;
       }
 
@@ -119,18 +144,37 @@ export async function POST(request: NextRequest) {
               note: `Payment failed: ${gateway_response}`,
             },
           });
+
+          log.warn("charge.failed processed", {
+            endpoint: "/api/webhooks/paystack",
+            reference,
+            orderId: payment.orderId,
+            gatewayResponse: gateway_response,
+          });
+        } else {
+          log.warn("charge.failed received but payment record not found", {
+            endpoint: "/api/webhooks/paystack",
+            reference,
+          });
         }
         break;
       }
 
       default:
-        console.log(`Unhandled Paystack event: ${event.event}`);
+        log.info(`Unhandled Paystack event type: ${event.event}`, {
+          endpoint: "/api/webhooks/paystack",
+          eventType: event.event,
+          reference: event.data.reference,
+        });
     }
 
     return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error("Webhook processing error:", error);
+  } catch (error: any) {
+    log.error("Unhandled exception in Paystack webhook handler", {
+      endpoint: "/api/webhooks/paystack",
+      error: error?.message ?? "unknown",
+    });
     // Return 200 to prevent Paystack from retrying
     return NextResponse.json({ received: true });
   }
-}
+});

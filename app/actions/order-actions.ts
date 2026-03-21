@@ -5,6 +5,9 @@ import { requireAdmin } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/order";
 import { OrderStatus, PaymentStatus, Prisma } from "@/app/generated/prisma";
 import type { CartItem } from "@/types/shop";
+import { getLogger } from "@/lib/logger";
+
+const log = getLogger("actions/orders");
 
 interface CustomerInfo {
   firstName: string;
@@ -164,13 +167,25 @@ export async function createOrder(
       },
     });
 
+    log.info("Order created via admin panel", {
+      action: "createOrder",
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customerId: dbCustomer.id,
+      itemCount: items.length,
+      totalGHS: total,
+    });
+
     return {
       success: true,
       orderNumber: order.orderNumber,
       orderId: order.id,
     };
-  } catch (error) {
-    console.error("Failed to create order:", error);
+  } catch (error: any) {
+    log.error("Failed to create order", {
+      action: "createOrder",
+      error: error?.message ?? "unknown",
+    });
     return {
       success: false,
       error: "Failed to create order. Please try again.",
@@ -255,9 +270,21 @@ export async function updateOrderStatus(
       },
     });
 
+    log.info("Order status updated", {
+      action: "updateOrderStatus",
+      orderId,
+      newStatus: status,
+      note: note ?? "",
+    });
+
     return { success: true, order };
-  } catch (error) {
-    console.error("Failed to update order status:", error);
+  } catch (error: any) {
+    log.error("Failed to update order status", {
+      action: "updateOrderStatus",
+      orderId,
+      status,
+      error: error?.message ?? "unknown",
+    });
     return { success: false, error: "Failed to update order status" };
   }
 }
@@ -271,9 +298,16 @@ export async function deleteOrder(orderId: string) {
     await prisma.payment.deleteMany({ where: { orderId } });
     await prisma.orderItem.deleteMany({ where: { orderId } });
     await prisma.order.delete({ where: { id: orderId } });
+
+    log.info("Order deleted", { action: "deleteOrder", orderId });
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to delete order:", error);
+  } catch (error: any) {
+    log.error("Failed to delete order", {
+      action: "deleteOrder",
+      orderId,
+      error: error?.message ?? "unknown",
+    });
     return { success: false, error: "Failed to delete order" };
   }
 }
@@ -297,9 +331,21 @@ export async function updateOrder(
         adminNotes: data.adminNotes,
       },
     });
+
+    log.info("Order metadata updated", {
+      action: "updateOrder",
+      orderId,
+      hasNotes: Boolean(data.notes),
+      hasAdminNotes: Boolean(data.adminNotes),
+    });
+
     return { success: true, order };
-  } catch (error) {
-    console.error("Failed to update order:", error);
+  } catch (error: any) {
+    log.error("Failed to update order", {
+      action: "updateOrder",
+      orderId,
+      error: error?.message ?? "unknown",
+    });
     return { success: false, error: "Failed to update order" };
   }
 }
@@ -341,9 +387,21 @@ export async function updateOrderItemPrice(
       },
     });
 
+    log.info("Order item price updated", {
+      action: "updateOrderItemPrice",
+      itemId,
+      orderId: item.order.id,
+      amountPaid,
+      newOrderTotal: newTotal,
+    });
+
     return { success: true };
-  } catch (error) {
-    console.error("Failed to update item price:", error);
+  } catch (error: any) {
+    log.error("Failed to update item price", {
+      action: "updateOrderItemPrice",
+      itemId,
+      error: error?.message ?? "unknown",
+    });
     return { success: false, error: "Failed to update price" };
   }
 }

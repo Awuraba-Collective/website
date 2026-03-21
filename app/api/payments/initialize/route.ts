@@ -11,6 +11,9 @@ import {
   ProductVariant,
 } from "@/app/generated/prisma";
 import { getProductPrice } from "@/lib/utils/currency";
+import { getLogger, withFlush } from "@/lib/logger";
+
+const log = getLogger("payments/initialize");
 
 interface InitializePaymentRequest {
   phone: string;
@@ -34,7 +37,7 @@ interface InitializePaymentRequest {
   exchangeRate: number;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withFlush(async (request: NextRequest) => {
   // Rate limiting: 5 requests per minute per IP
   const ip =
     request.headers.get("x-forwarded-for") ??
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
   const { success: rateLimitOk } = await checkRateLimit(paymentRatelimit, ip);
 
   if (!rateLimitOk) {
+    log.warn("Rate limit exceeded", { endpoint: "/api/payments/initialize", ip });
     return NextResponse.json(
       { error: "Too many requests. Please try again in a minute." },
       { status: 429 },
@@ -69,6 +73,12 @@ export async function POST(request: NextRequest) {
 
     // Validate request
     if (!phone || !items?.length) {
+      log.warn("Validation failed — missing phone or items", {
+        endpoint: "/api/payments/initialize",
+        ip,
+        hasPhone: Boolean(phone),
+        itemCount: items?.length ?? 0,
+      });
       return NextResponse.json(
         { error: "Phone and items are required" },
         { status: 400 },
@@ -206,10 +216,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    log.info("Order created, initializing Paystack payment", {
+      endpoint: "/api/payments/initialize",
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      reference: paymentReference,
+      totalGHS: total,
+      currency,
+      itemCount: validatedItems.length,
+    });
+
     // Get callback URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
     const callbackUrl = `${baseUrl}/checkout/callback`;
-
 
     try {
       // Initialize Paystack payment
@@ -226,6 +245,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      log.info("Paystack payment initialized", {
+        endpoint: "/api/payments/initialize",
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        reference: paystackResponse.data.reference,
+      });
+
       return NextResponse.json({
         success: true,
         authorizationUrl: paystackResponse.data.authorization_url,
@@ -234,17 +260,25 @@ export async function POST(request: NextRequest) {
         orderNumber: order.orderNumber,
       });
     } catch (paystackError: any) {
-      console.error("Paystack initialization failed:", paystackError);
+      log.error("Paystack initialization failed", {
+        endpoint: "/api/payments/initialize",
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        error: paystackError?.message ?? "unknown",
+      });
       return NextResponse.json(
         { error: `Payment provider error: ${paystackError.message || "Failed to initialize"}` },
-        { status: 502 }, // Bad Gateway for upstream provider
+        { status: 502 },
       );
     }
   } catch (error: any) {
-    console.error("Failed to initialize order:", error);
+    log.error("Unhandled exception in payment initialization", {
+      endpoint: "/api/payments/initialize",
+      error: error?.message ?? "unknown",
+    });
     return NextResponse.json(
       { error: `Failed to process order: ${error.message || "Unknown error"}` },
       { status: 500 },
     );
   }
-}
+});
