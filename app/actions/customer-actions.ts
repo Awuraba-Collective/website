@@ -1,6 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/database";
+import { getLogger } from "@/lib/logger";
+
+const log = getLogger("actions/customers");
 
 export async function getCustomers() {
   try {
@@ -46,8 +49,11 @@ export async function getCustomers() {
         }))
       };
     });
-  } catch (error) {
-    console.error("Failed to fetch customers:", error);
+  } catch (error: any) {
+    log.error("Failed to fetch customers", {
+      action: "getCustomers",
+      error: error?.message ?? "unknown",
+    });
     return [];
   }
 }
@@ -99,8 +105,12 @@ export async function getCustomerById(id: string) {
         })),
       })),
     };
-  } catch (error) {
-    console.error("Failed to fetch customer by ID:", error);
+  } catch (error: any) {
+    log.error("Failed to fetch customer", {
+      action: "getCustomerById",
+      customerId: id,
+      error: error?.message ?? "unknown",
+    });
     return null;
   }
 }
@@ -121,6 +131,10 @@ export async function createCustomer(data: {
     });
 
     if (existing) {
+      log.warn("Duplicate customer creation attempted", {
+        action: "createCustomer",
+        whatsappNumber: whatsappClean,
+      });
       return { success: false, error: "A customer with this WhatsApp number already exists." };
     }
 
@@ -137,9 +151,18 @@ export async function createCustomer(data: {
       },
     });
 
+    log.info("Customer created", {
+      action: "createCustomer",
+      customerId: customer.id,
+      whatsappNumber: whatsappClean,
+    });
+
     return { success: true, customer: { ...customer, totalSpent: customer.totalSpent.toString() } };
-  } catch (error) {
-    console.error("Failed to create customer:", error);
+  } catch (error: any) {
+    log.error("Failed to create customer", {
+      action: "createCustomer",
+      error: error?.message ?? "unknown",
+    });
     return { success: false, error: "Failed to create customer. Please try again." };
   }
 }

@@ -12,6 +12,10 @@
   "dependencies": {
     "@bprogress/next": "^3.2.12",
     "@hookform/resolvers": "^5.2.2",
+    "@opentelemetry/api-logs": "^0.213.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
+    "@opentelemetry/resources": "^2.6.0",
+    "@opentelemetry/sdk-logs": "^0.213.0",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@prisma/client-runtime-utils": "7.2.0",

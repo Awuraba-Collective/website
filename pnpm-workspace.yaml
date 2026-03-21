@@ -10,3 +10,4 @@ onlyBuiltDependencies:
   - core-js
   - esbuild
   - prisma
+  - protobufjs
