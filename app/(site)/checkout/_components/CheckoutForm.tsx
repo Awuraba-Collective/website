@@ -18,7 +18,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import posthog from "posthog-js";
-import { getProductPrice, CURRENCY_SYMBOLS } from "@/lib/utils/currency";
+import {
+  getProductPrice,
+  CURRENCY_SYMBOLS,
+} from "@/lib/utils/currency";
 import { getMediaThumbnail } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,14 +73,8 @@ interface PaystackConfig {
 const checkoutSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  whatsapp: z
-    .string()
-    .min(1, "WhatsApp number is required")
-    .regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)"),
-  phone: z
-    .string()
-    .regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)")
-    .or(z.literal("")),
+  whatsapp: z.string().min(1, "WhatsApp number is required").regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)"),
+  phone: z.string().regex(/^\d{7,15}$/, "Invalid phone format (e.g. 233123456789)").or(z.literal("")),
   address: z.string().optional(),
   city: z.string().optional(),
   region: z.string().optional(),
@@ -89,11 +86,7 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export function CheckoutForm() {
   const dispatch = useAppDispatch();
-  const {
-    items,
-    currency: selectedCurrency,
-    currencyRate: exchangeRate,
-  } = useAppSelector((state) => ({
+  const { items, currency: selectedCurrency, currencyRate: exchangeRate } = useAppSelector((state) => ({
     items: state.cart.items,
     currency: state.shop.currency,
     currencyRate: state.shop.currencyRate,
@@ -135,16 +128,14 @@ export function CheckoutForm() {
   const [error, setError] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [paymentConfig, setPaymentConfig] = useState<PaystackConfig | null>(
-    null,
+    null
   );
 
   // Success message and tracking data after payment
-  const [submittedData, setSubmittedData] = useState<CheckoutFormData | null>(
-    null,
-  );
+  const [submittedData, setSubmittedData] = useState<CheckoutFormData | null>(null);
 
   // Helper function to get item price in current selected currency
-  const getItemDisplayPrice = (item: (typeof items)[0]) => {
+  const getItemDisplayPrice = (item: typeof items[0]) => {
     const { price, discountPrice } = getProductPrice(item, selectedCurrency);
     return discountPrice ?? price;
   };
@@ -152,7 +143,7 @@ export function CheckoutForm() {
   // Calculate total in selected currency for display
   const total = items.reduce(
     (sum, item) => sum + getItemDisplayPrice(item) * item.quantity,
-    0,
+    0
   );
 
   // Calculate GHS total for Paystack
@@ -161,8 +152,8 @@ export function CheckoutForm() {
     const currentPrice = getItemDisplayPrice(item);
 
     // If foreign currency, convert to GHS using exchange rate from Redux
-    if (selectedCurrency !== "GHS") {
-      return sum + currentPrice * exchangeRate * item.quantity;
+    if (selectedCurrency !== 'GHS') {
+      return sum + (currentPrice * exchangeRate * item.quantity);
     }
 
     // If GHS, use the price directly
@@ -188,9 +179,7 @@ export function CheckoutForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: data.useWhatsAppAsPhone
-            ? data.whatsapp
-            : data.phone || data.whatsapp,
+          phone: data.useWhatsAppAsPhone ? data.whatsapp : (data.phone || data.whatsapp),
           firstName: data.firstName,
           lastName: data.lastName,
           address: data.address || undefined,
@@ -216,7 +205,7 @@ export function CheckoutForm() {
 
       if (!response.ok || !result.success) {
         setError(
-          result.error || "Failed to initialize payment. Please try again.",
+          result.error || "Failed to initialize payment. Please try again."
         );
         setIsSubmitting(false);
         return;
@@ -250,9 +239,7 @@ export function CheckoutForm() {
             {
               display_name: "Phone",
               variable_name: "phone",
-              value: data.useWhatsAppAsPhone
-                ? data.whatsapp
-                : data.phone || data.whatsapp,
+              value: data.useWhatsAppAsPhone ? data.whatsapp : (data.phone || data.whatsapp),
             },
           ],
         },
@@ -299,29 +286,26 @@ export function CheckoutForm() {
     setIsSubmitting(false);
     setPaymentConfig(null);
     setError(
-      "Payment was cancelled. Your order is still pending - you can try again.",
+      "Payment was cancelled. Your order is still pending - you can try again."
     );
   };
 
-  // Paystack payment hook — only initialize when config is ready.
-  // We use accessCode exclusively: it's always returned by the server's
-  // /transaction/initialize call and carries all transaction data (amount,
-  // reference, email). Passing those fields separately alongside accessCode
-  // would cause Paystack to attempt a second init with the same reference →
-  // "Duplicate Transaction Reference".
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // Paystack payment hook - only initialize when config is ready
   const initPaystack = usePaystackPayment(
-    (paymentConfig
+    paymentConfig
       ? {
-          publicKey: paymentConfig.publicKey,
-          accessCode: paymentConfig.accessCode!,
-        }
+        ...paymentConfig,
+        amount: paymentConfig.amount,
+        email: paymentConfig.email,
+        reference: paymentConfig.reference,
+        publicKey: paymentConfig.publicKey,
+      }
       : {
-          reference: "",
-          email: "",
-          amount: 0,
-          publicKey: PAYSTACK_PUBLIC_KEY,
-        }) as any,
+        reference: "",
+        email: "",
+        amount: 0,
+        publicKey: PAYSTACK_PUBLIC_KEY,
+      }
   );
 
   // Effect to trigger Paystack popup when config is ready
@@ -351,8 +335,8 @@ export function CheckoutForm() {
             </p>
           )}
           <p className="text-neutral-600 dark:text-neutral-400">
-            Thank you for your order, {submittedData?.firstName}! We&apos;ve
-            received your payment and will contact you at{" "}
+            Thank you for your order, {submittedData?.firstName}! We&apos;ve received
+            your payment and will contact you at{" "}
             <span className="text-black dark:text-white font-bold">
               {submittedData?.whatsapp}
             </span>{" "}
@@ -453,8 +437,7 @@ export function CheckoutForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">
-                          WhatsApp Number{" "}
-                          <span className="text-red-500">*</span>
+                          WhatsApp Number <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -472,14 +455,13 @@ export function CheckoutForm() {
                     )}
                   />
 
+
                   <FormField
                     control={form.control}
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">
-                          Calling Number
-                        </FormLabel>
+                        <FormLabel className="text-sm font-medium">Calling Number</FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -565,9 +547,7 @@ export function CheckoutForm() {
                             name="city"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-sm font-medium">
-                                  City
-                                </FormLabel>
+                                <FormLabel className="text-sm font-medium">City</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Accra"
@@ -598,9 +578,7 @@ export function CheckoutForm() {
                       ) : (
                         <>
                           <CreditCard className="w-4 h-4" />
-                          Pay{" "}
-                          {CURRENCY_SYMBOLS[selectedCurrency] ||
-                            selectedCurrency}
+                          Pay {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency}
                           {total.toFixed(2)} Now
                         </>
                       )}
@@ -649,8 +627,7 @@ export function CheckoutForm() {
                       )}
                     </div>
                     <div className="text-sm font-bold">
-                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency}{" "}
-                      {(getItemDisplayPrice(item) * item.quantity).toFixed(2)}
+                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {(getItemDisplayPrice(item) * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -659,10 +636,7 @@ export function CheckoutForm() {
               <div className="border-t border-dashed border-neutral-200 dark:border-neutral-700 pt-4 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500">Subtotal</span>
-                  <span className="font-bold">
-                    {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency}{" "}
-                    {total.toFixed(2)}
-                  </span>
+                  <span className="font-bold">{CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <div className="flex flex-col">
@@ -676,8 +650,7 @@ export function CheckoutForm() {
                   <span>Total Payable</span>
                   <div className="text-right">
                     <div className="font-sans font-bold text-2xl tracking-tighter">
-                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency}{" "}
-                      {total.toFixed(2)}
+                      {CURRENCY_SYMBOLS[selectedCurrency] || selectedCurrency} {total.toFixed(2)}
                     </div>
                   </div>
                 </div>
