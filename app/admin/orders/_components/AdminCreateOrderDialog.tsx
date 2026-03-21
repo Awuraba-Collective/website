@@ -131,6 +131,10 @@ export function AdminCreateOrderDialog({
     };
 
     const addProductToOrder = (product: any) => {
+        if (!product.variants || product.variants.length === 0) {
+            toast.error(`${product.name} has no available variants`);
+            return;
+        }
         const basePrice = product.basePrice;
         const newItem = {
             productId: product.id,
@@ -465,17 +469,17 @@ export function AdminCreateOrderDialog({
                                                         <div className="space-y-1">
                                                             <Label className="text-[9px] font-black uppercase text-neutral-400">Variant</Label>
                                                             <Select
-                                                                value={item.selectedVariant.id}
+                                                                value={item.selectedVariant?.id || ""}
                                                                 onValueChange={(val) => {
                                                                     const v = item.availableVariants.find((av: any) => av.id === val);
-                                                                    updateOrderItem(idx, { selectedVariant: v });
+                                                                    if (v) updateOrderItem(idx, { selectedVariant: v });
                                                                 }}
                                                             >
                                                                 <SelectTrigger className="h-8 text-[10px] font-bold uppercase">
                                                                     <SelectValue />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
-                                                                    {item.availableVariants.map((v: any) => (
+                                                                    {(item.availableVariants || []).map((v: any) => (
                                                                         <SelectItem key={v.id} value={v.id} className="text-[10px] font-bold uppercase">{v.name}</SelectItem>
                                                                     ))}
                                                                 </SelectContent>

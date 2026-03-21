@@ -240,7 +240,13 @@ export function ProductDetailClient({
     return () => clearTimeout(t);
   }, [isAdded]);
 
+  const isVariantUnavailable = !selectedVariant?.isAvailable;
+
   const handleAddToCart = () => {
+    if (isVariantUnavailable) {
+      toast.error("This variant is currently sold out");
+      return;
+    }
     if (!selectedSize) {
       toast.error("Please select a size before adding to bag");
       return;
@@ -904,12 +910,17 @@ export function ProductDetailClient({
             <div className="pt-6 mt-6 border-t border-neutral-200 dark:border-neutral-800 lg:pt-8 lg:mt-8">
               <button
                 onClick={handleAddToCart}
-                className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${isAdded
-                  ? "bg-green-600 text-white"
-                  : "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
+                disabled={isVariantUnavailable}
+                className={`w-full py-4 uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${isVariantUnavailable
+                  ? "bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed"
+                  : isAdded
+                    ? "bg-green-600 text-white"
+                    : "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
                   }`}
               >
-                {isAdded ? (
+                {isVariantUnavailable ? (
+                  "Sold Out"
+                ) : isAdded ? (
                   <>
                     <Check className="w-5 h-5" /> Added to Bag
                   </>
@@ -952,12 +963,15 @@ export function ProductDetailClient({
         </div>
         <button
           onClick={handleAddToCart}
-          className={`flex-grow h-12 uppercase tracking-widest text-xs font-bold transition-all px-6 ${isAdded
-            ? "bg-green-600 text-white"
-            : "bg-black text-white dark:bg-white dark:text-black"
+          disabled={isVariantUnavailable}
+          className={`flex-grow h-12 uppercase tracking-widest text-xs font-bold transition-all px-6 ${isVariantUnavailable
+            ? "bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed"
+            : isAdded
+              ? "bg-green-600 text-white"
+              : "bg-black text-white dark:bg-white dark:text-black"
             }`}
         >
-          {isAdded ? "Added" : "Add to Bag"}
+          {isVariantUnavailable ? "Sold Out" : isAdded ? "Added" : "Add to Bag"}
         </button>
       </div>
     </div>
