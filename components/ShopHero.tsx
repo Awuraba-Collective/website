@@ -43,11 +43,17 @@ export function ShopHero({ products }: ShopHeroProps) {
 
     useEffect(() => {
         if (products.length <= 1) return;
-        const timer = setInterval(() => {
+
+        const currentProduct = products[currentIndex];
+        const hasVideo = currentProduct.media.some(m => m.type === 'VIDEO' || m.src.match(/\.(mov|mp4|webm|ogg)$/i));
+        const duration = hasVideo ? 12000 : 5000;
+
+        const timer = setTimeout(() => {
             setCurrentIndex((prev) => (prev + 1) % products.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [products.length]);
+        }, duration);
+
+        return () => clearTimeout(timer);
+    }, [products.length, currentIndex, products]);
 
     if (!products || products.length === 0) {
         return (

@@ -61,7 +61,7 @@ export default async function Home() {
         collection: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take: 4,
     }),
     // 3. Fetch Active Collections
     prisma.collection.findMany({
@@ -109,7 +109,7 @@ export default async function Home() {
         isNewDrop: true,
         media: {
           orderBy: { position: "asc" },
-          take: 1,
+          take: 2,
           select: { src: true, alt: true, type: true, position: true }
         },
         prices: true,
@@ -117,7 +117,7 @@ export default async function Home() {
         variants: true,
       },
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take: 4,
     })
   ]);
 

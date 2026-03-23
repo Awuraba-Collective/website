@@ -8,7 +8,6 @@ import posthog from "posthog-js";
 import { useState, useEffect, useCallback } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { SerializableProduct } from "@/types";
-import { SalesPopup } from "./SalesPopup";
 
 interface ShopClientProps {
   products: SerializableProduct[];
@@ -72,8 +71,6 @@ export default function ShopClient({
       transition={{ duration: 0.5 }}
       className="bg-white dark:bg-black min-h-screen pb-20"
     >
-      <SalesPopup />
-
       <div className="max-w-7xl mx-auto px-6 pt-12 mb-12">
         {/* Search & Filters Container */}
         <div className="space-y-12 mb-16 text-center">

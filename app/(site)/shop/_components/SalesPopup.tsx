@@ -9,7 +9,7 @@ export function SalesPopup() {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        const cutoffDate = new Date("2026-02-01T00:00:00Z").getTime();
+        const cutoffDate = new Date("2026-04-06T00:00:00Z").getTime();
         const now = new Date().getTime();
 
         if (now > cutoffDate) return;
