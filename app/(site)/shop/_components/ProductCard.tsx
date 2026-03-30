@@ -31,23 +31,18 @@ export function ProductCard({
   const poster = product.media.find(
     (m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i),
   );
-  console.log("🚀 ~ ProductCard ~ poster:", poster);
   const video = product.media.find(
     (m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm|ogg)$/i),
   );
-  console.log("🚀 ~ ProductCard ~ video:", video);
 
   // Find second image if it exists
   const secondaryImage = product.media.filter(
     (m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i),
   )[1];
-  console.log("🚀 ~ ProductCard ~ secondaryImage:", secondaryImage);
 
-  // Use video thumbnail if no image poster exists
-  const videoThumbnail =
-    !poster && video
-      ? video.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
-      : null;
+  // No videoThumbnail fallback — S3/CloudFront doesn't auto-generate
+  // thumbnails from video URLs the way Cloudinary did. The video element
+  // itself (Layer 3) handles the display when no image poster exists.
 
   // Get currency-aware pricing
   const { price, discountPrice } = getProductPrice(product, currency);
@@ -123,7 +118,10 @@ export function ProductCard({
   }, [isHovered, video, isInView]);
 
   const hasSecondMedia = !!video || !!secondaryImage;
-  const showSecondMedia = isHovered || (video ? isInView : isFocused);
+  // If there's no image poster but a video exists, keep video always visible
+  const videoOnly = !poster && !!video;
+  const showSecondMedia =
+    videoOnly || isHovered || (video ? isInView : isFocused);
 
   return (
     <Link
@@ -134,13 +132,13 @@ export function ProductCard({
     >
       <div
         ref={containerRef}
-        className="relative aspect-[3/4] overflow-hidden bg-neutral-100 rounded-sm select-none"
+        className="relative aspect-3/4 overflow-hidden bg-neutral-100 rounded-sm select-none"
       >
-        {/* Layer 1: Primary Image (Poster or Video Thumbnail) */}
-        {(poster || videoThumbnail) && (
+        {/* Layer 1: Primary Image (only when a real image poster exists) */}
+        {poster && (
           <Image
-            src={poster?.src || videoThumbnail || ""}
-            alt={poster?.alt || product.name}
+            src={poster.src}
+            alt={poster.alt || product.name}
             fill
             className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -169,7 +167,7 @@ export function ProductCard({
           <video
             ref={videoRef}
             src={video.src}
-            poster={poster?.src || videoThumbnail || ""}
+            poster={poster?.src || ""}
             autoPlay
             muted
             loop
@@ -180,7 +178,7 @@ export function ProductCard({
         )}
 
         {/* Dark Gradient Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-[1]" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/40 to-transparent pointer-events-none z-1" />
 
         {/* Countdown Overlay */}
         <AnimatePresence>
