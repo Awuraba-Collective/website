@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   const folder = isImage ? "images" : "videos";
   const ext = filename.split(".").pop();
-  const key = `${folder}/${uuid()}.${ext}`;
+  const key = `${folder}/awuraba/products/${uuid()}.${ext}`;
 
   const command = new PutObjectCommand({
     Bucket: BUCKET,
