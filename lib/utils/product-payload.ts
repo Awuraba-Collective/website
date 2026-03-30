@@ -1,7 +1,5 @@
-import { getCloudinarySignatureAction } from "@/app/admin/products/upload/_actions/cloudinary-signature";
-
 /**
- * Upload files directly from the client to Cloudinary using signed requests.
+ * Upload files directly from the client to S3 via presigned URLs.
  * This bypasses Vercel's 4.5MB payload limit.
  */
 export async function uploadImagesToStorage(files: (File | null)[]): Promise<string[]> {
@@ -9,57 +7,43 @@ export async function uploadImagesToStorage(files: (File | null)[]): Promise<str
     if (validFiles.length === 0) return [];
 
     const uploadPromises = validFiles.map(async (file) => {
-        const folder = "awuraba/products";
-        const isVideo = file.type.startsWith("video/");
+        // 1. Request a presigned URL + CDN URL from our API
+        const res = await fetch("/api/upload/presign", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                filename: file.name,
+                contentType: file.type,
+                fileSize: file.size,
+            }),
+        });
 
-        // 1. Get signature from server
-        // We must include all parameters that will be signed
-        const params: Record<string, any> = {
-            folder,
-        };
-
-        if (isVideo) {
-            params.format = "mp4";
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Failed to get presigned URL");
         }
 
-        const { signature, timestamp, cloudName, apiKey } = await getCloudinarySignatureAction(params);
+        const { presignedUrl, cdnUrl } = await res.json();
 
-        // 2. Prepare Form Data for direct upload
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('api_key', apiKey!);
-        formData.append('timestamp', timestamp.toString());
-        formData.append('signature', signature);
-        formData.append('folder', folder);
+        // 2. Upload directly to S3 using the presigned URL
+        const uploadRes = await fetch(presignedUrl, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type },
+        });
 
-        if (isVideo) {
-            formData.append('format', 'mp4');
+        if (!uploadRes.ok) {
+            throw new Error("Upload to S3 failed");
         }
 
-        // 3. Upload directly to Cloudinary
-        // We use 'auto' resource type to handle both images and videos
-        const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
-            {
-                method: 'POST',
-                body: formData,
-            }
-        );
-
-        if (!response.ok) {
-            const error = await response.json();
-            console.error('Cloudinary upload error:', error);
-            throw new Error(error.error?.message || 'Upload failed');
-        }
-
-        const data = await response.json();
-        return data.secure_url;
+        // 3. Return the permanent CloudFront CDN URL to store in the DB
+        return cdnUrl as string;
     });
 
     try {
         return await Promise.all(uploadPromises);
     } catch (error) {
-        console.error('Storage upload error:', error);
+        console.error("Storage upload error:", error);
         throw error;
     }
 }

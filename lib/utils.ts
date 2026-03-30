@@ -14,7 +14,7 @@ export function generateSlug(name: string): string {
 
 /**
  * Returns a thumbnail URL for a given media source.
- * If the source is a video (Cloudinary), it replaces the extension with .jpg
+ * For video sources, replaces the file extension with .jpg to use as a still thumbnail.
  */
 export function getMediaThumbnail(src: string | null | undefined): string {
   if (!src) return "";

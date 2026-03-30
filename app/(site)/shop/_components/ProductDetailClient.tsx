@@ -743,7 +743,7 @@ export function ProductDetailClient({
                           .includes(variant.name.toLowerCase()))
                     );
 
-                    // For video thumbnails, replace the extension with .jpg (Cloudinary convention)
+                    // For video thumbnails, replace the extension with .jpg to show a still image preview
                     const previewSrc = variantPreview?.type === "VIDEO"
                       ? variantPreview.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
                       : variantPreview?.src;

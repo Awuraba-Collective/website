@@ -12,10 +12,14 @@ import { motion, AnimatePresence } from "framer-motion";
 interface ProductCardProps {
   product: SerializableProduct;
   hideTags?: boolean;
-  context?: 'shop' | 'best-sellers' | 'fbt' | 'pieces-you-love';
+  context?: "shop" | "best-sellers" | "fbt" | "pieces-you-love";
 }
 
-export function ProductCard({ product, hideTags, context = 'shop' }: ProductCardProps) {
+export function ProductCard({
+  product,
+  hideTags,
+  context = "shop",
+}: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -24,37 +28,53 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
   const { currency } = useAppSelector((state) => state.shop);
 
   // Filter media
-  const poster = product.media.find((m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i));
-  const video = product.media.find((m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm|ogg)$/i));
+  const poster = product.media.find(
+    (m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i),
+  );
+  console.log("🚀 ~ ProductCard ~ poster:", poster);
+  const video = product.media.find(
+    (m) => m.type === "VIDEO" || m.src.match(/\.(mov|mp4|webm|ogg)$/i),
+  );
+  console.log("🚀 ~ ProductCard ~ video:", video);
 
   // Find second image if it exists
-  const secondaryImage = product.media.filter(m => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i))[1];
+  const secondaryImage = product.media.filter(
+    (m) => m.type === "IMAGE" && !m.src.match(/\.(mov|mp4|webm|ogg)$/i),
+  )[1];
+  console.log("🚀 ~ ProductCard ~ secondaryImage:", secondaryImage);
 
   // Use video thumbnail if no image poster exists
-  const videoThumbnail = !poster && video
-    ? video.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
-    : null;
+  const videoThumbnail =
+    !poster && video
+      ? video.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
+      : null;
 
   // Get currency-aware pricing
   const { price, discountPrice } = getProductPrice(product, currency);
 
-  const isOutOfStock = product.variants?.length > 0 && product.variants.every(v => !v.isAvailable);
-  const isNewDrop = product.isNewDrop && (!product.newDropExpiresAt || new Date(product.newDropExpiresAt) > new Date());
+  const isOutOfStock =
+    product.variants?.length > 0 &&
+    product.variants.every((v) => !v.isAvailable);
+  const isNewDrop =
+    product.isNewDrop &&
+    (!product.newDropExpiresAt ||
+      new Date(product.newDropExpiresAt) > new Date());
   const isSale = !!discountPrice;
 
   // Priority Tag Selection based on Context
   let activeTag = null;
 
-  if (context === 'best-sellers') {
+  if (context === "best-sellers") {
     // Best Sellers: Show SALE only. No New Drop or OOS tags.
     if (isSale) activeTag = { label: "SALE", type: "sale" };
-  } else if (context === 'fbt' || context === 'pieces-you-love') {
+  } else if (context === "fbt" || context === "pieces-you-love") {
     // FBT & Pieces You'll Love: New Drop > Sale. No OOS tags.
     if (isNewDrop) activeTag = { label: "New Drop", type: "new-drop" };
     else if (isSale) activeTag = { label: "SALE", type: "sale" };
   } else {
     // Default Shop: OOS > New Drop > Sale.
-    if (isOutOfStock) activeTag = { label: "Out of Stock", type: "out-of-stock" };
+    if (isOutOfStock)
+      activeTag = { label: "Out of Stock", type: "out-of-stock" };
     else if (isNewDrop) activeTag = { label: "New Drop", type: "new-drop" };
     else if (isSale) activeTag = { label: "SALE", type: "sale" };
   }
@@ -64,7 +84,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
     // Desktop logic: Hover based
     if (window.matchMedia("(min-width: 1024px)").matches) {
       if (isHovered) {
-        videoRef.current?.play().catch(() => { });
+        videoRef.current?.play().catch(() => {});
       } else {
         videoRef.current?.pause();
       }
@@ -84,7 +104,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
             videoRef.current.play().catch(() => {
               // Fallback for some browsers: try again once
               setTimeout(() => {
-                videoRef.current?.play().catch(() => { });
+                videoRef.current?.play().catch(() => {});
               }, 100);
             });
           } else {
@@ -92,7 +112,7 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
           }
         });
       },
-      { threshold: [0.1, 0.6] }
+      { threshold: [0.1, 0.6] },
     );
 
     if (containerRef.current) {
@@ -177,12 +197,15 @@ export function ProductCard({ product, hideTags, context = 'shop' }: ProductCard
         </AnimatePresence>
 
         {!hideTags && activeTag && (
-          <div className={`absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-2xl border transition-all duration-300 shadow-sm ${activeTag.type === 'new-drop'
-            ? 'bg-black/40 text-white border-white/20'
-            : activeTag.type === 'out-of-stock'
-              ? 'bg-white/70 text-black border-white/40 dark:bg-black/40 dark:text-white dark:border-white/20'
-              : 'bg-white/70 text-rose-600 border-white/40 dark:bg-black/40 dark:text-rose-400 dark:border-white/10'
-            }`}>
+          <div
+            className={`absolute top-4 left-4 z-10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-2xl border transition-all duration-300 shadow-sm ${
+              activeTag.type === "new-drop"
+                ? "bg-black/40 text-white border-white/20"
+                : activeTag.type === "out-of-stock"
+                  ? "bg-white/70 text-black border-white/40 dark:bg-black/40 dark:text-white dark:border-white/20"
+                  : "bg-white/70 text-rose-600 border-white/40 dark:bg-black/40 dark:text-rose-400 dark:border-white/10"
+            }`}
+          >
             {activeTag.label}
           </div>
         )}

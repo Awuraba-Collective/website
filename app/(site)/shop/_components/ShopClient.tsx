@@ -102,9 +102,10 @@ export default function ShopClient({
                   key={filter}
                   onClick={() => handleFilterClick(filter)}
                   className={`text-[9px] sm:text-[10px] tracking-[0.3em] uppercase transition-all whitespace-nowrap pb-4 -mb-4 border-b-2 relative
-                    ${activeFilter === filter
-                      ? "text-black dark:text-white font-bold"
-                      : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
+                    ${
+                      activeFilter === filter
+                        ? "text-black dark:text-white font-bold"
+                        : "border-transparent text-neutral-400 hover:text-black dark:hover:text-white"
                     }
                   `}
                 >
@@ -124,7 +125,7 @@ export default function ShopClient({
               ))}
             </div>
             {/* Gradient masks for scroll indication on mobile */}
-            <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none md:hidden" />
+            <div className="absolute right-0 top-0 bottom-4 w-12 bg-linear-to-l from-white dark:from-black to-transparent pointer-events-none md:hidden" />
           </div>
         </div>
 
