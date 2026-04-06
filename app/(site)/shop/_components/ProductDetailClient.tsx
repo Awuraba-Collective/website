@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +19,7 @@ import posthog from "posthog-js";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addToCart } from "@/store/slices/cartSlice";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
-import { getMediaThumbnail } from "@/lib/utils";
+import { getMediaThumbnail, cleanMediaUrl } from "@/lib/utils";
 import type {
   SerializableProduct,
   Length,
@@ -28,6 +28,7 @@ import type {
 } from "@/types";
 import { SizingDiagram } from "@/app/(site)/sizing/_components/SizingDiagram";
 import { Countdown } from "@/components/Countdown";
+import { VideoThumbnail } from "@/components/VideoThumbnail";
 import { ProductCard } from "./ProductCard";
 
 interface ProductDetailClientProps {
@@ -211,6 +212,40 @@ export function ProductDetailClient({
   standardFitCategory,
 }: ProductDetailClientProps) {
   const dispatch = useAppDispatch();
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
+  const mobileVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Single Audio Playback Logic
+  useEffect(() => {
+    const handleMuteAll = (e: any) => {
+      const activeSource = e.detail?.source;
+
+      // Mute main desktop video if it's not the source
+      if (mainVideoRef.current && mainVideoRef.current !== activeSource) {
+        mainVideoRef.current.muted = true;
+      }
+
+      // Mute all mobile slider videos if they aren't the source
+      mobileVideoRefs.current.forEach((v) => {
+        if (v && v !== activeSource) {
+          v.muted = true;
+        }
+      });
+    };
+
+    window.addEventListener("awuraba-mute-all", handleMuteAll);
+    return () => window.removeEventListener("awuraba-mute-all", handleMuteAll);
+  }, []);
+
+  const notifyMuteOthers = (videoElement: HTMLVideoElement) => {
+    if (!videoElement.muted && videoElement.volume > 0) {
+      window.dispatchEvent(
+        new CustomEvent("awuraba-mute-all", {
+          detail: { source: videoElement },
+        })
+      );
+    }
+  };
 
   // Selections
   const { currency } = useAppSelector((state) => state.shop);
@@ -270,7 +305,7 @@ export function ProductDetailClient({
         currencyPrice: finalCurrencyPrice, // Store the price in selected currency
         prices: product.prices, // Store the full pricing list
         discount: product.discount, // Store discount information
-        image: getMediaThumbnail(
+        image: cleanMediaUrl(
           activeMedia.find((m) => m.type === "IMAGE")?.src ||
           activeMedia[0]?.src
         ),
@@ -534,7 +569,8 @@ export function ProductDetailClient({
             >
               {activeMedia[activeImage]?.type === "VIDEO" ? (
                 <video
-                  src={activeMedia[activeImage].src}
+                  ref={mainVideoRef}
+                  src={cleanMediaUrl(activeMedia[activeImage].src)}
                   controls
                   autoPlay
                   muted
@@ -542,10 +578,12 @@ export function ProductDetailClient({
                   playsInline
                   className="w-full h-full object-cover"
                   onContextMenu={(e) => e.preventDefault()}
+                  onPlay={(e) => notifyMuteOthers(e.currentTarget)}
+                  onVolumeChange={(e) => notifyMuteOthers(e.currentTarget)}
                 />
               ) : (
                 <Image
-                  src={activeMedia[activeImage]?.src || ""}
+                  src={cleanMediaUrl(activeMedia[activeImage]?.src || "")}
                   alt={activeMedia[activeImage]?.alt || ""}
                   fill
                   className={`object-cover transition-transform duration-200 ${isHovering ? "scale-[1.5]" : "scale-100"
@@ -574,7 +612,8 @@ export function ProductDetailClient({
                   <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800 select-none">
                     {media.type === "VIDEO" ? (
                       <video
-                        src={media.src}
+                        ref={(el) => { mobileVideoRefs.current[idx] = el; }}
+                        src={cleanMediaUrl(media.src)}
                         controls
                         autoPlay
                         muted
@@ -582,10 +621,12 @@ export function ProductDetailClient({
                         playsInline
                         className="w-full h-full object-cover"
                         onContextMenu={(e) => e.preventDefault()}
+                        onPlay={(e) => notifyMuteOthers(e.currentTarget)}
+                        onVolumeChange={(e) => notifyMuteOthers(e.currentTarget)}
                       />
                     ) : (
                       <Image
-                        src={media.src}
+                        src={cleanMediaUrl(media.src)}
                         alt={media.alt}
                         fill
                         className="object-cover"
@@ -630,7 +671,7 @@ export function ProductDetailClient({
                     {media.type === "VIDEO" ? (
                       <div className="relative w-full h-full">
                         <video
-                          src={media.src}
+                          src={cleanMediaUrl(media.src)}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
@@ -641,7 +682,7 @@ export function ProductDetailClient({
                       </div>
                     ) : (
                       <Image
-                        src={media.src}
+                        src={cleanMediaUrl(media.src)}
                         alt={media.alt}
                         fill
                         className="object-cover"
@@ -743,10 +784,6 @@ export function ProductDetailClient({
                           .includes(variant.name.toLowerCase()))
                     );
 
-                    // For video thumbnails, replace the extension with .jpg to show a still image preview
-                    const previewSrc = variantPreview?.type === "VIDEO"
-                      ? variantPreview.src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg")
-                      : variantPreview?.src;
 
                     return (
                       <button
@@ -761,14 +798,22 @@ export function ProductDetailClient({
                           }`}
                         title={variant.name}
                       >
-                        {previewSrc ? (
+                        {variantPreview ? (
                           <div className="relative w-full h-full">
-                            <Image
-                              src={previewSrc}
-                              alt={variant.name}
-                              fill
-                              className="object-cover scale-150"
-                            />
+                            {variantPreview.type === "VIDEO" || variantPreview.src.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+                              <VideoThumbnail
+                                src={variantPreview.src}
+                                alt={variant.name}
+                                className="scale-150"
+                              />
+                            ) : (
+                              <Image
+                                src={getMediaThumbnail(variantPreview.src)}
+                                alt={variant.name}
+                                fill
+                                className="object-cover scale-150"
+                              />
+                            )}
                           </div>
                         ) : (
                           <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">

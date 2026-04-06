@@ -13,7 +13,8 @@ import { EmptyCart } from "@/components/EmptyCart";
 import { useEffect } from "react";
 import posthog from "posthog-js";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
-import { getMediaThumbnail } from "@/lib/utils";
+import { getMediaThumbnail, cleanMediaUrl } from "@/lib/utils";
+import { VideoThumbnail } from "@/components/VideoThumbnail";
 
 export function CartDrawer() {
   const dispatch = useAppDispatch();
@@ -78,12 +79,19 @@ export function CartDrawer() {
               >
                 <div className="relative w-20 aspect-[3/4] bg-neutral-100 rounded-xs overflow-hidden flex-shrink-0">
                   {item.image ? (
-                    <Image
-                      src={getMediaThumbnail(item.image)}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                    />
+                    item.image.includes("/videos/") || item.image.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+                      <VideoThumbnail
+                        src={item.image.replace(/\.jpg$/i, ".mp4")}
+                        alt={item.name}
+                      />
+                    ) : (
+                      <Image
+                        src={getMediaThumbnail(item.image)}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    )
                   ) : (
                     <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-[10px] text-neutral-400 font-bold uppercase">
                       No Image
