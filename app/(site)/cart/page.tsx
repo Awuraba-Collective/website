@@ -24,7 +24,8 @@ import { fetchProducts } from "@/store/slices/shopSlice";
 import { CartItem } from "@/types/shop";
 import posthog from "posthog-js";
 import { formatPrice, getProductPrice } from "@/lib/utils/currency";
-import { getMediaThumbnail } from "@/lib/utils";
+import { getMediaThumbnail, cleanMediaUrl } from "@/lib/utils";
+import { VideoThumbnail } from "@/components/VideoThumbnail";
 
 import { EmptyCart } from "@/components/EmptyCart";
 
@@ -105,12 +106,19 @@ export default function CartPage() {
                   <div className="sm:col-span-4 lg:col-span-3">
                     <div className="relative aspect-[3/4] bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 dark:border-neutral-800">
                       {item.image ? (
-                        <Image
-                          src={getMediaThumbnail(item.image)}
-                          alt={item.name}
-                          fill
-                          className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
+                        item.image.includes("/videos/") || item.image.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+                          <VideoThumbnail
+                            src={item.image.replace(/\.jpg$/i, ".mp4")}
+                            alt={item.name}
+                          />
+                        ) : (
+                          <Image
+                            src={getMediaThumbnail(item.image)}
+                            alt={item.name}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        )
                       ) : (
                         <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center text-xs text-neutral-400 font-bold uppercase">
                           No Image

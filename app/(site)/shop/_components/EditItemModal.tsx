@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Ruler, Check, Info } from "lucide-react";
+import { useState } from "react";
+import { X, Check } from "lucide-react";
 import Image from "next/image";
 import { CartItem } from "@/types/shop";
 import { SerializableFitSize } from "@/types";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import clsx from "clsx";
 import { Length, ProductVariant } from "@/app/generated/prisma";
-import { getMediaThumbnail } from "@/lib/utils";
+import { getMediaThumbnail, cleanMediaUrl } from "@/lib/utils";
+import { VideoThumbnail } from "@/components/VideoThumbnail";
 
 const lengths = Object.values(Length);
 
@@ -59,13 +60,12 @@ export function EditItemModal({
     if (media) {
       const variantImage = media.find(
         (m) =>
-          m.type === "IMAGE" &&
-          (m.modelWearingVariant?.toLowerCase() ===
-            selectedVariant.name.toLowerCase() ||
-            m.alt.toLowerCase().includes(selectedVariant.name.toLowerCase()))
+          m.modelWearingVariant?.toLowerCase() ===
+          selectedVariant.name.toLowerCase() ||
+          m.alt.toLowerCase().includes(selectedVariant.name.toLowerCase())
       );
       if (variantImage) {
-        newImage = getMediaThumbnail(variantImage.src);
+        newImage = cleanMediaUrl(variantImage.src);
       }
     }
 
@@ -124,10 +124,9 @@ export function EditItemModal({
                 // Find the first IMAGE for this variant preview
                 const variantPreview = media?.find(
                   (img) =>
-                    img.type === "IMAGE" &&
-                    (img.modelWearingVariant?.toLowerCase() ===
-                      v.name.toLowerCase() ||
-                      img.alt.toLowerCase().includes(v.name.toLowerCase()))
+                    img.modelWearingVariant?.toLowerCase() ===
+                    v.name.toLowerCase() ||
+                    img.alt.toLowerCase().includes(v.name.toLowerCase())
                 );
 
                 return (
@@ -146,12 +145,19 @@ export function EditItemModal({
                     title={v.name}
                   >
                     {variantPreview && variantPreview.src ? (
-                      <Image
-                        src={getMediaThumbnail(variantPreview.src)}
-                        alt={v.name}
-                        fill
-                        className="object-cover scale-150"
-                      />
+                      variantPreview.type === "VIDEO" || variantPreview.src.match(/\.(mp4|mov|webm|ogg)$/i) ? (
+                        <VideoThumbnail
+                          src={variantPreview.src}
+                          alt={v.name}
+                        />
+                      ) : (
+                        <Image
+                          src={getMediaThumbnail(variantPreview.src)}
+                          alt={v.name}
+                          fill
+                          className="object-cover scale-150"
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
                         <span className="text-[10px] font-bold text-neutral-400 uppercase text-center px-1">

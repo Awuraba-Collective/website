@@ -13,10 +13,19 @@ export function generateSlug(name: string): string {
 }
 
 /**
+ * Cleans a media URL by trimming and removing all internal whitespace/newlines.
+ */
+export function cleanMediaUrl(src: string | null | undefined): string {
+  if (!src) return "";
+  return src.trim().replace(/\s/g, "");
+}
+
+/**
  * Returns a thumbnail URL for a given media source.
  * For video sources, replaces the file extension with .jpg to use as a still thumbnail.
  */
 export function getMediaThumbnail(src: string | null | undefined): string {
-  if (!src) return "";
-  return src.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg");
+  const cleanSrc = cleanMediaUrl(src);
+  if (!cleanSrc) return "";
+  return cleanSrc.replace(/\.(mp4|mov|webm|ogg)$/i, ".jpg");
 }

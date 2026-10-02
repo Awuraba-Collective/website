@@ -8,6 +8,7 @@ import { useAppSelector } from "@/store/hooks";
 import { getProductPrice, formatPrice } from "@/lib/utils/currency";
 import { Countdown } from "@/components/Countdown";
 import { motion, AnimatePresence } from "framer-motion";
+import { cleanMediaUrl } from "@/lib/utils";
 
 interface ProductCardProps {
   product: SerializableProduct;
@@ -117,6 +118,29 @@ export function ProductCard({
     return () => observer.disconnect();
   }, [isHovered, video, isInView]);
 
+  // Single Audio Playback Logic
+  useEffect(() => {
+    const handleMuteAll = (e: any) => {
+      const activeSource = e.detail?.source;
+      if (videoRef.current && videoRef.current !== activeSource) {
+        videoRef.current.muted = true;
+      }
+    };
+
+    window.addEventListener("awuraba-mute-all", handleMuteAll);
+    return () => window.removeEventListener("awuraba-mute-all", handleMuteAll);
+  }, []);
+
+  const notifyMuteOthers = (videoElement: HTMLVideoElement) => {
+    if (!videoElement.muted && videoElement.volume > 0) {
+      window.dispatchEvent(
+        new CustomEvent("awuraba-mute-all", {
+          detail: { source: videoElement },
+        })
+      );
+    }
+  };
+
   const hasSecondMedia = !!video || !!secondaryImage;
   // If there's no image poster but a video exists, keep video always visible
   const videoOnly = !poster && !!video;
@@ -137,7 +161,7 @@ export function ProductCard({
         {/* Layer 1: Primary Image (only when a real image poster exists) */}
         {poster && (
           <Image
-            src={poster.src}
+            src={cleanMediaUrl(poster.src)}
             alt={poster.alt || product.name}
             fill
             className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-0 invisible" : "opacity-100 visible"}`}
@@ -152,7 +176,7 @@ export function ProductCard({
         {/* Layer 2: Secondary Image (only if no video) */}
         {!video && secondaryImage && (
           <Image
-            src={secondaryImage.src}
+            src={cleanMediaUrl(secondaryImage.src)}
             alt={secondaryImage.alt || product.name}
             fill
             className={`object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
@@ -166,14 +190,16 @@ export function ProductCard({
         {video && (
           <video
             ref={videoRef}
-            src={video.src}
-            poster={poster?.src || ""}
+            src={cleanMediaUrl(video.src)}
+            poster={poster ? cleanMediaUrl(poster.src) : ""}
             autoPlay
             muted
             loop
             playsInline
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${showSecondMedia ? "opacity-100 visible" : "opacity-0 invisible"}`}
             onContextMenu={(e) => e.preventDefault()}
+            onPlay={(e) => notifyMuteOthers(e.currentTarget)}
+            onVolumeChange={(e) => notifyMuteOthers(e.currentTarget)}
           />
         )}
 
